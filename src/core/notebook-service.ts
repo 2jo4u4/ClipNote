@@ -422,6 +422,8 @@ export class NotebookService {
       id: generateId(),
       key: params.key.trim(),
       value: params.value,
+      createdAt: now,
+      updatedAt: now,
       sourceUrl: params.sourceUrl,
       sourceTitle: params.sourceTitle,
     };
@@ -461,6 +463,7 @@ export class NotebookService {
     if (updates.sourceTitle !== undefined) field.sourceTitle = updates.sourceTitle;
 
     const now = Date.now();
+    field.updatedAt = now;
     section.updatedAt = now;
     page.updatedAt = now;
     await this.persist();

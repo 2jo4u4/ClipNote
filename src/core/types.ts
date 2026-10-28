@@ -9,6 +9,8 @@ export interface Field {
   id: string;
   key: string;
   value: string;
+  createdAt?: number;
+  updatedAt?: number;
   sourceUrl?: string;
   sourceTitle?: string;
 }

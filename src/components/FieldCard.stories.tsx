@@ -19,6 +19,7 @@ export const Default: Story = {
     id: 'f1',
     fieldKey: '專案架構師職稱',
     value: 'Senior Frontend Architect & Agent Systems Lead',
+    createdAt: Date.now() - 15 * 60 * 1000, // 15 分鐘前
     sourceUrl: 'https://104.com.tw/job/12345',
     sourceTitle: '104 人力銀行 - 架構師應徵頁',
   },
@@ -42,6 +43,7 @@ export const InteractiveCopy: Story = {
           id="f-interact"
           fieldKey="常用測試密碼"
           value="P@ssw0rd!#2026_SecureKey"
+          createdAt={Date.now() - 5 * 60 * 1000} // 5 分鐘前
           onCopy={(val) => setCopiedValue(val)}
           onEdit={(id) => alert(`編輯欄位: ${id}`)}
           onDelete={(id) => alert(`刪除欄位: ${id}`)}

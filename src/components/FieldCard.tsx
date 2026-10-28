@@ -3,6 +3,7 @@ import {
   Copy,
   Check,
   Tag,
+  Clock,
   ExternalLink,
   MoreHorizontal,
   Trash2,
@@ -11,12 +12,14 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { cn, getDomainFromUrl } from '../utils';
+import { cn, getDomainFromUrl, formatRelativeTime } from '../utils';
 
 export interface FieldCardProps {
   id: string;
   fieldKey: string;
   value: string;
+  createdAt?: number;
+  updatedAt?: number;
   sourceUrl?: string;
   sourceTitle?: string;
   onCopy?: (value: string) => void;
@@ -30,6 +33,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
   id,
   fieldKey,
   value,
+  createdAt,
   sourceUrl,
   sourceTitle,
   onCopy,
@@ -69,19 +73,29 @@ export const FieldCard: React.FC<FieldCardProps> = ({
         className
       )}
     >
-      {/* Top Meta: Field Key (Label) & Action Buttons */}
+      {/* Top Meta: Field Key (Label), Timestamp & Action Buttons */}
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5 min-w-0">
-          <Tag className="w-3 h-3 text-raycast-coral flex-shrink-0" />
-          <span
-            className={cn(
-              'text-xs font-semibold tracking-wide truncate select-none',
-              'text-raycast-light-text dark:text-raycast-dark-text'
-            )}
-            title={fieldKey}
-          >
-            {fieldKey}
-          </span>
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <Tag className="w-3 h-3 text-raycast-coral flex-shrink-0" />
+            <span
+              className={cn(
+                'text-xs font-semibold tracking-wide truncate select-none',
+                'text-raycast-light-text dark:text-raycast-dark-text'
+              )}
+              title={fieldKey}
+            >
+              {fieldKey}
+            </span>
+          </div>
+
+          {createdAt && (
+            <div className="flex items-center gap-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex-shrink-0">
+              <span className="text-black/20 dark:text-white/20 select-none">·</span>
+              <Clock className="w-3 h-3" />
+              <span>{formatRelativeTime(createdAt)}</span>
+            </div>
+          )}
         </div>
 
         {/* Hover Action Buttons */}
