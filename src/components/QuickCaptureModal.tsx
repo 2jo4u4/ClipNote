@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { cn } from '../utils';
 import type { SearchResult } from '../types';
+import { Dropdown } from './Dropdown';
 
 export interface QuickCaptureSectionOption {
   id: string;
@@ -254,37 +255,29 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/5 dark:border-white/8">
           {/* Target Page Pill & Section Selector */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-black/5 dark:bg-white/5 border border-raycast-light-border dark:border-white/5">
-              <Globe className="w-3.5 h-3.5 text-raycast-coral" />
-              <select
-                value={selectedPageId}
-                onChange={(e) => setSelectedPageId(e.target.value)}
-                className="bg-transparent border-none outline-none font-medium cursor-pointer text-raycast-light-text dark:text-raycast-dark-text"
-              >
-                {pages.map((p) => (
-                  <option key={p.id} value={p.id} className="bg-white dark:bg-raycast-dark-surface">
-                    {p.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+            <Dropdown
+              value={selectedPageId}
+              options={pages.map((p) => ({
+                id: p.id,
+                label: p.title,
+                icon: <Globe className="w-3.5 h-3.5 text-raycast-coral" />,
+              }))}
+              onChange={(id) => setSelectedPageId(id)}
+              icon={<Globe className="w-3.5 h-3.5 text-raycast-coral" />}
+            />
 
             {/* Target Section (if any available) */}
             {availableSections.length > 0 && (
-              <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-raycast-light-muted dark:text-raycast-dark-muted bg-black/5 dark:bg-white/5">
-                <Layers className="w-3 h-3 text-raycast-amber" />
-                <select
-                  value={selectedSectionId}
-                  onChange={(e) => setSelectedSectionId(e.target.value)}
-                  className="bg-transparent border-none outline-none cursor-pointer text-raycast-light-text dark:text-raycast-dark-text"
-                >
-                  {availableSections.map((s) => (
-                    <option key={s.id} value={s.id} className="bg-white dark:bg-raycast-dark-surface">
-                      {s.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
+              <Dropdown
+                value={selectedSectionId}
+                options={availableSections.map((s) => ({
+                  id: s.id,
+                  label: s.title,
+                  icon: <Layers className="w-3 h-3 text-raycast-amber" />,
+                }))}
+                onChange={(id) => setSelectedSectionId(id)}
+                icon={<Layers className="w-3 h-3 text-raycast-amber" />}
+              />
             )}
           </div>
 
