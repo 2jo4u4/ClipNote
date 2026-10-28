@@ -25,6 +25,7 @@ import { EditNoteModal } from './EditNoteModal';
 import { ManagePagesModal } from './ManagePagesModal';
 import { ConfirmModal } from './ConfirmModal';
 import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
+import { SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
 import { matchDomain } from '../core/notebook-service';
 
@@ -50,7 +51,7 @@ export interface SidePanelProps {
 // Built-in rich demo dataset using unified Cell and Section
 const defaultDemoPages: Page[] = [
   {
-    id: 'SYSTEM_GLOBAL_PAGE',
+    id: SYSTEM_GLOBAL_PAGE_ID,
     title: '第一頁',
     icon: '🌐',
     domains: ['*'],
@@ -216,7 +217,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
     const primary = matches.find((p) => p.isPrimary);
-    return primary ? primary.id : matches[0]?.id || basePages[0]?.id || 'SYSTEM_GLOBAL_PAGE';
+    return primary ? primary.id : matches[0]?.id || basePages[0]?.id || SYSTEM_GLOBAL_PAGE_ID;
   });
 
   const handleSelectPage = (pageId: string) => {
@@ -391,7 +392,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const deletedTitle = activePage.title;
     const remaining = pages.filter((p) => p.id !== activePage.id);
     setPages(remaining);
-    setActivePageId(remaining[0]?.id || 'SYSTEM_GLOBAL_PAGE');
+    setActivePageId(remaining[0]?.id || SYSTEM_GLOBAL_PAGE_ID);
     setShowDeletePageConfirm(false);
     showToast(t.sidePanel.deletedPageToast(deletedTitle));
   };
@@ -763,7 +764,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const remaining = pages.filter((p) => p.isSystem || !pageIds.includes(p.id));
     setPages(remaining);
     if (pageIds.includes(activePageId)) {
-      setActivePageId(remaining[0]?.id || 'SYSTEM_GLOBAL_PAGE');
+      setActivePageId(remaining[0]?.id || SYSTEM_GLOBAL_PAGE_ID);
     }
     showToast(t.sidePanel.batchDeletedToast(pageIds.length, 0));
   };
@@ -1177,7 +1178,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 type="button"
                 disabled={selectedSectionIds.length === 0 && selectedCellTargets.length === 0}
                 onClick={() => setShowBatchConfirm(true)}
-                className="px-2 py-1 rounded text-xs bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:pointer-events-none text-white font-medium flex items-center gap-1 transition-all"
+                className="px-2 py-1 rounded text-xs bg-raycast-coral hover:brightness-110 disabled:opacity-40 disabled:pointer-events-none text-white font-medium flex items-center gap-1 transition-all"
               >
                 <Trash2 className="w-3 h-3" />
                 <span>{t.sidePanel.batchDeleteSelected}</span>

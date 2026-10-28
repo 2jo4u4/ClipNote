@@ -33,6 +33,8 @@ export interface CellCardProps {
   className?: string;
 }
 
+const MENU_FLIP_HEIGHT_THRESHOLD = 150;
+
 export const CellCard: React.FC<CellCardProps> = ({
   id,
   cellKey,
@@ -206,7 +208,7 @@ export const CellCard: React.FC<CellCardProps> = ({
                     if (!showMenu && menuRef.current) {
                       const rect = menuRef.current.getBoundingClientRect();
                       const spaceBelow = window.innerHeight - rect.bottom;
-                      setOpenUpward(spaceBelow < 150);
+                      setOpenUpward(spaceBelow < MENU_FLIP_HEIGHT_THRESHOLD);
                     }
                     setShowMenu((prev) => !prev);
                   }}

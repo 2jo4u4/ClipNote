@@ -43,11 +43,15 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        onConfirm();
+        onClose();
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onConfirm, onClose]);
 
   if (!isOpen) return null;
 
@@ -69,7 +73,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
             className={cn(
               'w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5',
               isDestructive
-                ? 'bg-rose-500/10 border border-rose-500/20 text-rose-500'
+                ? 'bg-raycast-coral/10 border border-raycast-coral/20 text-raycast-coral'
                 : 'bg-raycast-amber/10 border border-raycast-amber/20 text-raycast-amber'
             )}
           >
@@ -94,30 +98,37 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
           </button>
         </div>
 
-        <div className="flex items-center justify-end gap-2 pt-1">
-          <button
-            ref={cancelBtnRef}
-            type="button"
-            onClick={onClose}
-            className="px-3.5 py-1.5 rounded-xl text-xs font-medium border border-black/10 dark:border-white/10 text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-all whitespace-nowrap active:scale-95"
-          >
-            {cancelText || t.common.cancel}
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              onConfirm();
-              onClose();
-            }}
-            className={cn(
-              'px-4 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all whitespace-nowrap active:scale-95',
-              isDestructive
-                ? 'bg-rose-500 hover:bg-rose-600 text-white'
-                : 'bg-raycast-amber hover:brightness-110 text-raycast-dark-bg'
-            )}
-          >
-            {confirmText || (isDestructive ? t.common.delete : t.common.confirm)}
-          </button>
+        <div className="flex items-center justify-between pt-1">
+          <div className="text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono flex items-center gap-1">
+            <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">Esc</kbd>
+            <span>{t.common.cancel}</span>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              ref={cancelBtnRef}
+              type="button"
+              onClick={onClose}
+              className="px-3.5 py-1.5 rounded-xl text-xs font-medium border border-raycast-light-border dark:border-white/10 text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-all whitespace-nowrap active:scale-95"
+            >
+              {cancelText || t.common.cancel}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                onConfirm();
+                onClose();
+              }}
+              className={cn(
+                'px-4 py-1.5 rounded-xl text-xs font-semibold shadow-sm transition-all whitespace-nowrap active:scale-95',
+                isDestructive
+                  ? 'bg-raycast-coral hover:brightness-110 text-white'
+                  : 'bg-raycast-amber hover:brightness-110 text-raycast-dark-bg'
+              )}
+            >
+              {confirmText || (isDestructive ? t.common.delete : t.common.confirm)}
+            </button>
+          </div>
         </div>
       </div>
     </div>

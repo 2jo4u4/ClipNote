@@ -239,7 +239,7 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-black/10 dark:border-white/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-all whitespace-nowrap shrink-0 active:scale-95"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-raycast-light-border dark:border-white/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-all whitespace-nowrap shrink-0 active:scale-95"
             >
               {t.common.cancel}
             </button>
@@ -251,7 +251,7 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 active:scale-95',
                   selectedIds.length > 0
-                    ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm'
+                    ? 'bg-raycast-coral hover:brightness-110 text-white shadow-sm'
                     : 'bg-black/5 dark:bg-white/5 text-raycast-light-subtle dark:text-raycast-dark-subtle cursor-not-allowed'
                 )}
               >
