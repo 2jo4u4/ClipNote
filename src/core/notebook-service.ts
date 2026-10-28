@@ -305,6 +305,23 @@ export class NotebookService {
     await this.persist();
   }
 
+  /**
+   * Persists the entire set of pages, preserving the system global page invariant.
+   */
+  async saveAllPages(pages: Page[]): Promise<void> {
+    const data = await this.ensureInitialized();
+    const newPagesRecord: Record<string, Page> = {};
+    for (const page of pages) {
+      newPagesRecord[page.id] = this.normalizePage(page);
+    }
+    if (!newPagesRecord[data.systemGlobalPageId] && data.pages[data.systemGlobalPageId]) {
+      newPagesRecord[data.systemGlobalPageId] = data.pages[data.systemGlobalPageId];
+    }
+    data.pages = newPagesRecord;
+    this.cachedData = data;
+    await this.persist();
+  }
+
   // ==========================================
   // Section Operations
   // ==========================================

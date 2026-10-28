@@ -23,7 +23,7 @@ export default defineBackground(() => {
     // Register Right-Click Context Menu for selected text
     chrome.contextMenus.create({
       id: 'notebook-capture-selection',
-      title: '儲存至筆記本',
+      title: '新增筆記',
       contexts: ['selection'],
     });
   });

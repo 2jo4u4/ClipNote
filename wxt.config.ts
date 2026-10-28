@@ -4,6 +4,11 @@ import { defineConfig } from 'wxt';
 export default defineConfig({
   srcDir: 'src',
   modules: ['@wxt-dev/module-react'],
+  imports: {
+    dirsScanOptions: {
+      fileFilter: (file) => !file.includes('.stories.') && !file.includes('.test.'),
+    },
+  },
   manifest: {
     name: 'Notebook 筆記本',
     description: '輕量、感知網域的個人備忘與快速填表 Chrome 擴充功能 (Notebook Browser Extension)',
@@ -28,7 +33,7 @@ export default defineConfig({
           default: 'Alt+N',
           mac: 'Alt+N',
         },
-        description: '快速捕獲筆記 / 全域搜尋',
+        description: '新增筆記 / 全域搜尋',
       },
     },
     action: {

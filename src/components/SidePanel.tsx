@@ -18,6 +18,7 @@ import { NewPageModal, NewPageData } from './NewPageModal';
 import { MoveCellModal } from './MoveCellModal';
 import type { Page, Section, Cell, SearchResult, CreateCellInput } from '../types';
 import { Language, getTranslations } from '../i18n';
+import { matchDomain } from '../core/notebook-service';
 
 export interface MovingCellTarget {
   cell: Cell;
@@ -203,7 +204,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const matched = basePages.find(
       (p) =>
         p.domains &&
-        p.domains.some((d) => d === currentDomain || currentDomain.endsWith(d.replace('*.', '')))
+        p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
     return matched ? matched.id : basePages[0]?.id || 'SYSTEM_GLOBAL_PAGE';
   });
@@ -214,7 +215,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const matched = pages.find(
       (p) =>
         p.domains &&
-        p.domains.some((d) => d === currentDomain || currentDomain.endsWith(d.replace('*.', '')))
+        p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
     if (matched) {
       setActivePageId(matched.id);

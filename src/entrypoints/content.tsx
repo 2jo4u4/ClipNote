@@ -5,6 +5,7 @@ import { QuickCaptureModal, QuickCapturePageOption, QuickCaptureSectionOption } 
 import {
   NotebookService,
   extractHostname,
+  matchDomain,
 } from '../core/notebook-service';
 import { ChromeStorageAdapter } from '../core/storage';
 import { SearchResult, CreateCellInput } from '../types';
@@ -62,7 +63,7 @@ function InPageQuickCaptureWrapper({
       const matched = currentPages.find(
         (p: Page) =>
           p.domains &&
-          p.domains.some((d: string) => d === host || host.endsWith(d.replace('*.', '')))
+          p.domains.some((pattern: string) => matchDomain(host, pattern))
       );
       if (matched) {
         setActivePageId(matched.id);
@@ -93,13 +94,26 @@ function InPageQuickCaptureWrapper({
     data: CreateCellInput & { pageId: string; sectionId?: string }
   ) => {
     try {
-      const targetSectionId = data.sectionId || 'welcome-fields';
-      await notebookService.createCell(data.pageId, targetSectionId, {
-        key: data.key,
-        value: data.value,
-        sourceUrl: data.sourceUrl || sourceUrl || window.location.href,
-        sourceTitle: data.sourceTitle || sourceTitle || document.title,
-      });
+      const allPages = await notebookService.getAllPages();
+      const targetPage = allPages.find((p) => p.id === data.pageId);
+      let targetSectionId = data.sectionId;
+
+      if (!targetSectionId) {
+        targetSectionId = targetPage?.sections[0]?.id;
+      }
+      if (!targetSectionId && targetPage) {
+        const newSec = await notebookService.createSection(targetPage.id, { title: '預設分類' });
+        targetSectionId = newSec.id;
+      }
+
+      if (targetSectionId) {
+        await notebookService.createCell(data.pageId, targetSectionId, {
+          key: data.key,
+          value: data.value,
+          sourceUrl: data.sourceUrl || sourceUrl || window.location.href,
+          sourceTitle: data.sourceTitle || sourceTitle || document.title,
+        });
+      }
     } catch (err) {
       console.warn('[Notebook] Failed to create cell:', err);
     }
@@ -189,23 +203,13 @@ export default defineContentScript({
       currentUi.mount();
     };
 
-    // 1. Listen for background messages (Context Menu & Commands)
+    // Listen for background messages (Context Menu & Commands: Alt+N)
     chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       if (message.type === 'OPEN_QUICK_CAPTURE') {
         const payload = message.payload || {};
-        summonModal(payload.content || '', payload.sourceUrl || '', payload.sourceTitle || '');
+        const selectedText = payload.content || window.getSelection()?.toString() || '';
+        summonModal(selectedText, payload.sourceUrl || window.location.href, payload.sourceTitle || document.title);
         sendResponse({ success: true });
-      }
-    });
-
-    // 2. Direct in-page fallback for Alt+N
-    window.addEventListener('keydown', (e: KeyboardEvent) => {
-      if (e.altKey && (e.key === 'n' || e.key === 'N')) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const selectedText = window.getSelection()?.toString() || '';
-        summonModal(selectedText, window.location.href, document.title);
       }
     });
   },

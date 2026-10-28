@@ -5,9 +5,10 @@ import { SidePanel } from '../../components/SidePanel';
 import {
   NotebookService,
   extractHostname,
+  DEFAULT_STORAGE_KEY,
 } from '../../core/notebook-service';
 import { ChromeStorageAdapter } from '../../core/storage';
-import { Page, NotebookStorage, SYSTEM_GLOBAL_PAGE_ID } from '../../core/types';
+import { Page } from '../../core/types';
 
 const storageAdapter = new ChromeStorageAdapter();
 const notebookService = new NotebookService(storageAdapter);
@@ -72,11 +73,8 @@ function ExtensionSidePanelApp() {
 
     // Listen to storage changes from Content Script or other contexts
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      if (areaName === 'local' && changes['notebook_storage_v1']) {
-        const newStorage = changes['notebook_storage_v1'].newValue as NotebookStorage | undefined;
-        if (newStorage && newStorage.pages) {
-          setPages(Object.values(newStorage.pages));
-        }
+      if (areaName === 'local' && changes[DEFAULT_STORAGE_KEY]) {
+        loadNotebookData();
       }
     };
 
@@ -101,14 +99,7 @@ function ExtensionSidePanelApp() {
   const handlePagesChange = async (newPages: Page[]) => {
     setPages(newPages);
     try {
-      const pagesRecord: Record<string, Page> = {};
-      for (const p of newPages) {
-        pagesRecord[p.id] = p;
-      }
-      await storageAdapter.set('notebook_storage_v1', {
-        pages: pagesRecord,
-        systemGlobalPageId: SYSTEM_GLOBAL_PAGE_ID,
-      });
+      await notebookService.saveAllPages(newPages);
     } catch (err) {
       console.warn('[Notebook] Failed to persist pages:', err);
     }
