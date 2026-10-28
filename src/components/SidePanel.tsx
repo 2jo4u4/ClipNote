@@ -64,7 +64,7 @@ const defaultDemoPages: Page[] = [
           },
           {
             id: 'j-2',
-            value: '這個全域分頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
+            value: '這個全域筆記頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
             sourceUrl: 'https://google.com',
             sourceTitle: 'Google 首頁',
             createdAt: Date.now() - 3600000,
@@ -84,7 +84,7 @@ const defaultDemoPages: Page[] = [
     sections: [
       {
         id: 'sec-104-job-fields',
-        title: '工作經驗與技能 (欄位與備忘混合)',
+        title: '工作經驗與技能',
         order: 0,
         createdAt: Date.now() - 86400000 * 2,
         updatedAt: Date.now() - 1200000,
@@ -247,6 +247,148 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(`已建立筆記頁「${data.title}」`);
   };
 
+  const handleAddSection = () => {
+    const title = window.prompt('請輸入新分區名稱：', '新分區');
+    if (!title || !title.trim()) return;
+
+    const newSec: Section = {
+      id: `sec-${Date.now()}`,
+      title: title.trim(),
+      order: activePage.sections.length,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      items: [],
+    };
+
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+        return {
+          ...p,
+          sections: [...p.sections, newSec],
+          updatedAt: Date.now(),
+        };
+      })
+    );
+    showToast(`已新增分區「${title.trim()}」`);
+  };
+
+  const handleExtractSectionToPage = (sectionId: string) => {
+    const targetSec = activePage.sections.find((s) => s.id === sectionId);
+    if (!targetSec) return;
+
+    const newPageId = `page-${Date.now()}`;
+    const newPage: Page = {
+      id: newPageId,
+      title: targetSec.title,
+      icon: '📄',
+      domains: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      sections: [{ ...targetSec, order: 0 }],
+    };
+
+    setPages((prev) => [
+      ...prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+        return {
+          ...p,
+          sections: p.sections.filter((s) => s.id !== sectionId),
+          updatedAt: Date.now(),
+        };
+      }),
+      newPage,
+    ]);
+
+    setActivePageId(newPageId);
+    showToast(`已升格為獨立筆記頁「${targetSec.title}」`);
+  };
+
+  const handleMoveCell = (cellId: string) => {
+    let foundCell: Cell | null = null;
+    let sourceSecId = '';
+
+    for (const sec of activePage.sections) {
+      const c = sec.items.find((item) => item.id === cellId);
+      if (c) {
+        foundCell = c;
+        sourceSecId = sec.id;
+        break;
+      }
+    }
+    if (!foundCell) return;
+
+    const otherSecInPage = activePage.sections.find((s) => s.id !== sourceSecId);
+    if (otherSecInPage) {
+      setPages((prev) =>
+        prev.map((p) => {
+          if (p.id !== activePage.id) return p;
+          return {
+            ...p,
+            sections: p.sections.map((s) => {
+              if (s.id === sourceSecId) {
+                return { ...s, items: s.items.filter((c) => c.id !== cellId), updatedAt: Date.now() };
+              }
+              if (s.id === otherSecInPage.id) {
+                return { ...s, items: [...s.items, foundCell!], updatedAt: Date.now() };
+              }
+              return s;
+            }),
+            updatedAt: Date.now(),
+          };
+        })
+      );
+      showToast(`已移動至「${otherSecInPage.title}」`);
+    } else {
+      const globalPage = pages.find((p) => p.isSystem) || pages[0];
+      const targetSec = globalPage.sections[0];
+      if (targetSec) {
+        setPages((prev) =>
+          prev.map((p) => {
+            if (p.id === activePage.id) {
+              return {
+                ...p,
+                sections: p.sections.map((s) => ({
+                  ...s,
+                  items: s.items.filter((c) => c.id !== cellId),
+                  updatedAt: Date.now(),
+                })),
+                updatedAt: Date.now(),
+              };
+            }
+            if (p.id === globalPage.id) {
+              return {
+                ...p,
+                sections: p.sections.map((s, idx) =>
+                  idx === 0 ? { ...s, items: [...s.items, foundCell!], updatedAt: Date.now() } : s
+                ),
+                updatedAt: Date.now(),
+              };
+            }
+            return p;
+          })
+        );
+        showToast(`已移動至「${globalPage.title}」`);
+      }
+    }
+  };
+
+  const handleBindDomain = (pageId: string) => {
+    if (!currentDomain) return;
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== pageId) return p;
+        if (p.domains.includes(currentDomain)) return p;
+        return {
+          ...p,
+          domains: [...p.domains, currentDomain],
+          updatedAt: Date.now(),
+        };
+      })
+    );
+    showToast(`已綁定「${currentDomain}」至該筆記頁`);
+  };
+
   const handleCopy = (content: string, label: string) => {
     navigator.clipboard.writeText(content).catch(() => {});
     showToast(`已複製「${label}」`);
@@ -337,7 +479,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast('已匯出分頁 JSON');
+    showToast('已匯出筆記頁 JSON');
   };
 
   const quickCapturePages = useMemo(() => {
@@ -413,7 +555,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
             <button
               onClick={handleExportJson}
-              title="匯出此分頁 JSON"
+              title="匯出此筆記頁 JSON"
               className={cn(
                 'p-1.5 rounded-lg text-raycast-light-muted dark:text-raycast-dark-muted',
                 'hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5',
@@ -446,6 +588,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <OmniSearchBar
             results={allSearchResults}
             currentDomain={currentDomain}
+            onBindDomain={handleBindDomain}
             onSelectItem={(item) => {
               setActivePageId(item.pageId);
               showToast(`已複製並定位至「${item.title}」`);
@@ -465,18 +608,33 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
         {/* Active Page Body */}
         <main className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
-          <div className="flex items-center justify-between pb-1">
-            <div className="flex items-center gap-1.5">
+          {/* Active Page Header Banner with Add Section Button on the Right */}
+          <div className="flex items-center justify-between pb-1 gap-2">
+            <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-base select-none">{activePage.icon || '📄'}</span>
-              <h2 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
+              <h2 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
                 {activePage.title}
               </h2>
+              {activePage.domains && activePage.domains.length > 0 && !activePage.isSystem && (
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-raycast-amber/30 bg-raycast-amber/10 text-raycast-amber truncate max-w-[130px]">
+                  {activePage.domains.join(', ')}
+                </span>
+              )}
             </div>
-            {activePage.domains && activePage.domains.length > 0 && !activePage.isSystem && (
-              <span className="text-[11px] font-mono text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                已綁定: {activePage.domains.join(', ')}
-              </span>
-            )}
+
+            {/* Q1: Add Section Button directly on the right side of the Page header! */}
+            <button
+              type="button"
+              onClick={handleAddSection}
+              title="在此筆記頁新增分區"
+              className={cn(
+                'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
+                'bg-raycast-amber/10 hover:bg-raycast-amber/20 text-raycast-amber border border-raycast-amber/30 active:scale-95'
+              )}
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>新增分區</span>
+            </button>
           </div>
 
           {activePage.sections && activePage.sections.length > 0 ? (
@@ -488,7 +646,21 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 type="mixed"
                 itemCount={section.items.length}
                 onAddItem={() => setIsQuickCaptureOpen(true)}
+                onExtractToPage={handleExtractSectionToPage}
                 onExportPage={handleExportJson}
+                onDeleteSection={(secId) => {
+                  setPages((prev) =>
+                    prev.map((p) => {
+                      if (p.id !== activePage.id) return p;
+                      return {
+                        ...p,
+                        sections: p.sections.filter((s) => s.id !== secId),
+                        updatedAt: Date.now(),
+                      };
+                    })
+                  );
+                  showToast('已刪除分區');
+                }}
               >
                 {section.items.length > 0 ? (
                   <div className="space-y-2">
@@ -502,6 +674,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         sourceUrl={cell.sourceUrl}
                         sourceTitle={cell.sourceTitle}
                         onCopy={() => handleCopy(cell.value, cell.key || '隨筆')}
+                        onMove={handleMoveCell}
                         onDelete={() =>
                           handleDeleteCell(activePage.id, section.id, cell.id)
                         }
@@ -525,14 +698,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   此筆記頁目前空空如也
                 </p>
                 <p className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle mt-0.5">
-                  點擊快速捕獲立即新增欄位或隨筆
+                  點擊快速捕獲或右上角「新增分區」開始記錄
                 </p>
               </div>
               <button
-                onClick={() => setIsQuickCaptureOpen(true)}
+                onClick={handleAddSection}
                 className="mt-1 px-3 py-1.5 rounded-lg text-xs bg-raycast-amber text-raycast-dark-bg font-medium"
               >
-                + 新增第一筆內容
+                + 新增第一筆分區
               </button>
             </div>
           )}
@@ -548,7 +721,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         >
           <div className="flex items-center gap-2">
             <span>
-              總計 {pages.length} 個分頁 · {allSearchResults.length} 筆資料
+              總計 {pages.length} 個筆記頁 · {allSearchResults.length} 筆資料
             </span>
           </div>
           <div className="flex items-center gap-2">

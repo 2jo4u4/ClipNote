@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   Copy,
   Check,
@@ -8,7 +8,7 @@ import {
   Trash2,
   FolderUp,
 } from 'lucide-react';
-import { cn } from '../utils';
+import { cn, formatRelativeTime, getDomainFromUrl } from '../utils';
 
 export interface CellCardProps {
   id: string;
@@ -21,33 +21,6 @@ export interface CellCardProps {
   onDelete?: (id: string) => void;
   onMove?: (id: string) => void;
   className?: string;
-}
-
-function formatRelativeTime(timestamp?: number): string {
-  if (!timestamp) return '剛剛';
-  const now = Date.now();
-  const diffSec = Math.max(0, Math.floor((now - timestamp) / 1000));
-
-  if (diffSec < 60) return '剛剛';
-  const diffMin = Math.floor(diffSec / 60);
-  if (diffMin < 60) return `${diffMin} 分鐘前`;
-  const diffHour = Math.floor(diffMin / 60);
-  if (diffHour < 24) return `${diffHour} 小時前`;
-  const diffDay = Math.floor(diffHour / 24);
-  if (diffDay < 30) return `${diffDay} 天前`;
-  return new Date(timestamp).toLocaleDateString('zh-TW', {
-    month: 'short',
-    day: 'numeric',
-  });
-}
-
-function getDisplayDomain(url?: string): string {
-  if (!url) return '';
-  try {
-    return new URL(url).hostname.replace(/^www\./, '');
-  } catch {
-    return url.split('/')[0];
-  }
 }
 
 export const CellCard: React.FC<CellCardProps> = ({
@@ -64,8 +37,23 @@ export const CellCard: React.FC<CellCardProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isField = Boolean(cellKey?.trim());
+
+  // Close menu gracefully when clicking outside without full-screen backdrops
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showMenu]);
 
   const handleCopy = (e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -115,14 +103,23 @@ export const CellCard: React.FC<CellCardProps> = ({
           {/* Timestamp */}
           <div className="flex items-center gap-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
             <Clock className="w-2.5 h-2.5 opacity-60" />
-            <span>{formatRelativeTime(createdAt)}</span>
+            <span>{formatRelativeTime(createdAt || Date.now())}</span>
           </div>
         </div>
 
-        {/* Hover / Direct Actions */}
-        <div className="flex items-center gap-1 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        {/* Hover / Direct Actions with isolated event propagation */}
+        <div
+          className="flex items-center gap-1 flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           <button
-            onClick={handleCopy}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleCopy(e);
+            }}
+            onMouseDown={(e) => e.stopPropagation()}
             title={copied ? '已複製！' : '複製內容'}
             className={cn(
               'flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-all duration-150',
@@ -141,49 +138,57 @@ export const CellCard: React.FC<CellCardProps> = ({
             )}
           </button>
 
-          {/* Action Popover Menu */}
+          {/* Action Popover Menu (Without full-screen blocking backdrop) */}
           {(onDelete || onMove) && (
-            <div className="relative">
+            <div className="relative" ref={menuRef}>
               <button
-                onClick={() => setShowMenu(!showMenu)}
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu((prev) => !prev);
+                }}
+                onMouseDown={(e) => e.stopPropagation()}
+                title="更多操作"
                 className="p-1 rounded text-raycast-light-subtle dark:text-raycast-dark-subtle opacity-0 group-hover:opacity-100 hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-opacity"
               >
                 <MoreVertical className="w-3 h-3" />
               </button>
 
               {showMenu && (
-                <>
-                  <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setShowMenu(false)}
-                  />
-                  <div className="absolute right-0 top-full mt-1 w-32 rounded-lg border shadow-lg z-50 py-1 bg-raycast-light-surface border-raycast-light-border dark:bg-raycast-dark-surface dark:border-raycast-dark-border animate-in fade-in zoom-in-95 duration-100">
-                    {onMove && (
-                      <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onMove(id);
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                      >
-                        <FolderUp className="w-3.5 h-3.5 text-raycast-amber" />
-                        <span>移動至...</span>
-                      </button>
-                    )}
-                    {onDelete && (
-                      <button
-                        onClick={() => {
-                          setShowMenu(false);
-                          onDelete(id);
-                        }}
-                        className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>刪除</span>
-                      </button>
-                    )}
-                  </div>
-                </>
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="absolute right-0 top-full mt-1 w-32 rounded-lg border shadow-lg z-50 py-1 bg-raycast-light-surface border-raycast-light-border dark:bg-raycast-dark-surface dark:border-raycast-dark-border animate-in fade-in zoom-in-95 duration-100"
+                >
+                  {onMove && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onMove(id);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <FolderUp className="w-3.5 h-3.5 text-raycast-amber" />
+                      <span>移動至...</span>
+                    </button>
+                  )}
+                  {onDelete && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onDelete(id);
+                      }}
+                      className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                      <span>刪除</span>
+                    </button>
+                  )}
+                </div>
               )}
             </div>
           )}
@@ -215,7 +220,7 @@ export const CellCard: React.FC<CellCardProps> = ({
               'hover:text-raycast-amber hover:bg-raycast-amber/10 border border-transparent hover:border-raycast-amber/20'
             )}
           >
-            <span className="truncate">{sourceTitle || getDisplayDomain(sourceUrl)}</span>
+            <span className="truncate">{sourceTitle || getDomainFromUrl(sourceUrl)}</span>
             <ExternalLink className="w-2.5 h-2.5 flex-shrink-0 opacity-70" />
           </a>
         </div>

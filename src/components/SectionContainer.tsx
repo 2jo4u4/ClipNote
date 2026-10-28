@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   ChevronDown,
   Layers,
@@ -43,9 +43,24 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const isFields = type === 'fields';
   const isJots = type === 'jots';
+
+  // Outside click listener for the action menu (No full-screen blocking backdrop)
+  useEffect(() => {
+    if (!showMenu) return;
+
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setShowMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [showMenu]);
 
   return (
     <div
@@ -69,7 +84,6 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
       >
         {/* Left: Type Icon + Title + Count Badge */}
         <div className="flex items-center gap-2.5 min-w-0">
-          {/* Section Type Icon Badge */}
           <div
             className={cn(
               'flex items-center justify-center w-6 h-6 rounded-lg transition-colors flex-shrink-0',
@@ -89,7 +103,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
               {title}
             </h3>
 
-            {/* Type & Item Count Badge */}
+            {/* Simple count badge, e.g. "4 筆" */}
             <span
               className={cn(
                 'inline-flex items-center px-1.5 py-0.5 rounded-md text-[10px] font-mono border leading-tight flex-shrink-0',
@@ -97,33 +111,46 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                 'dark:bg-white/5 dark:border-white/10 dark:text-raycast-dark-muted'
               )}
             >
-              {isFields ? '欄位' : '隨筆'} · {itemCount}
+              {itemCount} 筆
             </span>
           </div>
         </div>
 
         {/* Right: Actions & Collapse Arrow */}
-        <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+        <div
+          className="flex items-center gap-1 flex-shrink-0"
+          onClick={(e) => e.stopPropagation()}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
           {/* Add Item Quick Button */}
           {onAddItem && (
             <button
-              onClick={() => onAddItem(id)}
-              title={isFields ? '新增欄位' : '新增隨筆'}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                onAddItem(id);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
+              title="新增單元項"
               className={cn(
-                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150',
+                'flex items-center gap-1 p-1 rounded-lg text-xs font-medium transition-all duration-150',
                 'text-raycast-light-muted hover:text-raycast-light-text hover:bg-black/5',
                 'dark:text-raycast-dark-muted dark:hover:text-raycast-dark-text dark:hover:bg-white/5 active:scale-95'
               )}
             >
-              <Plus className="w-3 h-3" />
-              <span className="hidden sm:inline text-[11px]">{isFields ? '欄位' : '隨筆'}</span>
+              <Plus className="w-3.5 h-3.5" />
             </button>
           )}
 
           {/* Section Action Menu */}
-          <div className="relative">
+          <div className="relative" ref={menuRef}>
             <button
-              onClick={() => setShowMenu(!showMenu)}
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setShowMenu((prev) => !prev);
+              }}
+              onMouseDown={(e) => e.stopPropagation()}
               title="分區操作"
               className={cn(
                 'p-1.5 rounded-lg text-raycast-light-subtle hover:text-raycast-light-text',
@@ -136,16 +163,36 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
 
             {showMenu && (
               <div
+                onClick={(e) => e.stopPropagation()}
+                onMouseDown={(e) => e.stopPropagation()}
                 className={cn(
-                  'absolute right-0 top-full mt-1.5 z-30 w-56 py-1.5 rounded-xl shadow-xl border backdrop-blur-md',
+                  'absolute right-0 top-full mt-1.5 z-50 w-52 py-1.5 rounded-xl shadow-xl border backdrop-blur-md',
                   'bg-raycast-light-surface/95 border-raycast-light-border text-raycast-light-text',
                   'dark:bg-raycast-dark-surface/95 dark:border-white/10 dark:text-raycast-dark-text animate-in fade-in zoom-in-95 duration-150'
                 )}
               >
+                {/* Add Item */}
+                {onAddItem && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowMenu(false);
+                      onAddItem(id);
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <Plus className="w-3.5 h-3.5 text-raycast-amber" />
+                    <span>新增單元項</span>
+                  </button>
+                )}
+
                 {/* Extract Section to Page */}
                 {onExtractToPage && (
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShowMenu(false);
                       onExtractToPage(id);
                     }}
@@ -159,31 +206,19 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                   </button>
                 )}
 
-                {/* Add Item */}
-                {onAddItem && (
-                  <button
-                    onClick={() => {
-                      setShowMenu(false);
-                      onAddItem(id);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-raycast-light-muted dark:text-raycast-dark-muted" />
-                    <span>{isFields ? '新增欄位' : '新增隨筆'}</span>
-                  </button>
-                )}
-
                 {/* Export Page JSON */}
                 {onExportPage && (
                   <button
-                    onClick={() => {
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setShowMenu(false);
                       onExportPage();
                     }}
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
-                    <Download className="w-3.5 h-3.5 text-raycast-amber" />
-                    <span>匯出本頁 JSON</span>
+                    <Download className="w-3.5 h-3.5 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
+                    <span>匯出此筆記頁 JSON</span>
                   </button>
                 )}
 
@@ -191,7 +226,9 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                 {onDeleteSection && (
                   <div className="pt-1 mt-1 border-t border-raycast-light-border dark:border-white/10">
                     <button
-                      onClick={() => {
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
                         setShowMenu(false);
                         onDeleteSection(id);
                       }}
@@ -209,6 +246,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           {/* Smooth Accordion Toggle Arrow */}
           {isCollapsible && (
             <button
+              type="button"
               onClick={(e) => {
                 e.stopPropagation();
                 setIsExpanded(!isExpanded);
@@ -243,13 +281,14 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                   'dark:border-white/10 dark:text-raycast-dark-subtle'
                 )}
               >
-                <span>尚未加入任何{isFields ? '欄位' : '隨筆'}內容</span>
+                <span>尚未加入任何筆記內容</span>
                 {onAddItem && (
                   <button
+                    type="button"
                     onClick={() => onAddItem(id)}
-                    className="block mx-auto mt-2 text-raycast-coral hover:underline font-medium"
+                    className="block mx-auto mt-2 text-raycast-amber hover:underline font-medium"
                   >
-                    ＋ 立即新增
+                    + 新增單元項
                   </button>
                 )}
               </div>

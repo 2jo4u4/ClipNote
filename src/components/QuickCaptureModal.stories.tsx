@@ -59,12 +59,8 @@ export const Default: Story = {
           defaultContent="https://github.com/developer/raycast-design"
           sourceUrl="https://github.com"
           sourceTitle="GitHub - Raycast Design Exploration"
-          onSaveJot={(data) => {
-            alert(`儲存隨筆: ${JSON.stringify(data)}`);
-            setIsOpen(false);
-          }}
-          onSaveField={(data) => {
-            alert(`儲存欄位: ${JSON.stringify(data)}`);
+          onSaveCell={(data) => {
+            alert(`儲存單元項: ${JSON.stringify(data)}`);
             setIsOpen(false);
           }}
         />
@@ -118,12 +114,11 @@ export const InteractiveSpotlightSearch: Story = {
           onCopySearchResult={(item) => {
             setCapturedList((prev) => [...prev, `[已複製] ${item.title}: ${item.content}`]);
           }}
-          onSaveJot={(data) => {
-            setCapturedList((prev) => [...prev, `[隨筆] ${data.content} (分區: ${data.sectionId})`]);
-            setIsOpen(false);
-          }}
-          onSaveField={(data) => {
-            setCapturedList((prev) => [...prev, `[欄位] ${data.key}: ${data.value} (分區: ${data.sectionId})`]);
+          onSaveCell={(data) => {
+            setCapturedList((prev) => [
+              ...prev,
+              `[已儲存] ${data.key ? `[${data.key}] ` : ''}${data.value}`,
+            ]);
             setIsOpen(false);
           }}
         />

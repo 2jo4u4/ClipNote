@@ -195,6 +195,19 @@ export class NotebookService {
     return JSON.parse(JSON.stringify(val));
   }
 
+  private normalizePage(page: Page): Page {
+    const cloned = this.clone(page);
+    for (const sec of cloned.sections) {
+      if (!sec.updatedAt) {
+        sec.updatedAt = Math.max(
+          sec.createdAt,
+          ...sec.items.map((i) => i.updatedAt || i.createdAt || 0)
+        );
+      }
+    }
+    return cloned;
+  }
+
   // ==========================================
   // Page Operations
   // ==========================================
@@ -203,18 +216,18 @@ export class NotebookService {
     const data = await this.ensureInitialized();
     const globalPage = data.pages[data.systemGlobalPageId];
     const userPages = Object.values(data.pages).filter((p) => p.id !== data.systemGlobalPageId);
-    return [this.clone(globalPage), ...userPages.map((p) => this.clone(p))];
+    return [this.normalizePage(globalPage), ...userPages.map((p) => this.normalizePage(p))];
   }
 
   async getPage(id: string): Promise<Page | undefined> {
     const data = await this.ensureInitialized();
     const page = data.pages[id];
-    return page ? this.clone(page) : undefined;
+    return page ? this.normalizePage(page) : undefined;
   }
 
   async getGlobalPage(): Promise<Page> {
     const data = await this.ensureInitialized();
-    return this.clone(data.pages[data.systemGlobalPageId]);
+    return this.normalizePage(data.pages[data.systemGlobalPageId]);
   }
 
   async createPage(params: {
@@ -643,7 +656,7 @@ export class NotebookService {
               sectionTitle: section.title,
               title: cell.key || (cell.value.length > 30 ? cell.value.slice(0, 30) + '...' : cell.value),
               content: cell.value,
-              sourcePath: `來自 [${page.title}] > [${section.title}]${cell.key ? ` ‧ ${cell.key}` : ''}`,
+              sourcePath: `${page.title} > ${section.title}${cell.key ? ` ‧ ${cell.key}` : ''}`,
               sourceUrl: cell.sourceUrl,
               sourceTitle: cell.sourceTitle,
               matchedField: keyMatch ? 'key' : 'value',

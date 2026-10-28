@@ -1,8 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { SectionContainer } from './SectionContainer';
-import { FieldCard } from './FieldCard';
-import { JotCard } from './JotCard';
+import { CellCard } from './CellCard';
 
 const meta: Meta<typeof SectionContainer> = {
   title: 'Raycast/SectionContainer',
@@ -16,28 +15,32 @@ const meta: Meta<typeof SectionContainer> = {
 export default meta;
 type Story = StoryObj<typeof SectionContainer>;
 
-export const FieldsSectionDefault: Story = {
+export const MixedSectionDefault: Story = {
   render: () => {
     return (
       <div className="max-w-md mx-auto p-4 bg-raycast-dark-bg rounded-xl border border-raycast-dark-border">
         <SectionContainer
           id="sec-1"
-          title="基本履歷欄位"
-          type="fields"
-          itemCount={2}
+          title="基本履歷與隨筆"
+          itemCount={3}
           onExtractToPage={(id) => alert(`升格分區 ${id} 為獨立新筆記頁`)}
-          onAddItem={(id) => alert(`新增欄位於分區 ${id}`)}
+          onAddItem={(id) => alert(`新增單元項於分區 ${id}`)}
           onDeleteSection={(id) => alert(`刪除分區 ${id}`)}
         >
-          <FieldCard
+          <CellCard
             id="f1"
-            fieldKey="中文姓名"
+            cellKey="中文姓名"
             value="王大明 (David Wang)"
           />
-          <FieldCard
+          <CellCard
             id="f2"
-            fieldKey="聯絡信箱"
+            cellKey="聯絡信箱"
             value="david.wang@agent-cloud.io"
+          />
+          <CellCard
+            id="j1"
+            value="面試前請務必準備好架構重構的案例說明。"
+            createdAt={Date.now() - 3600000}
           />
         </SectionContainer>
       </div>
@@ -47,27 +50,30 @@ export const FieldsSectionDefault: Story = {
 
 export const JotsSectionInteractive: Story = {
   render: () => {
-    const [jots, setJots] = useState([
+    const [cells, setCells] = useState<
+      { id: string; cellKey?: string; value: string; createdAt?: number; sourceUrl?: string }[]
+    >([
       {
-        id: 'j-1',
-        content: '閱讀了最新 Chrome MV3 SidePanel API 規範，確認支援跨分頁長連接。',
+        id: 'c-1',
+        value: '閱讀了最新 Chrome MV3 SidePanel API 規範，確認支援跨分頁長連接。',
         createdAt: Date.now() - 1000 * 60 * 20,
         sourceUrl: 'https://developer.chrome.com/docs/extensions/reference/sidePanel',
       },
       {
-        id: 'j-2',
-        content: '中午吃了八方雲集招牌鍋貼 10 顆 + 豆漿 🥟🥤',
+        id: 'c-2',
+        cellKey: '常駐網址',
+        value: 'https://github.com/trending',
         createdAt: Date.now() - 1000 * 60 * 120,
       },
     ]);
 
-    const handleAddJot = () => {
-      const newJot = {
-        id: `j-${Date.now()}`,
-        content: '剛記錄了一筆即時靈感！點擊分區標題可測試平滑折疊收合。',
+    const handleAdd = () => {
+      const newCell = {
+        id: `c-${Date.now()}`,
+        value: '剛記錄了一筆即時靈感！點擊分區標題可測試平滑折疊收合。',
         createdAt: Date.now(),
       };
-      setJots([newJot, ...jots]);
+      setCells([newCell, ...cells]);
     };
 
     return (
@@ -78,17 +84,16 @@ export const JotsSectionInteractive: Story = {
         <SectionContainer
           id="sec-jots"
           title="日常靈感與備忘"
-          type="jots"
-          itemCount={jots.length}
-          onExtractToPage={(id) => alert(`觸發 Section Extraction: 將分區 ${id} 升格為獨立 Page`)}
-          onAddItem={handleAddJot}
-          onDeleteSection={() => setJots([])}
+          itemCount={cells.length}
+          onExtractToPage={(id) => alert(`觸發 Section Extraction: 將分區 ${id} 升格為獨立筆記頁`)}
+          onAddItem={handleAdd}
+          onDeleteSection={() => setCells([])}
         >
-          {jots.map((jot) => (
-            <JotCard
-              key={jot.id}
-              {...jot}
-              onDelete={(id) => setJots(jots.filter((j) => j.id !== id))}
+          {cells.map((cell) => (
+            <CellCard
+              key={cell.id}
+              {...cell}
+              onDelete={(id) => setCells(cells.filter((c) => c.id !== id))}
             />
           ))}
         </SectionContainer>
@@ -103,10 +108,9 @@ export const EmptyState: Story = {
       <div className="max-w-md mx-auto p-4 bg-raycast-dark-bg rounded-xl border border-raycast-dark-border">
         <SectionContainer
           id="sec-empty"
-          title="空白欄位分區"
-          type="fields"
+          title="空白分區"
           itemCount={0}
-          onAddItem={(id) => alert(`點擊新增欄位: ${id}`)}
+          onAddItem={(id) => alert(`點擊新增單元項: ${id}`)}
         >
           {null}
         </SectionContainer>
@@ -125,14 +129,13 @@ export const LightAndDarkComparison: Story = {
           <SectionContainer
             id="sec-dark"
             title="技術技能清單"
-            type="fields"
             itemCount={1}
             onExtractToPage={() => {}}
             onAddItem={() => {}}
           >
-            <FieldCard
+            <CellCard
               id="f-dark-1"
-              fieldKey="前端技術棧"
+              cellKey="前端技術棧"
               value="React 18, TypeScript, Tailwind CSS, Vite, Zustand"
             />
           </SectionContainer>
@@ -144,14 +147,13 @@ export const LightAndDarkComparison: Story = {
           <SectionContainer
             id="sec-light"
             title="技術技能清單"
-            type="fields"
             itemCount={1}
             onExtractToPage={() => {}}
             onAddItem={() => {}}
           >
-            <FieldCard
+            <CellCard
               id="f-light-1"
-              fieldKey="前端技術棧"
+              cellKey="前端技術棧"
               value="React 18, TypeScript, Tailwind CSS, Vite, Zustand"
             />
           </SectionContainer>
