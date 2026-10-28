@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Search, X, Layers, Sparkles, Check, Globe, CornerDownLeft, ExternalLink } from 'lucide-react';
+import { Search, X, Check, Globe, CornerDownLeft, ExternalLink } from 'lucide-react';
 import { cn } from '../utils';
 import type { SearchResult } from '../types';
 
@@ -176,11 +176,16 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
                     {/* Origin Path & Action badges */}
                     <div className="flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-1.5 text-raycast-light-muted dark:text-raycast-dark-muted font-sans truncate">
-                        {isField ? (
-                          <Layers className="w-3 h-3 text-raycast-coral flex-shrink-0" />
-                        ) : (
-                          <Sparkles className="w-3 h-3 text-raycast-amber flex-shrink-0" />
-                        )}
+                        <span
+                          className={cn(
+                            'text-[10px] px-1.5 py-0.2 rounded font-mono font-medium flex-shrink-0',
+                            isField
+                              ? 'bg-raycast-coral/10 text-raycast-coral border border-raycast-coral/30'
+                              : 'bg-raycast-amber/10 text-raycast-amber border border-raycast-amber/30'
+                          )}
+                        >
+                          {isField ? '[欄位]' : '[隨筆]'}
+                        </span>
                         <span className="truncate">
                           來自 <span className="font-medium text-raycast-light-text dark:text-raycast-dark-text">{item.pageTitle}</span> &gt; {item.sectionTitle}
                         </span>

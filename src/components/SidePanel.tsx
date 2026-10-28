@@ -15,7 +15,8 @@ import { SectionContainer } from './SectionContainer';
 import { CellCard } from './CellCard';
 import { QuickCaptureModal } from './QuickCaptureModal';
 import { NewPageModal, NewPageData } from './NewPageModal';
-import type { Page, Section, Cell, SearchResult } from '../types';
+import { MoveCellModal } from './MoveCellModal';
+import type { Page, Section, Cell, SearchResult, CreateCellInput } from '../types';
 
 export interface SidePanelProps {
   currentDomain?: string;
@@ -172,6 +173,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isNewPageModalOpen, setIsNewPageModalOpen] = useState(false);
+  const [movingCellTarget, setMovingCellTarget] = useState<{
+    cell: Cell;
+    sourcePageId: string;
+    sourceSectionId: string;
+  } | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -304,73 +310,60 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(`已升格為獨立筆記頁「${targetSec.title}」`);
   };
 
-  const handleMoveCell = (cellId: string) => {
-    let foundCell: Cell | null = null;
-    let sourceSecId = '';
+  const handleOpenMoveModal = (cell: Cell, sourcePageId: string, sourceSectionId: string) => {
+    setMovingCellTarget({ cell, sourcePageId, sourceSectionId });
+  };
 
-    for (const sec of activePage.sections) {
-      const c = sec.items.find((item) => item.id === cellId);
-      if (c) {
-        foundCell = c;
-        sourceSecId = sec.id;
-        break;
-      }
-    }
-    if (!foundCell) return;
+  const handleConfirmMoveCell = (targetPageId: string, targetSectionId: string) => {
+    if (!movingCellTarget) return;
+    const { cell, sourcePageId, sourceSectionId } = movingCellTarget;
 
-    const otherSecInPage = activePage.sections.find((s) => s.id !== sourceSecId);
-    if (otherSecInPage) {
-      setPages((prev) =>
-        prev.map((p) => {
-          if (p.id !== activePage.id) return p;
-          return {
-            ...p,
-            sections: p.sections.map((s) => {
-              if (s.id === sourceSecId) {
-                return { ...s, items: s.items.filter((c) => c.id !== cellId), updatedAt: Date.now() };
-              }
-              if (s.id === otherSecInPage.id) {
-                return { ...s, items: [...s.items, foundCell!], updatedAt: Date.now() };
-              }
-              return s;
-            }),
-            updatedAt: Date.now(),
-          };
-        })
-      );
-      showToast(`已移動至「${otherSecInPage.title}」`);
-    } else {
-      const globalPage = pages.find((p) => p.isSystem) || pages[0];
-      const targetSec = globalPage.sections[0];
-      if (targetSec) {
-        setPages((prev) =>
-          prev.map((p) => {
-            if (p.id === activePage.id) {
+    setPages((prev) => {
+      let movedCell: Cell | null = null;
+      const removed = prev.map((p) => {
+        if (p.id !== sourcePageId) return p;
+        return {
+          ...p,
+          sections: p.sections.map((s) => {
+            if (s.id !== sourceSectionId) return s;
+            const idx = s.items.findIndex((c) => c.id === cell.id);
+            if (idx !== -1) {
+              movedCell = s.items[idx];
               return {
-                ...p,
-                sections: p.sections.map((s) => ({
-                  ...s,
-                  items: s.items.filter((c) => c.id !== cellId),
-                  updatedAt: Date.now(),
-                })),
+                ...s,
+                items: s.items.filter((c) => c.id !== cell.id),
                 updatedAt: Date.now(),
               };
             }
-            if (p.id === globalPage.id) {
-              return {
-                ...p,
-                sections: p.sections.map((s, idx) =>
-                  idx === 0 ? { ...s, items: [...s.items, foundCell!], updatedAt: Date.now() } : s
-                ),
-                updatedAt: Date.now(),
-              };
-            }
-            return p;
-          })
-        );
-        showToast(`已移動至「${globalPage.title}」`);
-      }
-    }
+            return s;
+          }),
+          updatedAt: Date.now(),
+        };
+      });
+
+      if (!movedCell) return prev;
+
+      return removed.map((p) => {
+        if (p.id !== targetPageId) return p;
+        return {
+          ...p,
+          sections: p.sections.map((s) => {
+            if (s.id !== targetSectionId) return s;
+            return {
+              ...s,
+              items: [...s.items, { ...movedCell!, updatedAt: Date.now() }],
+              updatedAt: Date.now(),
+            };
+          }),
+          updatedAt: Date.now(),
+        };
+      });
+    });
+
+    const targetPage = pages.find((p) => p.id === targetPageId);
+    const targetSection = targetPage?.sections.find((s) => s.id === targetSectionId);
+    showToast(`已移動至「${targetPage?.title || ''} > ${targetSection?.title || ''}」`);
+    setMovingCellTarget(null);
   };
 
   const handleBindDomain = (pageId: string) => {
@@ -412,17 +405,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         };
       })
     );
-    showToast('已刪除筆記項目');
+    showToast('已刪除單元項');
   };
 
-  const handleQuickSaveCell = (data: {
-    pageId: string;
-    sectionId?: string;
-    key?: string;
-    value: string;
-    sourceUrl?: string;
-    sourceTitle?: string;
-  }) => {
+  const handleQuickSaveCell = (
+    data: CreateCellInput & { pageId: string; sectionId?: string }
+  ) => {
     const now = Date.now();
     const newCell: Cell = {
       id: `c-${Date.now()}`,
@@ -671,10 +659,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         cellKey={cell.key}
                         value={cell.value}
                         createdAt={cell.createdAt}
+                        updatedAt={cell.updatedAt}
                         sourceUrl={cell.sourceUrl}
                         sourceTitle={cell.sourceTitle}
                         onCopy={() => handleCopy(cell.value, cell.key || '隨筆')}
-                        onMove={handleMoveCell}
+                        onMove={() => handleOpenMoveModal(cell, activePage.id, section.id)}
                         onDelete={() =>
                           handleDeleteCell(activePage.id, section.id, cell.id)
                         }
@@ -759,6 +748,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           isOpen={isNewPageModalOpen}
           onClose={() => setIsNewPageModalOpen(false)}
           onSubmit={handleCreatePage}
+        />
+
+        <MoveCellModal
+          isOpen={Boolean(movingCellTarget)}
+          cell={movingCellTarget?.cell || null}
+          sourcePageId={movingCellTarget?.sourcePageId || ''}
+          sourceSectionId={movingCellTarget?.sourceSectionId || ''}
+          pages={pages}
+          onClose={() => setMovingCellTarget(null)}
+          onConfirm={handleConfirmMoveCell}
         />
       </div>
     </div>

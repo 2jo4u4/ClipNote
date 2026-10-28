@@ -15,6 +15,7 @@ export interface CellCardProps {
   cellKey?: string; // Optional key: if provided, renders as a Field; otherwise as a Jot
   value: string;
   createdAt?: number;
+  updatedAt?: number;
   sourceUrl?: string;
   sourceTitle?: string;
   onCopy?: (content: string) => void;
@@ -28,6 +29,7 @@ export const CellCard: React.FC<CellCardProps> = ({
   cellKey,
   value,
   createdAt,
+  updatedAt,
   sourceUrl,
   sourceTitle,
   onCopy,
@@ -101,9 +103,20 @@ export const CellCard: React.FC<CellCardProps> = ({
           )}
 
           {/* Timestamp */}
-          <div className="flex items-center gap-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
+          <div
+            title={
+              updatedAt && createdAt && updatedAt > createdAt + 1000
+                ? `建立時間: ${new Date(createdAt).toLocaleString()}\n更新時間: ${new Date(updatedAt).toLocaleString()}`
+                : `建立時間: ${new Date(createdAt || Date.now()).toLocaleString()}`
+            }
+            className="flex items-center gap-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono"
+          >
             <Clock className="w-2.5 h-2.5 opacity-60" />
-            <span>{formatRelativeTime(createdAt || Date.now())}</span>
+            <span>
+              {formatRelativeTime(
+                updatedAt && updatedAt > (createdAt || 0) ? updatedAt : createdAt || Date.now()
+              )}
+            </span>
           </div>
         </div>
 

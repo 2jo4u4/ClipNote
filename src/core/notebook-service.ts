@@ -14,6 +14,7 @@ import {
   Page,
   Section,
   Cell,
+  CreateCellInput,
   SearchResult,
   MoveCellParams,
   SYSTEM_GLOBAL_PAGE_ID,
@@ -424,7 +425,7 @@ export class NotebookService {
   async createCell(
     pageId: string,
     sectionId: string,
-    params: { key?: string; value: string; sourceUrl?: string; sourceTitle?: string }
+    params: CreateCellInput
   ): Promise<Cell> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
@@ -565,7 +566,9 @@ export class NotebookService {
     return this.clone(cell);
   }
 
-  // Alias for backward compatibility
+  /**
+   * @deprecated Use moveCell instead.
+   */
   async moveItem(params: MoveCellParams): Promise<void> {
     await this.moveCell(params);
   }
@@ -656,7 +659,7 @@ export class NotebookService {
               sectionTitle: section.title,
               title: cell.key || (cell.value.length > 30 ? cell.value.slice(0, 30) + '...' : cell.value),
               content: cell.value,
-              sourcePath: `${page.title} > ${section.title}${cell.key ? ` ‧ ${cell.key}` : ''}`,
+              sourcePath: `來自 [${page.title}] > [${section.title}]${cell.key ? ` ‧ ${cell.key}` : ''}`,
               sourceUrl: cell.sourceUrl,
               sourceTitle: cell.sourceTitle,
               matchedField: keyMatch ? 'key' : 'value',
@@ -719,7 +722,15 @@ export class NotebookService {
 
   async exportNotebookAsJson(): Promise<string> {
     const data = await this.ensureInitialized();
-    return JSON.stringify(data, null, 2);
+    const normalizedPages: Record<string, Page> = {};
+    for (const [id, page] of Object.entries(data.pages)) {
+      normalizedPages[id] = this.normalizePage(page);
+    }
+    const exportData = {
+      ...data,
+      pages: normalizedPages,
+    };
+    return JSON.stringify(exportData, null, 2);
   }
 
   async exportPageAsJson(pageId: string): Promise<string> {

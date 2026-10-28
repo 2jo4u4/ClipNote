@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '../utils';
-import type { SearchResult } from '../types';
+import type { SearchResult, CreateCellInput } from '../types';
 import { Dropdown } from './Dropdown';
 
 export interface QuickCaptureSectionOption {
@@ -35,14 +35,7 @@ export interface QuickCaptureModalProps {
   sourceUrl?: string;
   sourceTitle?: string;
   searchResults?: SearchResult[];
-  onSaveCell?: (data: {
-    pageId: string;
-    sectionId?: string;
-    key?: string;
-    value: string;
-    sourceUrl?: string;
-    sourceTitle?: string;
-  }) => void;
+  onSaveCell?: (data: CreateCellInput & { pageId: string; sectionId?: string }) => void;
   onSaveJot?: (data: {
     pageId: string;
     sectionId?: string;
@@ -305,7 +298,17 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                         {isField ? <Layers className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
                       </div>
                       <div className="min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={cn(
+                              'text-[10px] px-1.5 py-0.2 rounded font-mono font-medium',
+                              isField
+                                ? 'bg-raycast-amber/10 text-raycast-amber border border-raycast-amber/30'
+                                : 'bg-raycast-coral/10 text-raycast-coral border border-raycast-coral/30'
+                            )}
+                          >
+                            {isField ? '[欄位]' : '[隨筆]'}
+                          </span>
                           <span className="font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
                             {item.title}
                           </span>

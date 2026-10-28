@@ -21,6 +21,16 @@ export interface Cell {
 }
 
 /**
+ * Common input payload for creating a new Cell.
+ */
+export interface CreateCellInput {
+  key?: string;
+  value: string;
+  sourceUrl?: string;
+  sourceTitle?: string;
+}
+
+/**
  * Section is a flexible container within a Page holding an ordered list of Cells.
  */
 export interface Section {
@@ -63,7 +73,7 @@ export interface SearchResult {
   sectionTitle: string;
   title: string; // Key name for field, or truncated value for jot
   content: string; // cell.value
-  sourcePath: string; // e.g. "104 中文經歷 > 工作經驗欄位"
+  sourcePath: string; // e.g. "來自 [104 中文經歷] > [工作經驗欄位]"
   sourceUrl?: string;
   sourceTitle?: string;
   matchedField?: 'key' | 'value';
@@ -78,5 +88,7 @@ export interface MoveCellParams {
   targetIndex?: number;
 }
 
-// Transitional alias for backwards compatibility
+/**
+ * @deprecated Use MoveCellParams instead.
+ */
 export type MoveItemParams = MoveCellParams;

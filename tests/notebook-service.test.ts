@@ -401,11 +401,13 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(results1.length).toBe(2);
       expect(results1.map((r) => r.type)).toContain('field');
       expect(results1.map((r) => r.type)).toContain('jot');
+      expect(results1[0].sourcePath).toContain('來自 [工作履歷] > [重要資訊]');
 
       // Search by value across field
       const results2 = await service.search('0988-123-456');
       expect(results2.length).toBe(1);
       expect(results2[0].type).toBe('field');
+      expect(results2[0].sourcePath).toContain('來自 [工作履歷] > [重要資訊]');
 
       // Empty query returns empty array
       expect(await service.search('')).toEqual([]);

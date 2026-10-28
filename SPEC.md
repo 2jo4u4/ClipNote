@@ -42,13 +42,14 @@ It provides:
 14. As a user with multiple Pages associated with the same domain, I want to designate a primary Page or have the system remember my last active Page tab on that site, so that I land on the most relevant page without repetitive clicking.
 15. As a user reviewing my notes on a matched domain, I want a permanent `[ 🌐 全域筆記頁 ]` tab pinned at the top of the Side Panel, so that I can instantly switch between domain-specific notes and universal notes.
 16. As a user personalizing my workspace, I want to assign custom Emoji icons (e.g., `💼`, `📝`, `💬`, `🚀`) to my Pages, so that I can recognize them visually at a glance in the tab bar.
+16.b. As a user with many Pages in the tab bar, I want the tab bar to support horizontal mouse wheel scrolling and display smooth Chevron navigation buttons when overflowing, with domain badges kept clean and hidden by default, so that navigating across many tabs is effortless and compact.
 17. As a user organizing my knowledge base, I want to click the `+` button on the tab bar to open a dialog for creating a new Page with title, icon, and optional bound domains, so that I can structure new projects easily.
 
 ### Content Structure & Section Flexibility
 18. As a user organizing a thematic area (e.g., "資深前端職缺應徵"), I want to create a Section that holds both structured contact fields (Email, Phone) and narrative statements (Intro, Cover letter), so that related information stays grouped logically together.
 19. As a user reviewing my Sections, I want the Section's `updatedAt` timestamp to automatically reflect the latest modification time among its member Cells, so that I know when that topic was last touched.
 20. As a user whose Section has grown into an independent topic, I want to extract that Section into a new top-level Page with one click, so that I can progressively organize my notebook without manual copy-pasting.
-21. As a user tidying up my notes, I want to move individual Cells between different Sections and Pages, so that misplaced items can be re-filed easily.
+21. As a user tidying up my notes, I want to click "移動至..." on any Cell to open an interactive target selection modal (`MoveCellModal`), allowing me to choose destination Page and Section, so that misplaced items can be re-filed precisely.
 
 ### Discovery & Search
 22. As a user on a new job website (`cake.me`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `104 中文經歷`.
