@@ -3,6 +3,7 @@ import { Search, X, Check, Globe, CornerDownLeft, ExternalLink } from 'lucide-re
 import { cn } from '../utils';
 import type { SearchResult } from '../types';
 import { CellTypeBadge } from './CellTypeBadge';
+import { Language, getTranslations } from '../i18n';
 
 export interface OmniSearchBarProps {
   onSearch?: (query: string) => void;
@@ -11,6 +12,7 @@ export interface OmniSearchBarProps {
   onBindDomain?: (pageId: string) => void;
   currentDomain?: string;
   placeholder?: string;
+  language?: Language;
   className?: string;
 }
 
@@ -20,9 +22,12 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
   onSelectItem,
   onBindDomain,
   currentDomain,
-  placeholder = '全域搜尋欄位與隨筆... (輸入關鍵字)',
+  placeholder,
+  language = 'zh-TW',
   className,
 }) => {
+  const t = getTranslations(language);
+  const resolvedPlaceholder = placeholder || t.sidePanel.searchPlaceholder;
   const [query, setQuery] = useState('');
   const [isOpen, setIsOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -117,7 +122,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
           onFocus={() => {
             if (query.trim().length > 0) setIsOpen(true);
           }}
-          placeholder={placeholder}
+          placeholder={resolvedPlaceholder}
           className={cn(
             'w-full bg-transparent text-xs font-sans outline-none',
             'text-raycast-light-text placeholder-raycast-light-subtle',
@@ -152,7 +157,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
         >
           {results.length === 0 ? (
             <div className="py-8 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-              找不到與「<span className="text-raycast-coral">{query}</span>」相關的欄位或隨筆
+              {t.sidePanel.searchNoResults}
             </div>
           ) : (
             <div ref={listRef} className="p-1.5 flex flex-col gap-1">
@@ -177,7 +182,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
                     {/* Origin Path & Action badges */}
                     <div className="flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-1.5 text-raycast-light-muted dark:text-raycast-dark-muted font-sans truncate">
-                        <CellTypeBadge type={item.type} />
+                        <CellTypeBadge type={item.type} language={language} />
                         <span className="truncate font-mono text-[10px]">
                           {item.sourcePath}
                         </span>
@@ -188,7 +193,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
                         {isCopied ? (
                           <span className="flex items-center gap-1 text-emerald-500 font-medium">
                             <Check className="w-3 h-3" />
-                            <span>已複製!</span>
+                            <span>{t.common.copied}</span>
                           </span>
                         ) : (
                           <span
@@ -199,7 +204,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
                                 : 'opacity-0 group-hover:opacity-100 text-raycast-light-muted dark:text-raycast-dark-muted border-transparent'
                             )}
                           >
-                            <span>複製</span>
+                            <span>{t.common.copy}</span>
                             <CornerDownLeft className="w-2.5 h-2.5" />
                           </span>
                         )}
@@ -229,7 +234,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
                           className="inline-flex items-center gap-1 text-raycast-coral hover:underline"
                         >
                           <Globe className="w-2.5 h-2.5" />
-                          <span>＋ 將「{item.pageTitle}」綁定至當前網域 ({currentDomain})</span>
+                          <span>{t.sidePanel.bindDomainToCurrent(item.pageTitle, currentDomain)}</span>
                         </button>
 
                         {item.sourceUrl && (

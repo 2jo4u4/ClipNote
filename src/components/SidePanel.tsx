@@ -17,6 +17,7 @@ import { QuickCaptureModal } from './QuickCaptureModal';
 import { NewPageModal, NewPageData } from './NewPageModal';
 import { MoveCellModal } from './MoveCellModal';
 import type { Page, Section, Cell, SearchResult, CreateCellInput } from '../types';
+import { Language, getTranslations } from '../i18n';
 
 export interface MovingCellTarget {
   cell: Cell;
@@ -29,6 +30,8 @@ export interface SidePanelProps {
   currentUrl?: string;
   initialPages?: Page[];
   initialActivePageId?: string;
+  language?: Language;
+  initialLanguage?: Language;
   className?: string;
 }
 
@@ -163,8 +166,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   currentUrl = 'https://www.104.com.tw/job/7xyz8',
   initialPages = defaultDemoPages,
   initialActivePageId,
+  language: controlledLanguage,
+  initialLanguage = 'zh-TW',
   className,
 }) => {
+  const [internalLanguage, setInternalLanguage] = useState<Language>(initialLanguage);
+  const language = controlledLanguage || internalLanguage;
+  const t = getTranslations(language);
+
   const [pages, setPages] = useState<Page[]>(initialPages);
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
@@ -209,7 +218,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             pageTitle: page.title,
             sectionId: sec.id,
             sectionTitle: sec.title,
-            sourcePath: `來自 [${page.title}] > [${sec.title}]${cell.key ? ` ‧ ${cell.key}` : ''}`,
+            sourcePath: t.common.sourceFrom(page.title, sec.title, cell.key),
             sourceUrl: cell.sourceUrl,
             sourceTitle: cell.sourceTitle,
           });
@@ -217,7 +226,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       }
     }
     return list;
-  }, [pages]);
+  }, [pages, t]);
 
   const pageTabItems: PageItem[] = useMemo(() => {
     return pages.map((p) => ({
@@ -242,7 +251,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       sections: [
         {
           id: `sec-${Date.now()}-default`,
-          title: '常用筆記分區',
+          title: t.sidePanel.defaultCategoryName,
           order: 0,
           createdAt: Date.now(),
           updatedAt: Date.now(),
@@ -252,11 +261,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     };
     setPages((prev) => [...prev, newPage]);
     setActivePageId(newId);
-    showToast(`已建立筆記頁「${data.title}」`);
+    showToast(t.sidePanel.createdPageToast(data.title));
   };
 
   const handleAddSection = () => {
-    const title = window.prompt('請輸入新分區名稱：', '新分區');
+    const title = window.prompt(t.sidePanel.addCategoryPrompt, t.sidePanel.defaultCategoryName);
     if (!title || !title.trim()) return;
 
     const newSec: Section = {
@@ -278,7 +287,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         };
       })
     );
-    showToast(`已新增分區「${title.trim()}」`);
+    showToast(t.sidePanel.createdCategoryToast(title.trim()));
   };
 
   const handleExtractSectionToPage = (sectionId: string) => {
@@ -309,7 +318,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     ]);
 
     setActivePageId(newPageId);
-    showToast(`已升格為獨立筆記頁「${targetSec.title}」`);
+    showToast(t.sidePanel.promotedPageToast(targetSec.title));
   };
 
   const handleOpenMoveModal = (cell: Cell, sourcePageId: string, sourceSectionId: string) => {
@@ -323,7 +332,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const targetPage = pages.find((p) => p.id === targetPageId);
     const targetSection = targetPage?.sections.find((s) => s.id === targetSectionId);
     if (!targetPage || !targetSection) {
-      showToast('目標分區無效，無法移動');
+      showToast(t.sidePanel.invalidCategoryToast);
       return;
     }
 
@@ -369,7 +378,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       });
     });
 
-    showToast(`已移動至「${targetPage.title} > ${targetSection.title}」`);
+    showToast(t.sidePanel.movedNoteToast(targetPage.title, targetSection.title));
     setMovingCellTarget(null);
   };
 
@@ -386,15 +395,19 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         };
       })
     );
-    showToast(`已綁定「${currentDomain}」至該筆記頁`);
+    showToast(t.sidePanel.boundDomainToast(currentDomain));
   };
 
-  const handleCopy = (content: string, label: string) => {
+  const handleCopy = (content: string) => {
     navigator.clipboard.writeText(content).catch(() => {});
-    showToast(`已複製「${label}」`);
+    showToast(t.sidePanel.copiedToast);
   };
 
   const handleDeleteCell = (pageId: string, sectionId: string, cellId: string) => {
+    const page = pages.find((p) => p.id === pageId);
+    const sec = page?.sections.find((s) => s.id === sectionId);
+    const targetCell = sec?.items.find((c) => c.id === cellId);
+
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== pageId) return p;
@@ -412,7 +425,22 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         };
       })
     );
-    showToast('已刪除單元項');
+    showToast(t.sidePanel.deletedNoteToast(targetCell?.key));
+  };
+
+  const handleDeleteSection = (secId: string) => {
+    const sec = activePage.sections.find((s) => s.id === secId);
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+        return {
+          ...p,
+          sections: p.sections.filter((s) => s.id !== secId),
+          updatedAt: Date.now(),
+        };
+      })
+    );
+    showToast(t.sidePanel.deletedCategoryToast(sec?.title || ''));
   };
 
   const handleQuickSaveCell = (
@@ -441,7 +469,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         if (secIndex === -1) {
           const newSec: Section = {
             id: `sec-${Date.now()}`,
-            title: '預設分區',
+            title: t.sidePanel.defaultCategoryName,
             order: 0,
             createdAt: now,
             updatedAt: now,
@@ -461,7 +489,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       })
     );
 
-    showToast(data.key ? `已儲存欄位「${data.key}」！` : '已儲存隨筆！');
+    showToast(t.sidePanel.copiedToast);
   };
 
   const handleExportJson = () => {
@@ -474,7 +502,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
-    showToast('已匯出筆記頁 JSON');
+    showToast(t.sidePanel.exportJsonSuccess);
   };
 
   const quickCapturePages = useMemo(() => {
@@ -518,7 +546,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               N
             </div>
             <span className="font-semibold text-xs tracking-tight text-raycast-light-text dark:text-raycast-dark-text flex-shrink-0">
-              筆記本
+              {t.common.appName}
             </span>
 
             {currentDomain && (
@@ -538,19 +566,19 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
               onClick={() => setIsQuickCaptureOpen(true)}
-              title="快速輸入備忘 (Alt+N)"
+              title={`${t.sidePanel.newNote} (${t.sidePanel.shortcutCapture})`}
               className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200',
                 'bg-raycast-amber text-raycast-dark-bg hover:brightness-110 active:scale-95 shadow-sm'
               )}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>快速捕獲</span>
+              <span>{t.sidePanel.newNote}</span>
             </button>
 
             <button
               onClick={handleExportJson}
-              title="匯出此筆記頁 JSON"
+              title={t.sidePanel.exportJson}
               className={cn(
                 'p-1.5 rounded-lg text-raycast-light-muted dark:text-raycast-dark-muted',
                 'hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5',
@@ -562,7 +590,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
-              title={isDarkMode ? '切換為亮色主題' : '切換為深色主題'}
+              title={isDarkMode ? t.sidePanel.switchToLight : t.sidePanel.switchToDark}
               className={cn(
                 'p-1.5 rounded-lg text-raycast-light-muted dark:text-raycast-dark-muted',
                 'hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5',
@@ -575,18 +603,35 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 <Moon className="w-3.5 h-3.5 text-raycast-light-muted" />
               )}
             </button>
+
+            {/* Language Switcher Toggle */}
+            <button
+              type="button"
+              onClick={() => setInternalLanguage((l) => (l === 'zh-TW' ? 'en' : 'zh-TW'))}
+              title={t.sidePanel.languageToggle}
+              className={cn(
+                'px-1.5 py-0.5 rounded-lg text-xs font-semibold font-mono tracking-tight border',
+                'bg-black/5 border-raycast-light-border text-raycast-light-muted',
+                'dark:bg-white/5 dark:border-white/10 dark:text-raycast-dark-muted',
+                'hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:border-raycast-amber/40',
+                'transition-colors duration-150'
+              )}
+            >
+              {language === 'zh-TW' ? 'EN' : '中'}
+            </button>
           </div>
         </header>
 
         {/* Omni-Search Bar */}
         <div className="p-3 border-b border-raycast-light-border dark:border-raycast-dark-border flex-shrink-0">
           <OmniSearchBar
+            language={language}
             results={allSearchResults}
             currentDomain={currentDomain}
             onBindDomain={handleBindDomain}
             onSelectItem={(item) => {
               setActivePageId(item.pageId);
-              showToast(`已複製並定位至「${item.title}」`);
+              showToast(t.sidePanel.copyAndLocateToast(item.title));
             }}
           />
         </div>
@@ -594,6 +639,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         {/* PageTabs */}
         <div className="flex-shrink-0">
           <PageTabs
+            language={language}
             pages={pageTabItems}
             activePageId={activePageId}
             onSelectPage={setActivePageId}
@@ -603,7 +649,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
         {/* Active Page Body */}
         <main className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
-          {/* Active Page Header Banner with Add Section Button on the Right */}
+          {/* Active Page Header Banner with Pure Icon '+' Button on the Right */}
           <div className="flex items-center justify-between pb-1 gap-2">
             <div className="flex items-center gap-1.5 min-w-0">
               <span className="text-base select-none">{activePage.icon || '📄'}</span>
@@ -617,18 +663,17 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               )}
             </div>
 
-            {/* Q1: Add Section Button directly on the right side of the Page header! */}
+            {/* Q1-2: Pure icon '+' button with hover tooltip */}
             <button
               type="button"
               onClick={handleAddSection}
-              title="在此筆記頁新增分區"
+              title={t.sidePanel.addCategory}
               className={cn(
-                'flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
-                'bg-raycast-amber/10 hover:bg-raycast-amber/20 text-raycast-amber border border-raycast-amber/30 active:scale-95'
+                'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
+                'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
               )}
             >
               <Plus className="w-3.5 h-3.5" />
-              <span>新增分區</span>
             </button>
           </div>
 
@@ -639,23 +684,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 id={section.id}
                 title={section.title}
                 type="mixed"
+                language={language}
                 itemCount={section.items.length}
                 onAddItem={() => setIsQuickCaptureOpen(true)}
                 onExtractToPage={handleExtractSectionToPage}
                 onExportPage={handleExportJson}
-                onDeleteSection={(secId) => {
-                  setPages((prev) =>
-                    prev.map((p) => {
-                      if (p.id !== activePage.id) return p;
-                      return {
-                        ...p,
-                        sections: p.sections.filter((s) => s.id !== secId),
-                        updatedAt: Date.now(),
-                      };
-                    })
-                  );
-                  showToast('已刪除分區');
-                }}
+                onDeleteSection={handleDeleteSection}
               >
                 {section.items.length > 0 ? (
                   <div className="space-y-2">
@@ -665,11 +699,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         id={cell.id}
                         cellKey={cell.key}
                         value={cell.value}
+                        language={language}
                         createdAt={cell.createdAt}
                         updatedAt={cell.updatedAt}
                         sourceUrl={cell.sourceUrl}
                         sourceTitle={cell.sourceTitle}
-                        onCopy={() => handleCopy(cell.value, cell.key || '隨筆')}
+                        onCopy={() => handleCopy(cell.value)}
                         onMove={() => handleOpenMoveModal(cell, activePage.id, section.id)}
                         onDelete={() =>
                           handleDeleteCell(activePage.id, section.id, cell.id)
@@ -679,7 +714,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   </div>
                 ) : (
                   <div className="py-6 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                    分區尚無單元項，點擊右上角「+」或快速捕獲新增
+                    {t.sidePanel.emptyCategoryPrompt}
                   </div>
                 )}
               </SectionContainer>
@@ -691,17 +726,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               </div>
               <div>
                 <p className="text-xs font-medium text-raycast-light-text dark:text-raycast-dark-text">
-                  此筆記頁目前空空如也
-                </p>
-                <p className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle mt-0.5">
-                  點擊快速捕獲或右上角「新增分區」開始記錄
+                  {t.sidePanel.emptyPagePrompt}
                 </p>
               </div>
               <button
                 onClick={handleAddSection}
                 className="mt-1 px-3 py-1.5 rounded-lg text-xs bg-raycast-amber text-raycast-dark-bg font-medium"
               >
-                + 新增第一筆分區
+                + {t.sidePanel.addCategory}
               </button>
             </div>
           )}
@@ -717,14 +749,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         >
           <div className="flex items-center gap-2">
             <span>
-              總計 {pages.length} 個筆記頁 · {allSearchResults.length} 筆資料
+              {t.sidePanel.statsTotal(pages.length, allSearchResults.length)}
             </span>
           </div>
           <div className="flex items-center gap-2">
             <kbd className="px-1.5 py-0.2 rounded bg-black/5 dark:bg-white/10 font-mono text-[10px]">
               Alt+N
             </kbd>
-            <span>快速捕獲</span>
+            <span>{t.sidePanel.newNote}</span>
           </div>
         </footer>
 
@@ -739,6 +771,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         {/* Quick Capture Modal */}
         <QuickCaptureModal
           isOpen={isQuickCaptureOpen}
+          language={language}
           onClose={() => setIsQuickCaptureOpen(false)}
           pages={quickCapturePages}
           activePageId={activePageId}
@@ -747,8 +780,26 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           searchResults={allSearchResults}
           onSaveCell={handleQuickSaveCell}
           onCopySearchResult={(item) => {
-            handleCopy(item.content, item.title);
+            handleCopy(item.content);
           }}
+        />
+
+        <NewPageModal
+          isOpen={isNewPageModalOpen}
+          language={language}
+          onClose={() => setIsNewPageModalOpen(false)}
+          onSubmit={handleCreatePage}
+        />
+
+        <MoveCellModal
+          isOpen={Boolean(movingCellTarget)}
+          language={language}
+          cell={movingCellTarget?.cell || null}
+          sourcePageId={movingCellTarget?.sourcePageId || ''}
+          sourceSectionId={movingCellTarget?.sourceSectionId || ''}
+          pages={pages}
+          onClose={() => setMovingCellTarget(null)}
+          onConfirm={handleConfirmMoveCell}
         />
 
         <NewPageModal

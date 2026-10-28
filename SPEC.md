@@ -16,8 +16,9 @@ It provides:
 3. **One-Click Copy (一鍵複製)**: Fast, non-destructive copying of any Cell value with visual feedback (scale tap + emerald glow), tailored for form filling and zero DOM disruption.
 4. **Context-First Active Page Resolution (作用中筆記頁解析)**: Automatically highlights and opens the relevant thematic notebook page (e.g., "104 中文經歷" or "社交平台貼文") based on the current website hostname, while universally pinning a built-in `Global Page` (`🌐`) as a universal fallback.
 5. **Custom Page Icons & Dynamic Creation**: Full customization of page tabs with Emoji icons (e.g., `💼`, `💬`, `📝`, `🚀`) and a streamlined creation flow (`NewPageModal`).
-6. **Zero-Friction Dual-Mode Capture**: Instant capturing via right-click context menu and an in-page floating modal (`Alt+N`) with unified key/value inputs and real-time omni-search.
+6. **Zero-Friction Dual-Mode Capture**: Instant capturing via right-click context menu and an in-page floating modal (`Alt+N`) with unified title/content inputs and real-time omni-search.
 7. **Side Panel Workspace (側邊欄常駐工作區)**: Non-obstructive Chrome Side Panel (`Alt+S`) built with Raycast-inspired warm minimalism for multi-field continuous resume filling.
+8. **Bilingual Interface (繁體中文 / English)**: Native support for both Traditional Chinese (`zh-TW`) and English (`en`) with unified ubiquitous vocabulary and header language toggle.
 
 ## User Stories
 

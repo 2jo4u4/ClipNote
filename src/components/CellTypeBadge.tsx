@@ -1,19 +1,26 @@
 import React from 'react';
 import { cn } from '../utils';
 import type { SearchResultType } from '../core/types';
+import { Language, getTranslations } from '../i18n';
 
 export interface CellTypeBadgeProps {
   type: SearchResultType;
+  language?: Language;
   className?: string;
 }
 
 /**
  * Standardized type indicator badge for Cells:
- * - Field: Amber tone with [欄位] label
- * - Jot: Coral tone with [隨筆] label
+ * - Field: Amber tone with [欄位] / [Field] label
+ * - Jot: Coral tone with [隨筆] / [Jot] label
  */
-export const CellTypeBadge: React.FC<CellTypeBadgeProps> = ({ type, className }) => {
+export const CellTypeBadge: React.FC<CellTypeBadgeProps> = ({
+  type,
+  language = 'zh-TW',
+  className,
+}) => {
   const isField = type === 'field';
+  const t = getTranslations(language);
 
   return (
     <span
@@ -25,7 +32,7 @@ export const CellTypeBadge: React.FC<CellTypeBadgeProps> = ({ type, className })
         className
       )}
     >
-      {isField ? '[欄位]' : '[隨筆]'}
+      {isField ? t.common.fieldBadge : t.common.jotBadge}
     </span>
   );
 };

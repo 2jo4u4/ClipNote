@@ -11,6 +11,7 @@ import {
   Download,
 } from 'lucide-react';
 import { cn } from '../utils';
+import { Language, getTranslations } from '../i18n';
 
 export interface SectionContainerProps {
   id: string;
@@ -19,6 +20,7 @@ export interface SectionContainerProps {
   itemCount: number;
   isCollapsible?: boolean;
   defaultExpanded?: boolean;
+  language?: Language;
   onExtractToPage?: (sectionId: string) => void;
   onAddItem?: (sectionId: string) => void;
   onDeleteSection?: (sectionId: string) => void;
@@ -34,6 +36,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   itemCount,
   isCollapsible = true,
   defaultExpanded = true,
+  language = 'zh-TW',
   onExtractToPage,
   onAddItem,
   onDeleteSection,
@@ -41,6 +44,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   children,
   className,
 }) => {
+  const t = getTranslations(language);
   const [isExpanded, setIsExpanded] = useState(defaultExpanded);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -111,7 +115,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                 'dark:bg-white/5 dark:border-white/10 dark:text-raycast-dark-muted'
               )}
             >
-              {itemCount} 筆
+              {t.sidePanel.itemCount(itemCount)}
             </span>
           </div>
         </div>
@@ -131,7 +135,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                 onAddItem(id);
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="新增單元項"
+              title={t.sectionContainer.newNote}
               className={cn(
                 'flex items-center gap-1 p-1 rounded-lg text-xs font-medium transition-all duration-150',
                 'text-raycast-light-muted hover:text-raycast-light-text hover:bg-black/5',
@@ -151,7 +155,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                 setShowMenu((prev) => !prev);
               }}
               onMouseDown={(e) => e.stopPropagation()}
-              title="分區操作"
+              title={t.common.moreActions}
               className={cn(
                 'p-1.5 rounded-lg text-raycast-light-subtle hover:text-raycast-light-text',
                 'dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text',
@@ -183,7 +187,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
                     <Plus className="w-3.5 h-3.5 text-raycast-amber" />
-                    <span>新增單元項</span>
+                    <span>{t.sectionContainer.newNote}</span>
                   </button>
                 )}
 
@@ -200,7 +204,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                   >
                     <span className="flex items-center gap-2">
                       <FolderUp className="w-3.5 h-3.5 text-raycast-coral" />
-                      <span>升格為獨立筆記頁</span>
+                      <span>{t.sectionContainer.promoteToPage}</span>
                     </span>
                     <ArrowUpRight className="w-3 h-3 text-raycast-light-subtle dark:text-raycast-dark-subtle group-hover/item:translate-x-0.5 group-hover/item:-translate-y-0.5 transition-transform" />
                   </button>
@@ -218,7 +222,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                     className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                   >
                     <Download className="w-3.5 h-3.5 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
-                    <span>匯出此筆記頁 JSON</span>
+                    <span>{t.sidePanel.exportJson}</span>
                   </button>
                 )}
 
@@ -235,7 +239,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                       className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>刪除此分區</span>
+                      <span>{t.sectionContainer.deleteCategory}</span>
                     </button>
                   </div>
                 )}
@@ -281,14 +285,14 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                   'dark:border-white/10 dark:text-raycast-dark-subtle'
                 )}
               >
-                <span>尚未加入任何筆記內容</span>
+                <span>{t.sidePanel.emptyCategoryPrompt}</span>
                 {onAddItem && (
                   <button
                     type="button"
                     onClick={() => onAddItem(id)}
                     className="block mx-auto mt-2 text-raycast-amber hover:underline font-medium"
                   >
-                    + 新增單元項
+                    + {t.sectionContainer.newNote}
                   </button>
                 )}
               </div>

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, CornerDownLeft, Globe } from 'lucide-react';
 import { cn } from '../utils';
+import { Language, getTranslations } from '../i18n';
 
 export interface NewPageData {
   title: string;
@@ -10,6 +11,7 @@ export interface NewPageData {
 
 export interface NewPageModalProps {
   isOpen: boolean;
+  language?: Language;
   onClose: () => void;
   onSubmit: (data: NewPageData) => void;
   className?: string;
@@ -19,10 +21,12 @@ const PRESET_EMOJIS = ['💼', '📝', '💬', '🌐', '🚀', '💡', '🎯', '
 
 export const NewPageModal: React.FC<NewPageModalProps> = ({
   isOpen,
+  language = 'zh-TW',
   onClose,
   onSubmit,
   className,
 }) => {
+  const t = getTranslations(language);
   const [title, setTitle] = useState('');
   const [icon, setIcon] = useState('📝');
   const [domainsInput, setDomainsInput] = useState('');
@@ -94,11 +98,8 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
             <span className="text-lg">{icon || '📄'}</span>
             <div>
               <h3 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
-                新增筆記頁
+                {t.newPageModal.title}
               </h3>
-              <p className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                建立專屬的分頁以分類管理結構化欄位或隨筆
-              </p>
             </div>
           </div>
           <button
@@ -114,14 +115,14 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
           {/* Page Title */}
           <div>
             <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5">
-              筆記頁名稱 <span className="text-raycast-coral">*</span>
+              {t.newPageModal.nameLabel} <span className="text-raycast-coral">*</span>
             </label>
             <input
               ref={inputRef}
               type="text"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="例如：104 中文經歷、CakeResume、社群文案..."
+              placeholder={t.newPageModal.namePlaceholder}
               className={cn(
                 'w-full px-3 py-2 rounded-lg text-sm outline-none transition-all duration-200',
                 'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
@@ -134,10 +135,7 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
           {/* Icon / Emoji Selection */}
           <div>
             <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center justify-between">
-              <span>頁籤圖示 (Emoji)</span>
-              <span className="text-[11px] font-normal text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                可點擊下方常用圖示或自行輸入
-              </span>
+              <span>{t.newPageModal.iconLabel}</span>
             </label>
             <div className="flex items-center gap-2 mb-2">
               <input
@@ -178,13 +176,13 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
           <div>
             <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center gap-1.5">
               <Globe className="w-3.5 h-3.5 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
-              <span>綁定網域 (可選)</span>
+              <span>{t.newPageModal.domainLabel}</span>
             </label>
             <input
               type="text"
               value={domainsInput}
               onChange={(e) => setDomainsInput(e.target.value)}
-              placeholder="例如：104.com.tw, cakeresume.com"
+              placeholder={t.newPageModal.domainPlaceholder}
               className={cn(
                 'w-full px-3 py-2 rounded-lg text-sm outline-none transition-all duration-200 font-mono text-xs',
                 'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
@@ -192,9 +190,6 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 'focus:border-raycast-amber focus:ring-1 focus:ring-raycast-amber/50'
               )}
             />
-            <p className="mt-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
-              開啟符合的網頁時，擴充功能將自動切換並優先展示此筆記頁。多個網域請用逗號隔開。
-            </p>
           </div>
 
           {/* Actions Footer */}
@@ -203,12 +198,12 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
               <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 font-mono text-[10px]">
                 Esc
               </kbd>
-              <span>取消</span>
+              <span>{t.common.cancel}</span>
               <span className="mx-1">·</span>
               <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 font-mono text-[10px]">
                 Enter
               </kbd>
-              <span>建立</span>
+              <span>{t.common.confirm}</span>
             </div>
 
             <div className="flex items-center gap-2">
@@ -221,7 +216,7 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                   'hover:bg-black/5 dark:hover:bg-white/5'
                 )}
               >
-                取消
+                {t.common.cancel}
               </button>
               <button
                 type="submit"
@@ -234,7 +229,7 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 )}
               >
                 <CornerDownLeft className="w-3.5 h-3.5" />
-                <span>建立筆記頁</span>
+                <span>{t.newPageModal.submitBtn}</span>
               </button>
             </div>
           </div>

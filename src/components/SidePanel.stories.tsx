@@ -154,3 +154,20 @@ export const UnboundDomainGlobalPage: Story = {
     );
   },
 };
+
+/**
+ * 英文介面 (English Mode)
+ */
+export const EnglishLocale: Story = {
+  render: () => {
+    return (
+      <div className="w-[380px] h-[680px] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800">
+        <SidePanel
+          currentDomain="104.com.tw"
+          currentUrl="https://www.104.com.tw/job/7xyz8"
+          initialLanguage="en"
+        />
+      </div>
+    );
+  },
+};

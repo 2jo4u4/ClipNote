@@ -12,6 +12,7 @@ import { cn } from '../utils';
 import type { SearchResult, CreateCellInput } from '../types';
 import { Dropdown } from './Dropdown';
 import { CellTypeBadge } from './CellTypeBadge';
+import { Language, getTranslations } from '../i18n';
 
 export interface QuickCaptureSectionOption {
   id: string;
@@ -36,6 +37,7 @@ export interface QuickCaptureModalProps {
   sourceUrl?: string;
   sourceTitle?: string;
   searchResults?: SearchResult[];
+  language?: Language;
   onSaveCell?: (data: CreateCellInput & { pageId: string; sectionId?: string }) => void;
   onSaveJot?: (data: {
     pageId: string;
@@ -76,6 +78,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   sourceUrl,
   sourceTitle,
   searchResults = [],
+  language = 'zh-TW',
   onSaveCell,
   onSaveJot,
   onSaveField,
@@ -83,6 +86,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   onCopySearchResult,
   className,
 }) => {
+  const t = getTranslations(language);
   // Form state
   const [selectedPageId, setSelectedPageId] = useState(activePageId);
   const [selectedSectionId, setSelectedSectionId] = useState<string>('');
@@ -250,7 +254,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             type="text"
             value={searchQuery}
             onChange={(e) => handleSearchChange(e.target.value)}
-            placeholder="輸入關鍵字搜尋全部筆記，或在下方直接捕獲..."
+            placeholder={t.quickCapture.searchPlaceholder}
             className={cn(
               'w-full bg-transparent text-sm outline-none placeholder:text-raycast-light-subtle dark:placeholder:text-raycast-dark-subtle',
               'text-raycast-light-text dark:text-raycast-dark-text'
@@ -261,7 +265,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               onClick={() => handleSearchChange('')}
               className="text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle hover:text-raycast-light-text dark:hover:text-raycast-dark-text px-1"
             >
-              清除
+              {t.common.clear}
             </button>
           )}
         </div>
@@ -300,7 +304,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <CellTypeBadge type={item.type} />
+                          <CellTypeBadge type={item.type} language={language} />
                           <span className="font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
                             {item.title}
                           </span>
@@ -318,13 +322,13 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                       {isCopied ? (
                         <span className="flex items-center gap-1 text-[11px] text-raycast-emerald font-medium">
                           <Check className="w-3.5 h-3.5" />
-                          已複製
+                          {t.common.copied}
                         </span>
                       ) : (
                         isSelected && (
                           <span className="flex items-center gap-1 text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
                             <CornerDownLeft className="w-3 h-3" />
-                            複製
+                            {t.common.copy}
                           </span>
                         )
                       )}
@@ -334,7 +338,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               })
             ) : (
               <div className="py-8 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                查無相符內容，可直接在下方捕獲儲存。
+                {t.sidePanel.searchNoResults}
               </div>
             )}
           </div>
@@ -345,7 +349,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
-                  存放筆記頁
+                  {t.quickCapture.targetPage}
                 </label>
                 <Dropdown
                   value={selectedPageId}
@@ -359,7 +363,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
 
               <div>
                 <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
-                  存放分區 (Section)
+                  {t.quickCapture.targetCategory}
                 </label>
                 <Dropdown
                   value={selectedSectionId}
@@ -370,7 +374,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                           id: s.id,
                           label: s.title,
                         }))
-                      : [{ id: '', label: '預設分區' }]
+                      : [{ id: '', label: t.sidePanel.defaultCategoryName }]
                   }
                 />
               </div>
@@ -379,16 +383,13 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             {/* Optional Key Input */}
             <div>
               <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1 flex items-center justify-between">
-                <span>欄位名稱 (選填)</span>
-                <span className="text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-normal">
-                  填寫即為結構化欄位，留空為自由隨筆
-                </span>
+                <span>{t.quickCapture.titlePlaceholder}</span>
               </label>
               <input
                 type="text"
                 value={cellKey}
                 onChange={(e) => setCellKey(e.target.value)}
-                placeholder="例如：職稱、電話、Email（留空則視為隨筆）"
+                placeholder={t.quickCapture.titlePlaceholder}
                 className={cn(
                   'w-full px-3 py-2 rounded-lg text-xs outline-none transition-all duration-150',
                   'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
@@ -401,14 +402,14 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             {/* Content Payload (Value) */}
             <div>
               <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
-                內容 (Value) <span className="text-raycast-coral">*</span>
+                {t.quickCapture.contentPlaceholder}
               </label>
               <textarea
                 ref={textareaRef}
                 rows={3}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
-                placeholder="輸入或貼上要記錄的內容..."
+                placeholder={t.quickCapture.contentPlaceholder}
                 className={cn(
                   'w-full p-3 rounded-lg text-xs outline-none transition-all duration-150 resize-none font-sans leading-relaxed',
                   'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
@@ -433,12 +434,12 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         <div className="flex items-center justify-between px-4 py-2.5 border-t border-raycast-light-border dark:border-raycast-dark-border bg-raycast-light-surface/40 dark:bg-raycast-dark-surface/40">
           <div className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1.5 font-mono">
             <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">Esc</kbd>
-            <span>關閉</span>
+            <span>{t.common.cancel}</span>
             <span className="mx-1">·</span>
             <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">
               Ctrl+Enter
             </kbd>
-            <span>儲存</span>
+            <span>{t.common.confirm}</span>
           </div>
 
           <div className="flex items-center gap-2">
@@ -446,7 +447,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               onClick={onClose}
               className="px-3 py-1.5 rounded-lg text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text transition-colors"
             >
-              取消
+              {t.common.cancel}
             </button>
             <button
               onClick={handleSave}
@@ -459,7 +460,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               )}
             >
               <CornerDownLeft className="w-3.5 h-3.5" />
-              <span>儲存單元項</span>
+              <span>{t.quickCapture.submitBtn}</span>
             </button>
           </div>
         </div>

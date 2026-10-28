@@ -3,6 +3,7 @@ import { FolderUp, X, Check } from 'lucide-react';
 import { cn } from '../utils';
 import { Page, Cell } from '../core/types';
 import { Dropdown } from './Dropdown';
+import { Language, getTranslations } from '../i18n';
 
 export interface MoveCellModalProps {
   isOpen: boolean;
@@ -10,6 +11,7 @@ export interface MoveCellModalProps {
   sourcePageId: string;
   sourceSectionId: string;
   pages: Page[];
+  language?: Language;
   onClose: () => void;
   onConfirm: (targetPageId: string, targetSectionId: string) => void;
   className?: string;
@@ -21,10 +23,12 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
   sourcePageId,
   sourceSectionId,
   pages,
+  language = 'zh-TW',
   onClose,
   onConfirm,
   className,
 }) => {
+  const t = getTranslations(language);
   const [targetPageId, setTargetPageId] = useState(sourcePageId);
   const [targetSectionId, setTargetSectionId] = useState(sourceSectionId);
 
@@ -75,7 +79,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
         <div className="flex items-center justify-between px-4 py-3 border-b border-raycast-light-border dark:border-raycast-dark-border">
           <div className="flex items-center gap-2">
             <FolderUp className="w-4 h-4 text-raycast-amber" />
-            <h3 className="font-semibold text-sm">移動單元項</h3>
+            <h3 className="font-semibold text-sm">{t.moveModal.title}</h3>
           </div>
           <button
             onClick={onClose}
@@ -90,7 +94,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
           {/* Cell Preview */}
           <div className="p-2.5 rounded-xl border border-raycast-light-border bg-black/[0.02] dark:bg-white/[0.03] space-y-1">
             <span className="text-[10px] font-mono text-raycast-light-subtle dark:text-raycast-dark-subtle">
-              當前單元項
+              {t.moveModal.currentNote}
             </span>
             <div className="font-medium text-raycast-light-text dark:text-raycast-dark-text truncate">
               {cell.key ? `${cell.key}: ${cell.value}` : cell.value}
@@ -100,7 +104,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
           {/* Target Page Selector */}
           <div className="space-y-1.5">
             <label className="text-raycast-light-muted dark:text-raycast-dark-muted font-medium">
-              目標筆記頁
+              {t.moveModal.targetPage}
             </label>
             <Dropdown
               options={pages.map((p) => ({
@@ -116,7 +120,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
           {/* Target Section Selector */}
           <div className="space-y-1.5">
             <label className="text-raycast-light-muted dark:text-raycast-dark-muted font-medium">
-              目標分區
+              {t.moveModal.targetCategory}
             </label>
             {availableSections.length > 0 ? (
               <Dropdown
@@ -129,7 +133,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
               />
             ) : (
               <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5 text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                該筆記頁尚無分區
+                {t.moveModal.noCategories}
               </div>
             )}
           </div>
@@ -142,7 +146,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
             onClick={onClose}
             className="px-3 py-1.5 rounded-lg font-medium text-xs text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           >
-            取消
+            {t.common.cancel}
           </button>
           <button
             type="button"
@@ -156,7 +160,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
             )}
           >
             <Check className="w-3.5 h-3.5 stroke-[2.5]" />
-            <span>確定移動</span>
+            <span>{t.moveModal.confirmMove}</span>
           </button>
         </div>
       </div>

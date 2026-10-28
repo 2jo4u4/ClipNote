@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Globe, Plus, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../utils';
+import { Language, getTranslations } from '../i18n';
 
 export interface PageItem {
   id: string;
@@ -20,6 +21,7 @@ export interface PageTabsProps {
   onSelectPage?: (pageId: string) => void;
   onAddPage?: () => void;
   showDomains?: boolean; // Default false to keep tabs clean and compact
+  language?: Language;
   className?: string;
 
   // Deprecated props supported for transitional compatibility
@@ -34,11 +36,13 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   onSelectPage: directOnSelectPage,
   onAddPage,
   showDomains = false,
+  language = 'zh-TW',
   className,
   tabs,
   activeTabId,
   onSelectTab,
 }) => {
+  const t = getTranslations(language);
   const pages = directPages || tabs || [];
   const activePageId = directActivePageId || activeTabId || '';
   const onSelectPage = directOnSelectPage || onSelectTab || (() => {});
@@ -170,7 +174,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
         <button
           type="button"
           onClick={() => scrollByAmount(-130)}
-          title="向左滾動筆記頁"
+          title={t.pageTabs.scrollLeft}
           className="flex items-center justify-center p-1 rounded-md text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 flex-shrink-0 transition-all duration-150 active:scale-95"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
@@ -275,7 +279,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
         <button
           type="button"
           onClick={() => scrollByAmount(130)}
-          title="向右滾動筆記頁"
+          title={t.pageTabs.scrollRight}
           className="flex items-center justify-center p-1 rounded-md text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 flex-shrink-0 transition-all duration-150 active:scale-95"
         >
           <ChevronRight className="w-3.5 h-3.5" />
@@ -286,7 +290,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
       {onAddPage && (
         <button
           onClick={onAddPage}
-          title="新增筆記頁"
+          title={t.pageTabs.newPage}
           className={cn(
             'flex items-center justify-center p-1.5 rounded-lg text-xs outline-none flex-shrink-0',
             'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text',

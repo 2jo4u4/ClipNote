@@ -9,6 +9,7 @@ import {
   FolderUp,
 } from 'lucide-react';
 import { cn, formatRelativeTime, getDomainFromUrl } from '../utils';
+import { Language, getTranslations } from '../i18n';
 
 export interface CellCardProps {
   id: string;
@@ -18,6 +19,7 @@ export interface CellCardProps {
   updatedAt?: number;
   sourceUrl?: string;
   sourceTitle?: string;
+  language?: Language;
   onCopy?: (content: string) => void;
   onDelete?: (id: string) => void;
   onMove?: (id: string) => void;
@@ -32,11 +34,13 @@ export const CellCard: React.FC<CellCardProps> = ({
   updatedAt,
   sourceUrl,
   sourceTitle,
+  language = 'zh-TW',
   onCopy,
   onDelete,
   onMove,
   className,
 }) => {
+  const t = getTranslations(language);
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
@@ -76,7 +80,7 @@ export const CellCard: React.FC<CellCardProps> = ({
   return (
     <div
       onClick={handleCopy}
-      title="點擊一秒複製內容"
+      title={t.common.clickToCopy}
       className={cn(
         'group relative flex flex-col p-3 rounded-xl border select-none cursor-pointer',
         'transition-all duration-200 ease-raycast active:scale-[0.98]',
@@ -133,7 +137,7 @@ export const CellCard: React.FC<CellCardProps> = ({
               handleCopy(e);
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            title={copied ? '已複製！' : '複製內容'}
+            title={copied ? t.common.copied : t.common.copy}
             className={cn(
               'flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-all duration-150',
               copied
@@ -144,7 +148,7 @@ export const CellCard: React.FC<CellCardProps> = ({
             {copied ? (
               <>
                 <Check className="w-3 h-3 text-raycast-emerald stroke-[2.5]" />
-                <span className="text-[10px]">已複製</span>
+                <span className="text-[10px]">{t.common.copied}</span>
               </>
             ) : (
               <Copy className="w-3 h-3" />
@@ -161,7 +165,7 @@ export const CellCard: React.FC<CellCardProps> = ({
                   setShowMenu((prev) => !prev);
                 }}
                 onMouseDown={(e) => e.stopPropagation()}
-                title="更多操作"
+                title={t.common.moreActions}
                 className="p-1 rounded text-raycast-light-subtle dark:text-raycast-dark-subtle opacity-0 group-hover:opacity-100 hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-opacity"
               >
                 <MoreVertical className="w-3 h-3" />
@@ -184,7 +188,7 @@ export const CellCard: React.FC<CellCardProps> = ({
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     >
                       <FolderUp className="w-3.5 h-3.5 text-raycast-amber" />
-                      <span>移動至...</span>
+                      <span>{t.moveModal.title}...</span>
                     </button>
                   )}
                   {onDelete && (
@@ -198,7 +202,7 @@ export const CellCard: React.FC<CellCardProps> = ({
                       className="w-full flex items-center gap-2 px-2.5 py-1.5 text-xs text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
-                      <span>刪除</span>
+                      <span>{t.common.delete}</span>
                     </button>
                   )}
                 </div>
