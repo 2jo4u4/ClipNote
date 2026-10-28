@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Globe, Plus, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Globe, Plus, FileText, ChevronLeft, ChevronRight, SlidersHorizontal } from 'lucide-react';
 import { cn } from '../utils';
 import { Language, getTranslations } from '../i18n';
 
@@ -20,6 +20,7 @@ export interface PageTabsProps {
   activePageId?: string;
   onSelectPage?: (pageId: string) => void;
   onAddPage?: () => void;
+  onManagePages?: () => void;
   showDomains?: boolean; // Default false to keep tabs clean and compact
   language?: Language;
   className?: string;
@@ -35,6 +36,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   activePageId: directActivePageId,
   onSelectPage: directOnSelectPage,
   onAddPage,
+  onManagePages,
   showDomains = false,
   language = 'zh-TW',
   className,
@@ -298,6 +300,22 @@ export const PageTabs: React.FC<PageTabsProps> = ({
           )}
         >
           <Plus className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Manage Pages Action Button */}
+      {onManagePages && (
+        <button
+          type="button"
+          onClick={onManagePages}
+          title={t.pageTabs.managePages}
+          className={cn(
+            'flex items-center justify-center p-1.5 rounded-lg text-xs outline-none flex-shrink-0',
+            'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text',
+            'hover:bg-raycast-light-hover dark:hover:bg-raycast-dark-hover transition-all duration-200 ease-raycast active:scale-95'
+          )}
+        >
+          <SlidersHorizontal className="w-3.5 h-3.5" />
         </button>
       )}
     </div>

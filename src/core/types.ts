@@ -31,6 +31,14 @@ export interface CreateCellInput {
 }
 
 /**
+ * Target reference identifying a specific Cell within a Section.
+ */
+export interface CellTarget {
+  sectionId: string;
+  cellId: string;
+}
+
+/**
  * Section is a flexible container within a Page holding an ordered list of Cells.
  */
 export interface Section {

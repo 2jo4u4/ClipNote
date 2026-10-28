@@ -3,6 +3,13 @@
 @tailwind utilities;
 
 @layer base {
+  html, body, #root {
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+  }
   body {
     @apply antialiased font-sans bg-raycast-light-bg text-raycast-light-text dark:bg-raycast-dark-bg dark:text-raycast-dark-text;
   }

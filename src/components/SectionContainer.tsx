@@ -9,6 +9,9 @@ import {
   Trash2,
   FolderUp,
   Download,
+  FileEdit,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { Language, getTranslations } from '../i18n';
@@ -21,6 +24,10 @@ export interface SectionContainerProps {
   isCollapsible?: boolean;
   defaultExpanded?: boolean;
   language?: Language;
+  isSelectMode?: boolean;
+  isSelected?: boolean;
+  onToggleSelect?: (sectionId: string) => void;
+  onRenameSection?: (sectionId: string) => void;
   onExtractToPage?: (sectionId: string) => void;
   onAddItem?: (sectionId: string) => void;
   onDeleteSection?: (sectionId: string) => void;
@@ -37,6 +44,10 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   isCollapsible = true,
   defaultExpanded = true,
   language = 'zh-TW',
+  isSelectMode = false,
+  isSelected = false,
+  onToggleSelect,
+  onRenameSection,
   onExtractToPage,
   onAddItem,
   onDeleteSection,
@@ -70,8 +81,9 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
     <div
       className={cn(
         'group/section flex flex-col rounded-2xl border transition-all duration-300 ease-raycast',
-        'bg-raycast-light-surface/60 border-raycast-light-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]',
-        'dark:bg-raycast-dark-surface/50 dark:border-white/8 dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
+        isSelectMode && isSelected
+          ? 'border-raycast-coral/40 bg-raycast-coral/[0.02] ring-1 ring-raycast-coral/30'
+          : 'bg-raycast-light-surface/60 border-raycast-light-border shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:bg-raycast-dark-surface/50 dark:border-white/8 dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
         className
       )}
     >
@@ -86,8 +98,24 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           if (isCollapsible) setIsExpanded(!isExpanded);
         }}
       >
-        {/* Left: Type Icon + Title + Count Badge */}
+        {/* Left: Checkbox (Select Mode) + Type Icon + Title + Count Badge */}
         <div className="flex items-center gap-2.5 min-w-0">
+          {isSelectMode && (
+            <div
+              className="flex-shrink-0"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (onToggleSelect) onToggleSelect(id);
+              }}
+            >
+              {isSelected ? (
+                <CheckSquare className="w-4 h-4 text-raycast-coral" />
+              ) : (
+                <Square className="w-4 h-4 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
+              )}
+            </div>
+          )}
+
           <div
             className={cn(
               'flex items-center justify-center w-6 h-6 rounded-lg transition-colors flex-shrink-0',
@@ -127,7 +155,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           onMouseDown={(e) => e.stopPropagation()}
         >
           {/* Add Item Quick Button */}
-          {onAddItem && (
+          {!isSelectMode && onAddItem && (
             <button
               type="button"
               onClick={(e) => {
@@ -147,105 +175,123 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           )}
 
           {/* Section Action Menu */}
-          <div className="relative" ref={menuRef}>
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setShowMenu((prev) => !prev);
-              }}
-              onMouseDown={(e) => e.stopPropagation()}
-              title={t.common.moreActions}
-              className={cn(
-                'p-1.5 rounded-lg text-raycast-light-subtle hover:text-raycast-light-text',
-                'dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text',
-                'hover:bg-black/5 dark:hover:bg-white/5 transition-colors'
-              )}
-            >
-              <MoreVertical className="w-3.5 h-3.5" />
-            </button>
-
-            {showMenu && (
-              <div
-                onClick={(e) => e.stopPropagation()}
+          {!isSelectMode && (
+            <div className="relative" ref={menuRef}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowMenu((prev) => !prev);
+                }}
                 onMouseDown={(e) => e.stopPropagation()}
+                title={t.common.moreActions}
                 className={cn(
-                  'absolute right-0 top-full mt-1.5 z-50 w-52 py-1.5 rounded-xl shadow-xl border backdrop-blur-md',
-                  'bg-raycast-light-surface/95 border-raycast-light-border text-raycast-light-text',
-                  'dark:bg-raycast-dark-surface/95 dark:border-white/10 dark:text-raycast-dark-text animate-in fade-in zoom-in-95 duration-150'
+                  'p-1.5 rounded-lg text-raycast-light-subtle hover:text-raycast-light-text',
+                  'dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text',
+                  'hover:bg-black/5 dark:hover:bg-white/5 transition-colors'
                 )}
               >
-                {/* Add Item */}
-                {onAddItem && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onAddItem(id);
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <Plus className="w-3.5 h-3.5 text-raycast-amber" />
-                    <span>{t.sectionContainer.newNote}</span>
-                  </button>
-                )}
+                <MoreVertical className="w-3.5 h-3.5" />
+              </button>
 
-                {/* Extract Section to Page */}
-                {onExtractToPage && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onExtractToPage(id);
-                    }}
-                    className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/item"
-                  >
-                    <span className="flex items-center gap-2">
-                      <FolderUp className="w-3.5 h-3.5 text-raycast-coral" />
-                      <span>{t.sectionContainer.promoteToPage}</span>
-                    </span>
-                    <ArrowUpRight className="w-3 h-3 text-raycast-light-subtle dark:text-raycast-dark-subtle group-hover/item:translate-x-0.5 group-hover/item:-translate-y-0.5 transition-transform" />
-                  </button>
-                )}
-
-                {/* Export Page JSON */}
-                {onExportPage && (
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onExportPage();
-                    }}
-                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-                  >
-                    <Download className="w-3.5 h-3.5 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
-                    <span>{t.sidePanel.exportJson}</span>
-                  </button>
-                )}
-
-                {/* Delete Section */}
-                {onDeleteSection && (
-                  <div className="pt-1 mt-1 border-t border-raycast-light-border dark:border-white/10">
+              {showMenu && (
+                <div
+                  onClick={(e) => e.stopPropagation()}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className={cn(
+                    'absolute right-0 top-full mt-1.5 z-50 w-52 py-1.5 rounded-xl shadow-xl border backdrop-blur-md',
+                    'bg-raycast-light-surface/95 border-raycast-light-border text-raycast-light-text',
+                    'dark:bg-raycast-dark-surface/95 dark:border-white/10 dark:text-raycast-dark-text animate-in fade-in zoom-in-95 duration-150'
+                  )}
+                >
+                  {/* Add Item */}
+                  {onAddItem && (
                     <button
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
                         setShowMenu(false);
-                        onDeleteSection(id);
+                        onAddItem(id);
                       }}
-                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>{t.sectionContainer.deleteCategory}</span>
+                      <Plus className="w-3.5 h-3.5 text-raycast-amber" />
+                      <span>{t.sectionContainer.newNote}</span>
                     </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
+                  )}
+
+                  {/* Rename Section */}
+                  {onRenameSection && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onRenameSection(id);
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <FileEdit className="w-3.5 h-3.5 text-raycast-amber" />
+                      <span>{t.sectionContainer.renameCategory}</span>
+                    </button>
+                  )}
+
+                  {/* Extract Section to Page */}
+                  {onExtractToPage && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onExtractToPage(id);
+                      }}
+                      className="w-full flex items-center justify-between px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors group/item"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FolderUp className="w-3.5 h-3.5 text-raycast-coral" />
+                        <span>{t.sectionContainer.promoteToPage}</span>
+                      </span>
+                      <ArrowUpRight className="w-3 h-3 text-raycast-light-subtle dark:text-raycast-dark-subtle group-hover/item:translate-x-0.5 group-hover/item:-translate-y-0.5 transition-transform" />
+                    </button>
+                  )}
+
+                  {/* Export Page JSON */}
+                  {onExportPage && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowMenu(false);
+                        onExportPage();
+                      }}
+                      className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
+                      <span>{t.sidePanel.exportJson}</span>
+                    </button>
+                  )}
+
+                  {/* Delete Section */}
+                  {onDeleteSection && (
+                    <div className="pt-1 mt-1 border-t border-raycast-light-border dark:border-white/10">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowMenu(false);
+                          onDeleteSection(id);
+                        }}
+                        className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                        <span>{t.sectionContainer.deleteCategory}</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Smooth Accordion Toggle Arrow */}
           {isCollapsible && (

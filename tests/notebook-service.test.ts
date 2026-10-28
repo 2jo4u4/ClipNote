@@ -135,7 +135,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
 
       const globalPage = await service.getGlobalPage();
       expect(globalPage.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
-      expect(globalPage.title).toBe('全域筆記頁');
+      expect(globalPage.title).toBe('第一頁');
       expect(globalPage.icon).toBe('🌐');
       expect(globalPage.isSystem).toBe(true);
       expect(globalPage.sections.length).toBe(2);
@@ -502,6 +502,52 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(pageAfter?.sections.length).toBe(1);
       expect(pageAfter?.sections[0].title).toBe('預設分類');
       expect(pageAfter?.sections[0].items[0].id).toBe(cell.id);
+    });
+
+    it('batch deletes custom pages while preserving system global page', async () => {
+      const page1 = await service.createPage({ title: 'Page 1' });
+      const page2 = await service.createPage({ title: 'Page 2' });
+      const page3 = await service.createPage({ title: 'Page 3' });
+
+      // Attempt to batch delete Page 1, Page 2 and SYSTEM_GLOBAL_PAGE
+      await service.deletePages([page1.id, page2.id, SYSTEM_GLOBAL_PAGE_ID]);
+
+      expect(await service.getPage(page1.id)).toBeUndefined();
+      expect(await service.getPage(page2.id)).toBeUndefined();
+      expect(await service.getPage(page3.id)).toBeDefined();
+      expect(await service.getPage(SYSTEM_GLOBAL_PAGE_ID)).toBeDefined();
+    });
+
+    it('batch deletes sections within a page', async () => {
+      const page = await service.createPage({ title: 'Batch Sections Page' });
+      const secA = await service.createSection(page.id, { title: 'Sec A' });
+      const secB = await service.createSection(page.id, { title: 'Sec B' });
+      const secC = await service.createSection(page.id, { title: 'Sec C' });
+
+      await service.deleteSections(page.id, [secA.id, secC.id]);
+      const pageAfter = await service.getPage(page.id);
+      expect(pageAfter?.sections.length).toBe(1);
+      expect(pageAfter?.sections[0].id).toBe(secB.id);
+    });
+
+    it('batch deletes cells across multiple sections of a page', async () => {
+      const page = await service.createPage({ title: 'Batch Cells Page' });
+      const sec1 = await service.createSection(page.id, { title: 'Sec 1' });
+      const sec2 = await service.createSection(page.id, { title: 'Sec 2' });
+
+      const c1 = await service.createCell(page.id, sec1.id, { value: 'Cell 1' });
+      const c2 = await service.createCell(page.id, sec1.id, { value: 'Cell 2' });
+      const c3 = await service.createCell(page.id, sec2.id, { value: 'Cell 3' });
+      const c4 = await service.createCell(page.id, sec2.id, { value: 'Cell 4' });
+
+      await service.deleteCells(page.id, [
+        { sectionId: sec1.id, cellId: c1.id },
+        { sectionId: sec2.id, cellId: c4.id },
+      ]);
+
+      const pageAfter = await service.getPage(page.id);
+      expect(pageAfter?.sections[0].items.map((i) => i.id)).toEqual([c2.id]);
+      expect(pageAfter?.sections[1].items.map((i) => i.id)).toEqual([c3.id]);
     });
   });
 });

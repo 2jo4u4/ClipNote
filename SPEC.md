@@ -51,6 +51,9 @@ It provides:
 19. As a user reviewing my Sections, I want the Section's `updatedAt` timestamp to automatically reflect the latest modification time among its member Cells, so that I know when that topic was last touched.
 20. As a user whose Section has grown into an independent topic, I want to extract that Section into a new top-level Page with one click, so that I can progressively organize my notebook without manual copy-pasting.
 21. As a user tidying up my notes, I want to click "移動至..." on any Cell to open an interactive target selection modal (`MoveCellModal`), allowing me to choose destination Page and Section, so that misplaced items can be re-filed precisely.
+22. As a user updating existing notes, I want to click "編輯筆記" on any Cell to open an edit modal (`EditNoteModal`) supporting `Ctrl+Enter` to quickly save and update Key or Value, so that outdated info can be corrected without re-capturing.
+23. As a user managing categories, I want an elegant modal (`CategoryModal`) for adding and renaming categories instead of native browser prompts, so that creating or modifying categories feels seamless and integrated.
+24. As a user organizing or clearing notebook items, I want batch selection and deletion for Pages, Categories, and Cells, so that I can select multiple unwanted items and delete them in one step.
 
 ### Discovery & Search
 22. As a user on a new job website (`cake.me`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `104 中文經歷`.
@@ -130,6 +133,12 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - Matches against both `cell.key` and `cell.value` case-insensitively.
 - Emits flat `SearchResult` items with dynamic type tag (`field` if `cell.key` exists, `jot` otherwise) and source breadcrumb path (`${page.title} > ${section.title}`).
 - One-click copy copies `cell.value` directly to clipboard.
+
+### 7. Full CRUD & Batch Deletion
+- **Page Management**: Default system page is designated as "第一頁" (`SYSTEM_GLOBAL_PAGE_ID`). Its title can be renamed inline, but deletion and domain wildcarding (`['*']`) remain protected. Custom pages can be batch-deleted via `ManagePagesModal` or individually removed.
+- **Category Management**: Categories can be created and renamed through Raycast-styled `CategoryModal` (replacing native `window.prompt`), deleted individually from the section menu, or batch-deleted via Batch Mode.
+- **Cell Management**: Cells can be edited through `EditNoteModal` (`Ctrl+Enter` save), deleted individually, or batch-selected and deleted.
+- **Batch Mode**: Active page header allows toggling batch selection mode (`isSelectMode`), displaying checkboxes across categories and cells, with a floating action toolbar showing selection statistics, select-all/deselect-all toggles, and confirmed bulk deletion.
 
 ---
 

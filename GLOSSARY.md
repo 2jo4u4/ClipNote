@@ -8,12 +8,14 @@ This document defines the ubiquitous language for the Notebook browser extension
 | :--- | :--- | :--- | :--- |
 | **Notebook** | 筆記本 | Notebook | The root application workspace containing all pages, settings, and storage state. |
 | **Page** | 一頁 / 頁 | Page | A discrete thematic document or tab (e.g., "104 中文經歷", "社交貼文草稿") that binds to target web domains. |
-| **Global Page** | 全域頁 | Global Page | The system-created, non-deletable Page pinned universally across all domains as a default scratchpad. |
+| **Global Page / First Page** | 第一頁 | First Page | The system-created default Page pinned universally across all domains as a default scratchpad (name is editable by user). |
 | **Section** | 分類 | Category | A flexible grouping within a Page to organize content items. |
 | **Cell** | 筆記 | Note | The fundamental, atomic unit of content within a Category. Holds a value and an optional title/key. |
 | **Field** | [欄位] | [Field] | A Cell with a non-empty title/key, optimized for structured form-filling and key-value copying. |
 | **Jot** | [隨筆] | [Jot] | A Cell with no title/key, representing an unstructured, timestamped plain text memo or quote. |
 | **Quick Capture** | 新增筆記 | New Note | The fast in-page palette (`Alt+N`) or top action button to instantly record notes. |
+| **Edit Note** | 編輯筆記 | Edit Note | Modifying the title or content of an existing note via modal (`EditNoteModal`). |
+| **Batch Manage** | 批次管理 | Batch Manage | Multi-item selection mode allowing bulk deletion across pages, categories, and notes. |
 | **Cell Key** | 筆記名稱 | Note Title | The optional structured label for a note (e.g., Phone, Email, Address). |
 | **Cell Value** | 筆記內容 | Note Content | The primary payload of the note. |
 | **Domain Binding** | 網域綁定 | Domain Binding | Domain patterns associated with a Page for automatic prioritization. |

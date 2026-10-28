@@ -434,29 +434,21 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         )}
 
         {/* Actions Footer */}
-        <div className="flex items-center justify-between px-4 py-2.5 border-t border-raycast-light-border dark:border-raycast-dark-border bg-raycast-light-surface/40 dark:bg-raycast-dark-surface/40">
-          <div className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1.5 font-mono">
+        <div className="flex items-center justify-between gap-2 px-4 py-2.5 border-t border-raycast-light-border dark:border-raycast-dark-border bg-raycast-light-surface/40 dark:bg-raycast-dark-surface/40 select-none">
+          <div className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1.5 font-mono whitespace-nowrap shrink-0">
             <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">Esc</kbd>
-            <span>{t.common.cancel}</span>
-            <span className="mx-1">·</span>
-            <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">
-              Ctrl+Enter
-            </kbd>
-            <span>{t.common.confirm}</span>
+            <span className="hidden sm:inline">{t.common.cancel}</span>
+            <span className="mx-1 text-black/20 dark:text-white/20">·</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">Ctrl+Enter</kbd>
+            <span className="hidden sm:inline">{t.common.confirm}</span>
           </div>
 
-          <div className="flex items-center gap-2">
-            <button
-              onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text transition-colors"
-            >
-              {t.common.cancel}
-            </button>
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={handleSave}
               disabled={!value.trim()}
               className={cn(
-                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
+                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 whitespace-nowrap',
                 value.trim()
                   ? 'bg-raycast-amber text-raycast-dark-bg hover:brightness-110 active:scale-95 shadow-sm'
                   : 'bg-black/10 dark:bg-white/10 text-raycast-light-subtle dark:text-raycast-dark-subtle cursor-not-allowed'

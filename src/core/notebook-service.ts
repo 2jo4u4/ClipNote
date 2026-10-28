@@ -15,6 +15,7 @@ import {
   Section,
   Cell,
   CreateCellInput,
+  CellTarget,
   SearchResult,
   MoveCellParams,
   SYSTEM_GLOBAL_PAGE_ID,
@@ -69,7 +70,7 @@ export function createDefaultSeedData(): NotebookStorage {
   const now = Date.now();
   const globalPage: Page = {
     id: SYSTEM_GLOBAL_PAGE_ID,
-    title: '全域筆記頁',
+    title: '第一頁',
     icon: '🌐',
     domains: ['*'],
     isPrimary: false,
@@ -327,6 +328,20 @@ export class NotebookService {
     await this.persist();
   }
 
+  async deletePages(ids: string[]): Promise<void> {
+    await this.reload();
+    const data = await this.ensureInitialized();
+    const idSet = new Set(ids);
+    // Never delete system global page
+    idSet.delete(data.systemGlobalPageId);
+    idSet.delete(SYSTEM_GLOBAL_PAGE_ID);
+
+    for (const id of idSet) {
+      delete data.pages[id];
+    }
+    await this.persist();
+  }
+
   /**
    * Persists the entire set of pages, preserving the system global page invariant.
    */
@@ -421,6 +436,20 @@ export class NotebookService {
     }
 
     page.sections.splice(index, 1);
+    page.updatedAt = Date.now();
+    await this.persist();
+  }
+
+  async deleteSections(pageId: string, sectionIds: string[]): Promise<void> {
+    await this.reload();
+    const data = await this.ensureInitialized();
+    const page = data.pages[pageId];
+    if (!page) {
+      throw new Error(`Page not found: ${pageId}`);
+    }
+
+    const idSet = new Set(sectionIds);
+    page.sections = page.sections.filter((s) => !idSet.has(s.id));
     page.updatedAt = Date.now();
     await this.persist();
   }
@@ -572,6 +601,37 @@ export class NotebookService {
     section.items.splice(index, 1);
     const now = Date.now();
     section.updatedAt = now;
+    page.updatedAt = now;
+    await this.persist();
+  }
+
+  async deleteCells(
+    pageId: string,
+    targets: CellTarget[]
+  ): Promise<void> {
+    await this.reload();
+    const data = await this.ensureInitialized();
+    const page = data.pages[pageId];
+    if (!page) {
+      throw new Error(`Page not found: ${pageId}`);
+    }
+
+    const now = Date.now();
+    const targetsBySection = new Map<string, Set<string>>();
+    for (const t of targets) {
+      if (!targetsBySection.has(t.sectionId)) {
+        targetsBySection.set(t.sectionId, new Set());
+      }
+      targetsBySection.get(t.sectionId)!.add(t.cellId);
+    }
+
+    for (const [secId, cellIdSet] of targetsBySection.entries()) {
+      const section = page.sections.find((s) => s.id === secId);
+      if (section) {
+        section.items = section.items.filter((c) => !cellIdSet.has(c.id));
+        section.updatedAt = now;
+      }
+    }
     page.updatedAt = now;
     await this.persist();
   }

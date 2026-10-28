@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import {
   Globe,
   Plus,
@@ -7,6 +7,11 @@ import {
   FileText,
   Download,
   Check,
+  X,
+  Edit2,
+  Trash2,
+  CheckSquare,
+  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { PageTabs, PageItem } from './PageTabs';
@@ -16,7 +21,10 @@ import { CellCard } from './CellCard';
 import { QuickCaptureModal } from './QuickCaptureModal';
 import { NewPageModal, NewPageData } from './NewPageModal';
 import { MoveCellModal } from './MoveCellModal';
-import type { Page, Section, Cell, SearchResult, CreateCellInput } from '../types';
+import { CategoryModal } from './CategoryModal';
+import { EditNoteModal } from './EditNoteModal';
+import { ManagePagesModal } from './ManagePagesModal';
+import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
 import { Language, getTranslations } from '../i18n';
 import { matchDomain } from '../core/notebook-service';
 
@@ -43,7 +51,7 @@ export interface SidePanelProps {
 const defaultDemoPages: Page[] = [
   {
     id: 'SYSTEM_GLOBAL_PAGE',
-    title: '全域筆記頁',
+    title: '第一頁',
     icon: '🌐',
     domains: ['*'],
     isSystem: true,
@@ -78,7 +86,7 @@ const defaultDemoPages: Page[] = [
           },
           {
             id: 'j-2',
-            value: '這個全域筆記頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
+            value: '這個第一頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
             sourceUrl: 'https://google.com',
             sourceTitle: 'Google 首頁',
             createdAt: Date.now() - 3600000,
@@ -235,8 +243,44 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isNewPageModalOpen, setIsNewPageModalOpen] = useState(false);
+  const [isManagePagesModalOpen, setIsManagePagesModalOpen] = useState(false);
   const [movingCellTarget, setMovingCellTarget] = useState<MovingCellTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Category Modal state (create or rename)
+  const [categoryModalState, setCategoryModalState] = useState<{
+    isOpen: boolean;
+    mode: 'create' | 'rename';
+    sectionId?: string;
+    initialTitle?: string;
+  }>({
+    isOpen: false,
+    mode: 'create',
+  });
+
+  // Edit Note Modal state
+  const [editNoteModalState, setEditNoteModalState] = useState<{
+    isOpen: boolean;
+    cell?: Cell;
+    sectionId?: string;
+  }>({
+    isOpen: false,
+  });
+
+  // Page title inline editing
+  const [isEditingPageTitle, setIsEditingPageTitle] = useState(false);
+  const [pageTitleInput, setPageTitleInput] = useState('');
+  const pageTitleInputRef = useRef<HTMLInputElement>(null);
+
+  // Batch Select Mode
+  const [isBatchMode, setIsBatchMode] = useState(false);
+  const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
+  const [selectedCellTargets, setSelectedCellTargets] = useState<CellTarget[]>([]);
+  const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+
+  const standaloneSelectedCellsCount = useMemo(() => {
+    return selectedCellTargets.filter((t) => !selectedSectionIds.includes(t.sectionId)).length;
+  }, [selectedCellTargets, selectedSectionIds]);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -311,30 +355,141 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(t.sidePanel.createdPageToast(data.title));
   };
 
-  const handleAddSection = () => {
-    const title = window.prompt(t.sidePanel.addCategoryPrompt, t.sidePanel.defaultCategoryName);
-    if (!title || !title.trim()) return;
+  const handleStartEditPageTitle = () => {
+    setPageTitleInput(activePage.title);
+    setIsEditingPageTitle(true);
+    setTimeout(() => {
+      pageTitleInputRef.current?.focus();
+      pageTitleInputRef.current?.select();
+    }, 50);
+  };
 
-    const newSec: Section = {
-      id: `sec-${Date.now()}`,
-      title: title.trim(),
-      order: activePage.sections.length,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      items: [],
-    };
+  const handleSavePageTitle = () => {
+    const trimmed = pageTitleInput.trim();
+    if (!trimmed || trimmed === activePage.title) {
+      setIsEditingPageTitle(false);
+      return;
+    }
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+        return {
+          ...p,
+          title: trimmed,
+          updatedAt: Date.now(),
+        };
+      })
+    );
+    setIsEditingPageTitle(false);
+    showToast(t.sidePanel.renamedPageToast(trimmed));
+  };
+
+  const handleDeleteActivePage = () => {
+    if (activePage.isSystem) return;
+    if (!window.confirm(t.sidePanel.confirmDeletePage(activePage.title))) return;
+    const deletedTitle = activePage.title;
+    const remaining = pages.filter((p) => p.id !== activePage.id);
+    setPages(remaining);
+    setActivePageId(remaining[0]?.id || 'SYSTEM_GLOBAL_PAGE');
+    showToast(t.sidePanel.deletedPageToast(deletedTitle));
+  };
+
+  const handleOpenAddCategory = () => {
+    setCategoryModalState({
+      isOpen: true,
+      mode: 'create',
+      initialTitle: '',
+    });
+  };
+
+  const handleOpenRenameCategory = (sectionId: string) => {
+    const targetSec = activePage.sections.find((s) => s.id === sectionId);
+    if (!targetSec) return;
+    setCategoryModalState({
+      isOpen: true,
+      mode: 'rename',
+      sectionId,
+      initialTitle: targetSec.title,
+    });
+  };
+
+  const handleCategoryModalSubmit = (title: string) => {
+    if (categoryModalState.mode === 'create') {
+      const newSec: Section = {
+        id: `sec-${Date.now()}`,
+        title: title.trim(),
+        order: activePage.sections.length,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        items: [],
+      };
+      setPages((prev) =>
+        prev.map((p) => {
+          if (p.id !== activePage.id) return p;
+          return {
+            ...p,
+            sections: [...p.sections, newSec],
+            updatedAt: Date.now(),
+          };
+        })
+      );
+      showToast(t.sidePanel.createdCategoryToast(title.trim()));
+    } else if (categoryModalState.mode === 'rename' && categoryModalState.sectionId) {
+      const secId = categoryModalState.sectionId;
+      setPages((prev) =>
+        prev.map((p) => {
+          if (p.id !== activePage.id) return p;
+          return {
+            ...p,
+            sections: p.sections.map((s) =>
+              s.id === secId ? { ...s, title: title.trim(), updatedAt: Date.now() } : s
+            ),
+            updatedAt: Date.now(),
+          };
+        })
+      );
+      showToast(t.sidePanel.renamedCategoryToast(title.trim()));
+    }
+    setCategoryModalState((prev) => ({ ...prev, isOpen: false }));
+  };
+
+  const handleOpenEditNote = (cell: Cell, sectionId: string) => {
+    setEditNoteModalState({
+      isOpen: true,
+      cell,
+      sectionId,
+    });
+  };
+
+  const handleSaveEditNote = (cellId: string, updates: { key?: string; value: string }) => {
+    if (!editNoteModalState.sectionId) return;
+    const { sectionId } = editNoteModalState;
+    const now = Date.now();
 
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== activePage.id) return p;
         return {
           ...p,
-          sections: [...p.sections, newSec],
-          updatedAt: Date.now(),
+          sections: p.sections.map((s) => {
+            if (s.id !== sectionId) return s;
+            return {
+              ...s,
+              items: s.items.map((c) =>
+                c.id === cellId
+                  ? { ...c, key: updates.key?.trim() || undefined, value: updates.value, updatedAt: now }
+                  : c
+              ),
+              updatedAt: now,
+            };
+          }),
+          updatedAt: now,
         };
       })
     );
-    showToast(t.sidePanel.createdCategoryToast(title.trim()));
+
+    setEditNoteModalState({ isOpen: false });
+    showToast(t.sidePanel.updatedNoteToast);
   };
 
   const handleExtractSectionToPage = (sectionId: string) => {
@@ -488,6 +643,103 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       })
     );
     showToast(t.sidePanel.deletedCategoryToast(sec?.title || ''));
+  };
+
+  // Batch Selection Handlers
+  const handleToggleSelectSection = (sectionId: string) => {
+    setSelectedSectionIds((prev) =>
+      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId]
+    );
+  };
+
+  const handleToggleSelectCell = (sectionId: string, cellId: string) => {
+    setSelectedCellTargets((prev) => {
+      const exists = prev.some((t) => t.sectionId === sectionId && t.cellId === cellId);
+      if (exists) {
+        return prev.filter((t) => !(t.sectionId === sectionId && t.cellId === cellId));
+      } else {
+        return [...prev, { sectionId, cellId }];
+      }
+    });
+  };
+
+  const totalPageSections = activePage.sections.length;
+  const totalPageCells = useMemo(() => {
+    return activePage.sections.reduce((acc, s) => acc + s.items.length, 0);
+  }, [activePage]);
+
+  const isAllSelected =
+    totalPageSections > 0 &&
+    selectedSectionIds.length === totalPageSections &&
+    selectedCellTargets.length === totalPageCells;
+
+  const handleToggleSelectAll = () => {
+    if (isAllSelected) {
+      setSelectedSectionIds([]);
+      setSelectedCellTargets([]);
+    } else {
+      setSelectedSectionIds(activePage.sections.map((s) => s.id));
+      const allCells: Array<{ sectionId: string; cellId: string }> = [];
+      activePage.sections.forEach((s) => {
+        s.items.forEach((c) => {
+          allCells.push({ sectionId: s.id, cellId: c.id });
+        });
+      });
+      setSelectedCellTargets(allCells);
+    }
+  };
+
+  const handleConfirmExecuteBatchDelete = () => {
+    const catsToDelete = new Set(selectedSectionIds);
+    const cellsToDelete = new Set(selectedCellTargets.map((t) => `${t.sectionId}::${t.cellId}`));
+
+    const deletedCatsCount = catsToDelete.size;
+    let deletedNotesCount = 0;
+
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+        const nextSections: Section[] = [];
+        for (const s of p.sections) {
+          if (catsToDelete.has(s.id)) {
+            deletedNotesCount += s.items.length;
+            continue;
+          }
+          const nextItems = s.items.filter((c) => {
+            if (cellsToDelete.has(`${s.id}::${c.id}`)) {
+              deletedNotesCount++;
+              return false;
+            }
+            return true;
+          });
+          nextSections.push({
+            ...s,
+            items: nextItems,
+            updatedAt: Date.now(),
+          });
+        }
+        return {
+          ...p,
+          sections: nextSections,
+          updatedAt: Date.now(),
+        };
+      })
+    );
+
+    setSelectedSectionIds([]);
+    setSelectedCellTargets([]);
+    setIsBatchMode(false);
+    setShowBatchConfirm(false);
+    showToast(t.sidePanel.batchDeletedToast(deletedCatsCount, deletedNotesCount));
+  };
+
+  const handleBatchDeletePages = (pageIds: string[]) => {
+    const remaining = pages.filter((p) => p.isSystem || !pageIds.includes(p.id));
+    setPages(remaining);
+    if (pageIds.includes(activePageId)) {
+      setActivePageId(remaining[0]?.id || 'SYSTEM_GLOBAL_PAGE');
+    }
+    showToast(t.sidePanel.batchDeletedToast(pageIds.length, 0));
   };
 
   const handleQuickSaveCell = (
@@ -691,37 +943,119 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             activePageId={activePageId}
             onSelectPage={handleSelectPage}
             onAddPage={() => setIsNewPageModalOpen(true)}
+            onManagePages={() => setIsManagePagesModalOpen(true)}
           />
         </div>
 
         {/* Active Page Body */}
         <main className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
-          {/* Active Page Header Banner with Pure Icon '+' Button on the Right */}
-          <div className="flex items-center justify-between pb-1 gap-2">
-            <div className="flex items-center gap-1.5 min-w-0">
-              <span className="text-base select-none">{activePage.icon || '📄'}</span>
-              <h2 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
-                {activePage.title}
-              </h2>
+          {/* Active Page Header Banner */}
+          <div className="flex items-center justify-between pb-1 gap-2 flex-shrink-0">
+            <div className="flex items-center gap-1.5 min-w-0 flex-1">
+              <span className="text-base select-none flex-shrink-0">{activePage.icon || '📄'}</span>
+
+              {isEditingPageTitle ? (
+                <div className="flex items-center gap-1 flex-1 min-w-0">
+                  <input
+                    ref={pageTitleInputRef}
+                    type="text"
+                    value={pageTitleInput}
+                    onChange={(e) => setPageTitleInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleSavePageTitle();
+                      if (e.key === 'Escape') setIsEditingPageTitle(false);
+                    }}
+                    className={cn(
+                      'text-xs font-semibold px-2 py-0.5 rounded border outline-none w-full max-w-[200px]',
+                      'bg-raycast-light-surface border-raycast-amber text-raycast-light-text',
+                      'dark:bg-raycast-dark-surface dark:border-raycast-amber dark:text-raycast-dark-text'
+                    )}
+                  />
+                  <button
+                    onClick={handleSavePageTitle}
+                    className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-raycast-emerald"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => setIsEditingPageTitle(false)}
+                    className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1 min-w-0 group/title">
+                  <h2
+                    onDoubleClick={handleStartEditPageTitle}
+                    title="按兩下可編輯名稱"
+                    className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate cursor-pointer hover:underline underline-offset-2 decoration-raycast-amber/50"
+                  >
+                    {activePage.title}
+                  </h2>
+                  <button
+                    onClick={handleStartEditPageTitle}
+                    title="編輯頁面名稱"
+                    className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
+                  >
+                    <Edit2 className="w-3 h-3" />
+                  </button>
+
+                  {!activePage.isSystem && (
+                    <button
+                      onClick={handleDeleteActivePage}
+                      title={t.sidePanel.deletePage}
+                      className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-rose-500/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-rose-500 transition-all"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
+                  )}
+                </div>
+              )}
+
               {activePage.domains && activePage.domains.length > 0 && !activePage.isSystem && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-raycast-amber/30 bg-raycast-amber/10 text-raycast-amber truncate max-w-[130px]">
+                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-raycast-amber/30 bg-raycast-amber/10 text-raycast-amber truncate max-w-[110px] flex-shrink-0">
                   {activePage.domains.join(', ')}
                 </span>
               )}
             </div>
 
-            {/* Q1-2: Pure icon '+' button with hover tooltip */}
-            <button
-              type="button"
-              onClick={handleAddSection}
-              title={t.sidePanel.addCategory}
-              className={cn(
-                'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
-                'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
-              )}
-            >
-              <Plus className="w-3.5 h-3.5" />
-            </button>
+            <div className="flex items-center gap-1 flex-shrink-0">
+              {/* Batch Mode Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  setIsBatchMode(!isBatchMode);
+                  setSelectedSectionIds([]);
+                  setSelectedCellTargets([]);
+                }}
+                title={isBatchMode ? t.sidePanel.batchExit : t.sidePanel.batchSelect}
+                className={cn(
+                  'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150',
+                  isBatchMode
+                    ? 'bg-raycast-amber text-raycast-dark-bg font-semibold'
+                    : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5'
+                )}
+              >
+                <CheckSquare className="w-3.5 h-3.5" />
+                <span className="hidden sm:inline">
+                  {isBatchMode ? t.sidePanel.batchExit : t.sidePanel.batchSelect}
+                </span>
+              </button>
+
+              {/* Add Category '+' button */}
+              <button
+                type="button"
+                onClick={handleOpenAddCategory}
+                title={t.sidePanel.addCategory}
+                className={cn(
+                  'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
+                  'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
+                )}
+              >
+                <Plus className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
 
           {activePage.sections && activePage.sections.length > 0 ? (
@@ -733,6 +1067,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 type="mixed"
                 language={language}
                 itemCount={section.items.length}
+                isSelectMode={isBatchMode}
+                isSelected={selectedSectionIds.includes(section.id)}
+                onToggleSelect={() => handleToggleSelectSection(section.id)}
+                onRenameSection={() => handleOpenRenameCategory(section.id)}
                 onAddItem={() => setIsQuickCaptureOpen(true)}
                 onExtractToPage={handleExtractSectionToPage}
                 onExportPage={handleExportJson}
@@ -751,6 +1089,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         updatedAt={cell.updatedAt}
                         sourceUrl={cell.sourceUrl}
                         sourceTitle={cell.sourceTitle}
+                        isSelectMode={isBatchMode}
+                        isSelected={selectedCellTargets.some(
+                          (t) => t.sectionId === section.id && t.cellId === cell.id
+                        )}
+                        onToggleSelect={() => handleToggleSelectCell(section.id, cell.id)}
+                        onEdit={() => handleOpenEditNote(cell, section.id)}
                         onCopy={() => handleCopy(cell.value)}
                         onMove={() => handleOpenMoveModal(cell, activePage.id, section.id)}
                         onDelete={() =>
@@ -777,14 +1121,44 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 </p>
               </div>
               <button
-                onClick={handleAddSection}
-                className="mt-1 px-3 py-1.5 rounded-lg text-xs bg-raycast-amber text-raycast-dark-bg font-medium"
+                onClick={handleOpenAddCategory}
+                className="mt-1 px-3 py-1.5 rounded-xl text-xs font-medium border border-black/10 dark:border-white/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-all active:scale-95 flex items-center gap-1.5"
               >
-                + {t.sidePanel.addCategory}
+                <Plus className="w-3.5 h-3.5" />
+                <span>{t.sidePanel.addCategory}</span>
               </button>
             </div>
           )}
         </main>
+
+        {/* Floating Batch Action Toolbar */}
+        {isBatchMode && (
+          <div className="p-2 border-t border-raycast-amber/30 bg-raycast-amber/10 dark:bg-raycast-dark-surface/95 backdrop-blur-md flex items-center justify-between text-xs animate-in slide-in-from-bottom-2 duration-150 flex-shrink-0">
+            <div className="flex items-center gap-2">
+              <span className="font-medium text-raycast-amber">
+                {t.sidePanel.batchStats(selectedSectionIds.length, standaloneSelectedCellsCount)}
+              </span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={handleToggleSelectAll}
+                className="px-2 py-1 rounded text-xs border border-white/10 hover:bg-white/10 transition-colors"
+              >
+                {isAllSelected ? t.sidePanel.batchDeselectAll : t.sidePanel.batchSelectAll}
+              </button>
+              <button
+                type="button"
+                disabled={selectedSectionIds.length === 0 && selectedCellTargets.length === 0}
+                onClick={() => setShowBatchConfirm(true)}
+                className="px-2 py-1 rounded text-xs bg-rose-500 hover:bg-rose-600 disabled:opacity-40 disabled:pointer-events-none text-white font-medium flex items-center gap-1 transition-all"
+              >
+                <Trash2 className="w-3 h-3" />
+                <span>{t.sidePanel.batchDeleteSelected}</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <footer
@@ -812,6 +1186,46 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-raycast-dark-surface border border-white/15 text-raycast-dark-text text-xs shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
             <Check className="w-3.5 h-3.5 text-raycast-emerald" />
             <span>{toastMessage}</span>
+          </div>
+        )}
+
+        {/* Batch Delete Confirmation Dialog */}
+        {showBatchConfirm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+            <div className="w-full max-w-sm rounded-2xl bg-raycast-light-surface dark:bg-raycast-dark-surface border border-raycast-light-border dark:border-white/10 p-5 shadow-2xl space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
+                    {t.sidePanel.batchConfirmDeleteTitle}
+                  </h3>
+                  <p className="text-xs text-raycast-light-muted dark:text-raycast-dark-muted mt-0.5">
+                    {t.sidePanel.batchConfirmDeleteDesc(
+                      selectedSectionIds.length,
+                      standaloneSelectedCellsCount
+                    )}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBatchConfirm(false)}
+                  className="px-3 py-1.5 rounded-xl text-xs font-medium border border-white/10 hover:bg-white/5 transition-colors"
+                >
+                  {t.common.cancel}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmExecuteBatchDelete}
+                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white shadow-sm transition-all"
+                >
+                  {t.common.delete}
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
@@ -847,6 +1261,33 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           pages={pages}
           onClose={() => setMovingCellTarget(null)}
           onConfirm={handleConfirmMoveCell}
+        />
+
+        <CategoryModal
+          isOpen={categoryModalState.isOpen}
+          mode={categoryModalState.mode}
+          initialTitle={categoryModalState.initialTitle}
+          language={language}
+          onClose={() => setCategoryModalState((prev) => ({ ...prev, isOpen: false }))}
+          onSubmit={handleCategoryModalSubmit}
+        />
+
+        <EditNoteModal
+          isOpen={editNoteModalState.isOpen}
+          language={language}
+          cellId={editNoteModalState.cell?.id || ''}
+          initialKey={editNoteModalState.cell?.key || ''}
+          initialValue={editNoteModalState.cell?.value || ''}
+          onClose={() => setEditNoteModalState({ isOpen: false })}
+          onSubmit={handleSaveEditNote}
+        />
+
+        <ManagePagesModal
+          isOpen={isManagePagesModalOpen}
+          language={language}
+          pages={pages}
+          onClose={() => setIsManagePagesModalOpen(false)}
+          onDeletePages={handleBatchDeletePages}
         />
       </div>
     </div>

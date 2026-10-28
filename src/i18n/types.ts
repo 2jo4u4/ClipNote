@@ -48,16 +48,69 @@ export interface I18nTranslations {
     statsTotal: (pageCount: number, noteCount: number) => string;
     bindDomainToCurrent: (pageTitle: string, domain: string) => string;
     languageToggle: string;
+    firstPageDefaultTitle: string;
+    deletePage: string;
+    confirmDeletePage: (title: string) => string;
+    deletedPageToast: (title: string) => string;
+    renamedPageToast: (title: string) => string;
+    renamedCategoryToast: (title: string) => string;
+    updatedNoteToast: string;
+    batchDeletedToast: (cats: number, notes: number) => string;
+    managePages: string;
+    batchSelect: string;
+    batchExit: string;
+    batchSelectAll: string;
+    batchDeselectAll: string;
+    batchDeleteSelected: string;
+    batchStats: (categories: number, notes: number) => string;
+    batchConfirmDeleteTitle: string;
+    batchConfirmDeleteDesc: (categories: number, notes: number) => string;
   };
   pageTabs: {
     scrollLeft: string;
     scrollRight: string;
     newPage: string;
+    managePages: string;
   };
   sectionContainer: {
     promoteToPage: string;
     newNote: string;
+    renameCategory: string;
     deleteCategory: string;
+  };
+  cellCard: {
+    editNote: string;
+    copy: string;
+    copied: string;
+    moveNote: string;
+    deleteNote: string;
+  };
+  categoryModal: {
+    createTitle: string;
+    renameTitle: string;
+    nameLabel: string;
+    namePlaceholder: string;
+    submitCreate: string;
+    submitRename: string;
+  };
+  editNoteModal: {
+    title: string;
+    keyLabel: string;
+    keyPlaceholder: string;
+    contentLabel: string;
+    contentPlaceholder: string;
+    submitBtn: string;
+  };
+  managePagesModal: {
+    title: string;
+    subtitle: string;
+    lockedBadge: string;
+    domainBadge: (domain: string) => string;
+    noteCountBadge: (count: number) => string;
+    selectAll: string;
+    deleteSelected: (count: number) => string;
+    confirmDelete: (count: number) => string;
+    emptyCustomPages: string;
   };
   moveModal: {
     title: string;
