@@ -6,4 +6,5 @@ export * from './QuickCaptureModal';
 export * from './Dropdown';
 export * from './NewPageModal';
 export * from './MoveCellModal';
+export * from './CellTypeBadge';
 export * from './SidePanel';

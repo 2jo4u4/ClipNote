@@ -90,7 +90,7 @@ export const Default: Story = {
           onClick={() => setIsOpen(true)}
           className="px-4 py-2 rounded-xl bg-raycast-amber text-black font-medium text-xs shadow-md"
         >
-          開啟移動單元項彈窗
+          開啟移動單元項 Modal
         </button>
 
         {lastMoved && (

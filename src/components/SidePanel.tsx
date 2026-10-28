@@ -18,6 +18,12 @@ import { NewPageModal, NewPageData } from './NewPageModal';
 import { MoveCellModal } from './MoveCellModal';
 import type { Page, Section, Cell, SearchResult, CreateCellInput } from '../types';
 
+export interface MovingCellTarget {
+  cell: Cell;
+  sourcePageId: string;
+  sourceSectionId: string;
+}
+
 export interface SidePanelProps {
   currentDomain?: string;
   currentUrl?: string;
@@ -173,11 +179,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [isNewPageModalOpen, setIsNewPageModalOpen] = useState(false);
-  const [movingCellTarget, setMovingCellTarget] = useState<{
-    cell: Cell;
-    sourcePageId: string;
-    sourceSectionId: string;
-  } | null>(null);
+  const [movingCellTarget, setMovingCellTarget] = useState<MovingCellTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -318,9 +320,16 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     if (!movingCellTarget) return;
     const { cell, sourcePageId, sourceSectionId } = movingCellTarget;
 
+    const targetPage = pages.find((p) => p.id === targetPageId);
+    const targetSection = targetPage?.sections.find((s) => s.id === targetSectionId);
+    if (!targetPage || !targetSection) {
+      showToast('目標分區無效，無法移動');
+      return;
+    }
+
     setPages((prev) => {
       let movedCell: Cell | null = null;
-      const removed = prev.map((p) => {
+      const pagesWithCellRemoved = prev.map((p) => {
         if (p.id !== sourcePageId) return p;
         return {
           ...p,
@@ -343,7 +352,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
       if (!movedCell) return prev;
 
-      return removed.map((p) => {
+      return pagesWithCellRemoved.map((p) => {
         if (p.id !== targetPageId) return p;
         return {
           ...p,
@@ -360,9 +369,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       });
     });
 
-    const targetPage = pages.find((p) => p.id === targetPageId);
-    const targetSection = targetPage?.sections.find((s) => s.id === targetSectionId);
-    showToast(`已移動至「${targetPage?.title || ''} > ${targetSection?.title || ''}」`);
+    showToast(`已移動至「${targetPage.title} > ${targetSection.title}」`);
     setMovingCellTarget(null);
   };
 

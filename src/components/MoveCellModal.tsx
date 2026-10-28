@@ -33,8 +33,8 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
     if (isOpen) {
       setTargetPageId(sourcePageId);
       const curPage = pages.find((p) => p.id === sourcePageId);
-      const otherSec = curPage?.sections.find((s) => s.id !== sourceSectionId);
-      setTargetSectionId(otherSec?.id || sourceSectionId);
+      const fallbackSection = curPage?.sections.find((s) => s.id !== sourceSectionId);
+      setTargetSectionId(fallbackSection?.id || sourceSectionId);
     }
   }, [isOpen, sourcePageId, sourceSectionId, pages]);
 
@@ -45,14 +45,18 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
 
   const handlePageChange = (newPageId: string) => {
     setTargetPageId(newPageId);
-    const p = pages.find((page) => page.id === newPageId);
-    if (p && p.sections.length > 0) {
-      setTargetSectionId(p.sections[0].id);
+    const targetPage = pages.find((page) => page.id === newPageId);
+    if (targetPage && targetPage.sections.length > 0) {
+      setTargetSectionId(targetPage.sections[0].id);
+    } else {
+      setTargetSectionId(''); // Clear stale section ID from previous page
     }
   };
 
+  const isTargetSectionValid = availableSections.some((s) => s.id === targetSectionId);
   const isCurrentLocation =
     targetPageId === sourcePageId && targetSectionId === sourceSectionId;
+  const canConfirm = Boolean(targetSectionId) && isTargetSectionValid && !isCurrentLocation;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200 select-none">
@@ -86,7 +90,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
           {/* Cell Preview */}
           <div className="p-2.5 rounded-xl border border-raycast-light-border bg-black/[0.02] dark:bg-white/[0.03] space-y-1">
             <span className="text-[10px] font-mono text-raycast-light-subtle dark:text-raycast-dark-subtle">
-              當前項目
+              當前單元項
             </span>
             <div className="font-medium text-raycast-light-text dark:text-raycast-dark-text truncate">
               {cell.key ? `${cell.key}: ${cell.value}` : cell.value}
@@ -125,7 +129,7 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
               />
             ) : (
               <div className="p-2 rounded-lg bg-black/5 dark:bg-white/5 text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                該頁面尚無分區
+                該筆記頁尚無分區
               </div>
             )}
           </div>
@@ -142,11 +146,11 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
           </button>
           <button
             type="button"
-            disabled={isCurrentLocation || !targetSectionId}
+            disabled={!canConfirm}
             onClick={() => onConfirm(targetPageId, targetSectionId)}
             className={cn(
               'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-medium text-xs transition-all duration-150',
-              isCurrentLocation || !targetSectionId
+              !canConfirm
                 ? 'opacity-40 cursor-not-allowed bg-raycast-amber/20 text-raycast-amber'
                 : 'bg-raycast-amber text-black hover:bg-raycast-amber/90 active:scale-95 shadow-sm'
             )}
