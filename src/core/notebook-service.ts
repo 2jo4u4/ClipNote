@@ -60,6 +60,7 @@ export function createDefaultSeedData(): NotebookStorage {
   const globalPage: Page = {
     id: SYSTEM_GLOBAL_PAGE_ID,
     title: '全域筆記頁',
+    icon: '🌐',
     domains: ['*'],
     isPrimary: false,
     isSystem: true,
@@ -199,6 +200,7 @@ export class NotebookService {
 
   async createPage(params: {
     title: string;
+    icon?: string;
     domains?: string[];
     isPrimary?: boolean;
   }): Promise<Page> {
@@ -209,6 +211,7 @@ export class NotebookService {
     const newPage: Page = {
       id,
       title: params.title.trim(),
+      icon: params.icon?.trim() || undefined,
       domains: params.domains ? params.domains.map((d) => d.trim().toLowerCase()) : [],
       isPrimary: Boolean(params.isPrimary),
       isSystem: false,
@@ -240,6 +243,9 @@ export class NotebookService {
 
     if (updates.title !== undefined) {
       page.title = updates.title.trim();
+    }
+    if (updates.icon !== undefined) {
+      page.icon = updates.icon ? updates.icon.trim() : undefined;
     }
     if (updates.domains !== undefined && !page.isSystem) {
       page.domains = updates.domains.map((d) => d.trim().toLowerCase());

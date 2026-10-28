@@ -46,6 +46,7 @@ export type Section = FieldsSection | JotsSection;
 export interface Page {
   id: string;
   title: string;
+  icon?: string; // Optional custom emoji or icon identifier, e.g. "💼", "💬", "📝"
   domains: string[];
   isPrimary?: boolean;
   isSystem?: boolean;

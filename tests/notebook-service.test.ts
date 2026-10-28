@@ -181,29 +181,34 @@ describe('NotebookService Core Business Logic', () => {
     it('creates and retrieves a new user page', async () => {
       const page = await service.createPage({
         title: '104 中文經歷',
+        icon: '💼',
         domains: ['*.104.com.tw', '104.com.tw'],
         isPrimary: true,
       });
 
       expect(page.id).toBeDefined();
       expect(page.title).toBe('104 中文經歷');
+      expect(page.icon).toBe('💼');
       expect(page.domains).toEqual(['*.104.com.tw', '104.com.tw']);
       expect(page.isPrimary).toBe(true);
       expect(page.isSystem).toBe(false);
 
       const retrieved = await service.getPage(page.id);
       expect(retrieved?.id).toBe(page.id);
+      expect(retrieved?.icon).toBe('💼');
     });
 
-    it('updates page metadata and handles deletion', async () => {
-      const page = await service.createPage({ title: '社交平台貼文', domains: ['x.com'] });
+    it('updates page metadata including custom icon and handles deletion', async () => {
+      const page = await service.createPage({ title: '社交平台貼文', icon: '📝', domains: ['x.com'] });
 
       const updated = await service.updatePage(page.id, {
         title: '社群貼文工作區',
+        icon: '💬',
         domains: ['x.com', 'threads.net', 'facebook.com'],
       });
 
       expect(updated.title).toBe('社群貼文工作區');
+      expect(updated.icon).toBe('💬');
       expect(updated.domains).toContain('threads.net');
 
       await service.deletePage(page.id);

@@ -1,10 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Globe, Plus, Hash } from 'lucide-react';
+import { Globe, Plus, FileText } from 'lucide-react';
 import { cn } from '../utils';
 
 export interface PageItem {
   id: string;
   title: string;
+  icon?: string | React.ReactNode;
   isSystem?: boolean;
   domains?: string[];
   isPrimary?: boolean;
@@ -132,7 +133,16 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                   : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5'
               )}
             >
-              {isGlobal ? (
+              {/* Page Icon / Emoji */}
+              {page.icon ? (
+                typeof page.icon === 'string' ? (
+                  <span className="text-sm leading-none flex items-center justify-center select-none">
+                    {page.icon}
+                  </span>
+                ) : (
+                  page.icon
+                )
+              ) : isGlobal ? (
                 <Globe
                   className={cn(
                     'w-3.5 h-3.5 transition-colors',
@@ -142,9 +152,9 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                   )}
                 />
               ) : (
-                <Hash
+                <FileText
                   className={cn(
-                    'w-3 h-3 transition-colors',
+                    'w-3.5 h-3.5 transition-colors',
                     isActive
                       ? 'text-raycast-amber dark:text-raycast-amber'
                       : 'text-raycast-light-subtle dark:text-raycast-dark-subtle'

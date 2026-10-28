@@ -5,3 +5,4 @@ export * from './SectionContainer';
 export * from './OmniSearchBar';
 export * from './QuickCaptureModal';
 export * from './Dropdown';
+export * from './NewPageModal';
