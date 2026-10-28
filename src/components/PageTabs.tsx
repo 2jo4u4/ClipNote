@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Globe, Plus, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../utils';
 
@@ -57,47 +57,68 @@ export const PageTabs: React.FC<PageTabsProps> = ({
     opacity: 0,
   });
 
-  // Ensure Global Page is pinned first
-  const globalPage = pages.find((p) => p.isSystem || p.id === 'SYSTEM_GLOBAL_PAGE');
-  const otherPages = pages.filter((p) => p !== globalPage);
-  const sortedPages = globalPage ? [globalPage, ...otherPages] : pages;
+  // Ensure Global Page is pinned first (Memoized to prevent infinite re-render cycles)
+  const sortedPages = useMemo(() => {
+    const globalPage = pages.find((p) => p.isSystem || p.id === 'SYSTEM_GLOBAL_PAGE');
+    const otherPages = pages.filter((p) => p !== globalPage);
+    return globalPage ? [globalPage, ...otherPages] : pages;
+  }, [pages]);
 
-  const checkScrollable = () => {
+  // Guarded scroll check that avoids redundant state dispatches
+  const checkScrollable = useCallback(() => {
     const el = containerRef.current;
     if (!el) return;
-    setCanScrollLeft(el.scrollLeft > 2);
-    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
-  };
+    const nextLeft = el.scrollLeft > 2;
+    const nextRight = el.scrollLeft < el.scrollWidth - el.clientWidth - 2;
+    setCanScrollLeft((prev) => (prev !== nextLeft ? nextLeft : prev));
+    setCanScrollRight((prev) => (prev !== nextRight ? nextRight : prev));
+  }, []);
 
-  const updateIndicator = () => {
+  // Guarded indicator calculation that avoids redundant object dispatches
+  const updateIndicator = useCallback(() => {
     const activeEl = pageRefs.current.get(activePageId);
     if (activeEl) {
-      setIndicatorStyle({
-        left: activeEl.offsetLeft,
-        width: activeEl.offsetWidth,
-        opacity: 1,
+      const left = activeEl.offsetLeft;
+      const width = activeEl.offsetWidth;
+      setIndicatorStyle((prev) => {
+        if (prev.left === left && prev.width === width && prev.opacity === 1) {
+          return prev;
+        }
+        return { left, width, opacity: 1 };
       });
     }
-  };
+  }, [activePageId]);
 
-  // Wheel-to-horizontal-scroll listener for mouse users
+  // Wheel listener attached once on mount
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
     const handleWheel = (e: WheelEvent) => {
       if (e.deltaY !== 0 || e.deltaX !== 0) {
-        // Prevent default vertical window scroll when mouse is hovering the tabs
         e.preventDefault();
         const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
         el.scrollLeft += delta;
-        checkScrollable();
       }
     };
 
     el.addEventListener('wheel', handleWheel, { passive: false });
-    el.addEventListener('scroll', checkScrollable);
-    window.addEventListener('resize', checkScrollable);
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+    };
+  }, []);
+
+  // Scroll and Resize observers attached once on mount
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleScrollOrResize = () => {
+      checkScrollable();
+    };
+
+    el.addEventListener('scroll', handleScrollOrResize, { passive: true });
+    window.addEventListener('resize', handleScrollOrResize);
 
     const observer = new ResizeObserver(() => {
       checkScrollable();
@@ -109,14 +130,13 @@ export const PageTabs: React.FC<PageTabsProps> = ({
     updateIndicator();
 
     return () => {
-      el.removeEventListener('wheel', handleWheel);
-      el.removeEventListener('scroll', checkScrollable);
-      window.removeEventListener('resize', checkScrollable);
+      el.removeEventListener('scroll', handleScrollOrResize);
+      window.removeEventListener('resize', handleScrollOrResize);
       observer.disconnect();
     };
-  }, [sortedPages]);
+  }, [checkScrollable, updateIndicator]);
 
-  // Recalculate indicator position and auto-scroll active tab into view
+  // Recalculate indicator position and gently scroll active tab into view when active tab or pages change
   useEffect(() => {
     updateIndicator();
     const activeEl = pageRefs.current.get(activePageId);
@@ -128,7 +148,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
       });
     }
     checkScrollable();
-  }, [activePageId, pages]);
+  }, [activePageId, sortedPages, checkScrollable, updateIndicator]);
 
   const scrollByAmount = (amount: number) => {
     if (containerRef.current) {

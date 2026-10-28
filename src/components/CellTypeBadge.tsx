@@ -1,8 +1,9 @@
 import React from 'react';
 import { cn } from '../utils';
+import type { SearchResultType } from '../core/types';
 
 export interface CellTypeBadgeProps {
-  type: 'field' | 'jot';
+  type: SearchResultType;
   className?: string;
 }
 

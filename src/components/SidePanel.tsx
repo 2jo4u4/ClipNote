@@ -209,7 +209,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             pageTitle: page.title,
             sectionId: sec.id,
             sectionTitle: sec.title,
-            sourcePath: `${page.title} > ${sec.title}${cell.key ? ` ‧ ${cell.key}` : ''}`,
+            sourcePath: `來自 [${page.title}] > [${sec.title}]${cell.key ? ` ‧ ${cell.key}` : ''}`,
             sourceUrl: cell.sourceUrl,
             sourceTitle: cell.sourceTitle,
           });
