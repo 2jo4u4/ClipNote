@@ -1,5 +1,7 @@
 node_modules
 storybook-static
 dist
+.output
+.wxt
 .DS_Store
 *.log

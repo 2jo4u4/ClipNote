@@ -28,8 +28,10 @@ export interface MovingCellTarget {
 export interface SidePanelProps {
   currentDomain?: string;
   currentUrl?: string;
+  pages?: Page[];
   initialPages?: Page[];
   initialActivePageId?: string;
+  onPagesChange?: (pages: Page[]) => void;
   language?: Language;
   initialLanguage?: Language;
   className?: string;
@@ -164,8 +166,10 @@ const defaultDemoPages: Page[] = [
 export const SidePanel: React.FC<SidePanelProps> = ({
   currentDomain = '104.com.tw',
   currentUrl = 'https://www.104.com.tw/job/7xyz8',
+  pages: controlledPages,
   initialPages = defaultDemoPages,
   initialActivePageId,
+  onPagesChange,
   language: controlledLanguage,
   initialLanguage = 'zh-TW',
   className,
@@ -174,16 +178,48 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const language = controlledLanguage || internalLanguage;
   const t = getTranslations(language);
 
-  const [pages, setPages] = useState<Page[]>(initialPages);
+  const [pagesState, setPagesState] = useState<Page[]>(controlledPages || initialPages);
+  const pages = controlledPages || pagesState;
+
+  useEffect(() => {
+    if (controlledPages) {
+      setPagesState(controlledPages);
+    }
+  }, [controlledPages]);
+
+  const setPages = (updater: Page[] | ((prev: Page[]) => Page[])) => {
+    setPagesState((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (onPagesChange) {
+        onPagesChange(next);
+      }
+      return next;
+    });
+  };
+
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
-    const matched = initialPages.find(
+    const basePages = controlledPages || initialPages;
+    const matched = basePages.find(
       (p) =>
         p.domains &&
         p.domains.some((d) => d === currentDomain || currentDomain.endsWith(d.replace('*.', '')))
     );
-    return matched ? matched.id : initialPages[0]?.id || 'SYSTEM_GLOBAL_PAGE';
+    return matched ? matched.id : basePages[0]?.id || 'SYSTEM_GLOBAL_PAGE';
   });
+
+  // Automatically focus matching page when user switches tab domain in browser
+  useEffect(() => {
+    if (!currentDomain) return;
+    const matched = pages.find(
+      (p) =>
+        p.domains &&
+        p.domains.some((d) => d === currentDomain || currentDomain.endsWith(d.replace('*.', '')))
+    );
+    if (matched) {
+      setActivePageId(matched.id);
+    }
+  }, [currentDomain, pages]);
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
