@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Search, X, Layers, Sparkles, Check, Globe, CornerDownLeft, ExternalLink } from 'lucide-react';
 import { cn } from '../utils';
-import { SearchResultItem } from '../types';
+import type { SearchResult } from '../types';
 
 export interface OmniSearchBarProps {
   onSearch?: (query: string) => void;
-  results?: SearchResultItem[];
-  onSelectItem?: (item: SearchResultItem) => void;
+  results?: SearchResult[];
+  onSelectItem?: (item: SearchResult) => void;
   onBindDomain?: (pageId: string) => void;
   currentDomain?: string;
   placeholder?: string;
@@ -46,7 +46,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
     inputRef.current?.focus();
   };
 
-  const handleCopyItem = async (item: SearchResultItem) => {
+  const handleCopyItem = async (item: SearchResult) => {
     try {
       await navigator.clipboard.writeText(item.content);
     } catch {

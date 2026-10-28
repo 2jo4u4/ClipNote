@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { OmniSearchBar } from './OmniSearchBar';
-import { SearchResultItem } from '../types';
+import type { SearchResult } from '../types';
 
-const sampleResults: SearchResultItem[] = [
+const sampleResults: SearchResult[] = [
   {
     id: 'res-1',
     type: 'field',
@@ -13,6 +13,7 @@ const sampleResults: SearchResultItem[] = [
     sectionTitle: '職稱經歷',
     title: '英文職稱 (Title)',
     content: 'Staff Frontend Engineer & System Architect',
+    sourcePath: '來自 [104 中文經歷] > [職稱經歷] ‧ 英文職稱 (Title)',
   },
   {
     id: 'res-2',
@@ -23,6 +24,7 @@ const sampleResults: SearchResultItem[] = [
     sectionTitle: '專業簡介',
     title: '架構設計成就',
     content: '主導設計高併發前端微服務，將模組載入時間優化至 200ms 以內。',
+    sourcePath: '來自 [104 中文經歷] > [專業簡介] ‧ 架構設計成就',
   },
   {
     id: 'res-3',
@@ -33,6 +35,7 @@ const sampleResults: SearchResultItem[] = [
     sectionTitle: '隨筆收集箱',
     title: '靈感便簽',
     content: '推薦閱讀《Designing Data-Intensive Applications》第 5 章。',
+    sourcePath: '來自 [全域筆記頁] > [隨筆收集箱]',
     sourceUrl: 'https://news.ycombinator.com',
   },
   {
@@ -44,6 +47,7 @@ const sampleResults: SearchResultItem[] = [
     sectionTitle: '常用標籤',
     title: 'AI 貼文標籤組',
     content: '#React #TypeScript #RaycastUI #TailwindCSS #Frontend2026',
+    sourcePath: '來自 [社交平台貼文] > [常用標籤] ‧ AI 貼文標籤組',
   },
 ];
 
@@ -109,7 +113,7 @@ export const InteractiveSearchAndKeyboard: Story = {
 
 export const ExtremeManyResults: Story = {
   render: () => {
-    const manyResults: SearchResultItem[] = Array.from({ length: 20 }, (_, i) => ({
+    const manyResults: SearchResult[] = Array.from({ length: 20 }, (_, i) => ({
       id: `extreme-res-${i + 1}`,
       type: i % 2 === 0 ? 'field' : 'jot',
       pageId: `page-${i}`,
@@ -118,6 +122,7 @@ export const ExtremeManyResults: Story = {
       sectionTitle: `專案模組 #${i + 1}`,
       title: `測試金鑰與設定欄位 #${i + 1}`,
       content: `ACCESS_KEY_ID_PROD_${i + 1}=AKIAIOSFODNN7EXAMPLE_${i + 1}`,
+      sourcePath: `來自 [分類檔案庫 ${i + 1}] > [專案模組 #${i + 1}]`,
     }));
 
     return (

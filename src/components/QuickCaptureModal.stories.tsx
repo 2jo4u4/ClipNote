@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { useState } from 'react';
 import { QuickCaptureModal } from './QuickCaptureModal';
-import { SearchResultItem } from '../types';
+import type { SearchResult } from '../types';
 
-const sampleSearchHits: SearchResultItem[] = [
+const sampleSearchHits: SearchResult[] = [
   {
     id: 's-1',
     type: 'field',
@@ -13,6 +13,7 @@ const sampleSearchHits: SearchResultItem[] = [
     sectionTitle: '基本資料',
     title: '目前職稱',
     content: '資深前端架構師 (Staff Frontend Engineer)',
+    sourcePath: '來自 [104 中文經歷] > [基本資料] ‧ 目前職稱',
   },
   {
     id: 's-2',
@@ -23,6 +24,7 @@ const sampleSearchHits: SearchResultItem[] = [
     sectionTitle: '隨筆記事',
     title: '備忘',
     content: '面試時強調 MV3 架構設計與 Storybook 元件庫規範。',
+    sourcePath: '來自 [全域筆記頁] > [隨筆記事]',
   },
 ];
 
@@ -71,15 +73,17 @@ export const Default: Story = {
   },
 };
 
-export const InteractiveDualMode: Story = {
+export const InteractiveSpotlightSearch: Story = {
   render: () => {
     const [isOpen, setIsOpen] = useState(true);
     const [capturedList, setCapturedList] = useState<string[]>([]);
     const [query, setQuery] = useState('');
 
-    const searchResults = sampleSearchHits.filter(
-      (h) => h.title.includes(query) || h.content.includes(query)
-    );
+    const searchResults = query
+      ? sampleSearchHits.filter(
+          (h) => h.title.includes(query) || h.content.includes(query)
+        )
+      : [];
 
     return (
       <div className="min-h-[500px] p-8 bg-[#18181b] text-white flex flex-col items-center justify-center gap-4">
@@ -91,7 +95,7 @@ export const InteractiveDualMode: Story = {
             開啟快速擷取框 (Alt+N)
           </button>
           <p className="text-xs text-gray-400 mt-2">
-            提示：可使用 <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[10px]">Tab</kbd> 切換「快速記錄」與「全域搜尋」雙模，使用 <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[10px]">Esc</kbd> 關閉。
+            打字時會即時檢索既有筆記；使用 <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[10px]">↑↓</kbd> 選中並按 <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[10px]">↵</kbd> 可快速複製！按 <kbd className="px-1.5 py-0.5 rounded bg-white/10 text-white font-mono text-[10px]">Tab</kbd> 切換隨筆/欄位。
           </p>
         </div>
 
@@ -111,16 +115,15 @@ export const InteractiveDualMode: Story = {
           onClose={() => setIsOpen(false)}
           searchResults={searchResults}
           onSearchQueryChange={setQuery}
+          onCopySearchResult={(item) => {
+            setCapturedList((prev) => [...prev, `[已複製] ${item.title}: ${item.content}`]);
+          }}
           onSaveJot={(data) => {
-            setCapturedList((prev) => [...prev, `[隨筆] ${data.content}`]);
+            setCapturedList((prev) => [...prev, `[隨筆] ${data.content} (分區: ${data.sectionId})`]);
             setIsOpen(false);
           }}
           onSaveField={(data) => {
-            setCapturedList((prev) => [...prev, `[欄位] ${data.key}: ${data.value}`]);
-            setIsOpen(false);
-          }}
-          onCopySearchResult={(item) => {
-            setCapturedList((prev) => [...prev, `[複製] ${item.content}`]);
+            setCapturedList((prev) => [...prev, `[欄位] ${data.key}: ${data.value} (分區: ${data.sectionId})`]);
             setIsOpen(false);
           }}
         />
@@ -129,60 +132,42 @@ export const InteractiveDualMode: Story = {
   },
 };
 
-export const LongPreFilledText: Story = {
+export const LightAndDarkComparison: Story = {
   render: () => {
-    const [isOpen, setIsOpen] = useState(true);
-    const longText = `這是一段從 Instagram 貼文選取後透過右鍵選單自動預填入的長文字。
-包含多行換行：
-- 推薦必點：黑糖肉桂捲
-- 營業時間：13:00 - 19:00
-- 交通資訊：捷運忠孝新生站 5 號出口步行 3 分鐘。`;
+    const [darkOpen, setDarkOpen] = useState(false);
+    const [lightOpen, setLightOpen] = useState(false);
 
     return (
-      <div className="min-h-[500px] p-8 bg-[#18181b] flex flex-col items-center justify-center">
+      <div className="flex gap-4 p-8 items-center justify-center min-h-[400px] bg-neutral-900">
         <button
-          onClick={() => setIsOpen(true)}
-          className="px-4 py-2 rounded-xl bg-raycast-coral text-white text-xs font-semibold"
+          onClick={() => setDarkOpen(true)}
+          className="px-4 py-2 rounded-xl bg-white/10 text-white hover:bg-white/20 text-xs font-medium"
         >
-          開啟預選文字狀態
+          查看 Dark Mode Modal
+        </button>
+        <button
+          onClick={() => setLightOpen(true)}
+          className="px-4 py-2 rounded-xl bg-white text-black hover:bg-white/90 text-xs font-medium"
+        >
+          查看 Light Mode Modal
         </button>
 
-        <QuickCaptureModal
-          isOpen={isOpen}
-          onClose={() => setIsOpen(false)}
-          defaultContent={longText}
-          sourceUrl="https://instagram.com/p/cinnamon_cafe"
-          sourceTitle="肉桂捲咖啡廳 IG 推薦文"
-          onSaveJot={() => setIsOpen(false)}
-          onSaveField={() => setIsOpen(false)}
-        />
-      </div>
-    );
-  },
-};
-
-export const LightModeShowcase: Story = {
-  render: () => {
-    const [isOpen, setIsOpen] = useState(true);
-
-    return (
-      <div className="min-h-[500px] p-8 bg-[#faf9f6] flex flex-col items-center justify-center">
-        <button
-          onClick={() => setIsOpen(true)}
-          className="px-4 py-2 rounded-xl bg-black text-white text-xs font-semibold"
-        >
-          開啟淺色主題 Modal
-        </button>
-
-        {isOpen && (
-          <div className="light">
+        {darkOpen && (
+          <div className="dark">
             <QuickCaptureModal
-              isOpen={isOpen}
-              onClose={() => setIsOpen(false)}
-              defaultContent="簡潔流暢的淺色模式快速擷取測試。"
-              sourceUrl="https://news.ycombinator.com"
-              sourceTitle="Hacker News"
-              onSaveJot={() => setIsOpen(false)}
+              isOpen={darkOpen}
+              onClose={() => setDarkOpen(false)}
+              defaultContent="深色模式測試內容"
+            />
+          </div>
+        )}
+
+        {lightOpen && (
+          <div>
+            <QuickCaptureModal
+              isOpen={lightOpen}
+              onClose={() => setLightOpen(false)}
+              defaultContent="淺色象牙米白模式測試內容"
             />
           </div>
         )}

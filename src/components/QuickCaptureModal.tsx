@@ -1,35 +1,56 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  Sparkles,
   Layers,
   Search,
-  X,
   CornerDownLeft,
   Check,
   Globe,
+  ExternalLink,
 } from 'lucide-react';
 import { cn } from '../utils';
-import { SearchResultItem } from '../types';
+import type { SearchResult } from '../types';
+
+export interface QuickCaptureSectionOption {
+  id: string;
+  title: string;
+  type: 'fields' | 'jots';
+  pageId: string;
+}
 
 export interface QuickCapturePageOption {
   id: string;
   title: string;
   isSystem?: boolean;
+  sections?: QuickCaptureSectionOption[];
 }
 
 export interface QuickCaptureModalProps {
   isOpen: boolean;
   onClose: () => void;
   pages?: QuickCapturePageOption[];
+  sections?: QuickCaptureSectionOption[];
   activePageId?: string;
   defaultContent?: string;
   sourceUrl?: string;
   sourceTitle?: string;
-  searchResults?: SearchResultItem[];
-  onSaveJot?: (data: { pageId: string; content: string; sourceUrl?: string; sourceTitle?: string }) => void;
-  onSaveField?: (data: { pageId: string; key: string; value: string; sourceUrl?: string; sourceTitle?: string }) => void;
+  searchResults?: SearchResult[];
+  onSaveJot?: (data: {
+    pageId: string;
+    sectionId?: string;
+    content: string;
+    sourceUrl?: string;
+    sourceTitle?: string;
+  }) => void;
+  onSaveField?: (data: {
+    pageId: string;
+    sectionId?: string;
+    key: string;
+    value: string;
+    sourceUrl?: string;
+    sourceTitle?: string;
+  }) => void;
   onSearchQueryChange?: (query: string) => void;
-  onCopySearchResult?: (item: SearchResultItem) => void;
+  onCopySearchResult?: (item: SearchResult) => void;
   className?: string;
 }
 
@@ -40,6 +61,12 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
     { id: 'SYSTEM_GLOBAL_PAGE', title: '全域筆記頁', isSystem: true },
     { id: 'p1', title: '104 中文經歷' },
     { id: 'p2', title: '社交平台貼文' },
+  ],
+  sections = [
+    { id: 's-global-jots', title: '隨手記事', type: 'jots', pageId: 'SYSTEM_GLOBAL_PAGE' },
+    { id: 's-global-fields', title: '常用資料', type: 'fields', pageId: 'SYSTEM_GLOBAL_PAGE' },
+    { id: 's-104-fields', title: '經歷資料', type: 'fields', pageId: 'p1' },
+    { id: 's-social-jots', title: '靈感草稿', type: 'jots', pageId: 'p2' },
   ],
   activePageId = 'SYSTEM_GLOBAL_PAGE',
   defaultContent = '',
@@ -52,21 +79,34 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   onCopySearchResult,
   className,
 }) => {
-  // Mode: 'capture' | 'search'
-  const [mode, setMode] = useState<'capture' | 'search'>('capture');
-  // Capture Subtype: 'jot' | 'field'
+  // Capture Type: 'jot' | 'field'
   const [captureType, setCaptureType] = useState<'jot' | 'field'>('jot');
 
-  // Fields state
+  // Form state
   const [selectedPageId, setSelectedPageId] = useState(activePageId);
+  const [selectedSectionId, setSelectedSectionId] = useState<string>('');
   const [fieldKey, setFieldKey] = useState('');
   const [content, setContent] = useState(defaultContent);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchIndex, setSearchIndex] = useState(0);
+  const [searchIndex, setSearchIndex] = useState(-1); // -1 means focus is in input
   const [savedSuccess, setSavedSuccess] = useState(false);
 
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputKeyRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Available sections for the current page and capture type
+  const targetType = captureType === 'jot' ? 'jots' : 'fields';
+  const availableSections = sections.filter(
+    (s) => s.pageId === selectedPageId && s.type === targetType
+  );
+
+  // Auto-select first matching section whenever page or capture type changes
+  useEffect(() => {
+    if (availableSections.length > 0) {
+      setSelectedSectionId(availableSections[0].id);
+    } else {
+      setSelectedSectionId('');
+    }
+  }, [selectedPageId, captureType]);
 
   // Sync defaultContent when modal opens
   useEffect(() => {
@@ -74,22 +114,33 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
       setContent(defaultContent);
       setFieldKey('');
       setSavedSuccess(false);
-      setSearchQuery('');
-      setSearchIndex(0);
+      setSearchIndex(-1);
       setSelectedPageId(activePageId);
 
-      // Focus appropriate input on open
       setTimeout(() => {
-        if (mode === 'capture') {
-          if (captureType === 'field') {
-            inputRef.current?.focus();
-          } else {
-            textareaRef.current?.focus();
-          }
+        if (captureType === 'field') {
+          inputKeyRef.current?.focus();
+        } else {
+          textareaRef.current?.focus();
         }
       }, 50);
     }
-  }, [isOpen, defaultContent, activePageId, mode, captureType]);
+  }, [isOpen, defaultContent, activePageId, captureType]);
+
+  // Trigger search whenever text changes
+  const handleContentChange = (text: string) => {
+    setContent(text);
+    if (onSearchQueryChange) {
+      onSearchQueryChange(text.trim());
+    }
+  };
+
+  const handleKeyChange = (text: string) => {
+    setFieldKey(text);
+    if (onSearchQueryChange) {
+      onSearchQueryChange(text.trim());
+    }
+  };
 
   // Global keyboard shortcuts within the modal
   useEffect(() => {
@@ -103,21 +154,48 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         return;
       }
 
-      // Tab toggles mode (capture <-> search) if not in multiline textarea
+      // Tab toggles between Jot and Field modes
       if (e.key === 'Tab' && !e.shiftKey) {
-        // Prevent tab from shifting focus wildly, toggle mode smoothly
         if (e.target !== textareaRef.current || e.ctrlKey || e.altKey) {
           e.preventDefault();
-          setMode((prev) => (prev === 'capture' ? 'search' : 'capture'));
+          setCaptureType((prev) => (prev === 'jot' ? 'field' : 'jot'));
+        }
+      }
+
+      // Navigation into search results
+      if (searchResults.length > 0) {
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          setSearchIndex((prev) => (prev + 1 >= searchResults.length ? 0 : prev + 1));
+        } else if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSearchIndex((prev) => (prev <= 0 ? searchResults.length - 1 : prev - 1));
+        } else if (e.key === 'Enter' && searchIndex >= 0 && searchIndex < searchResults.length) {
+          e.preventDefault();
+          const item = searchResults[searchIndex];
+          handleCopySearchResult(item);
         }
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen, onClose, searchResults, searchIndex]);
 
   if (!isOpen) return null;
+
+  const handleCopySearchResult = (item: SearchResult) => {
+    if (onCopySearchResult) onCopySearchResult(item);
+    try {
+      navigator.clipboard?.writeText(item.content);
+    } catch {
+      // Fallback
+    }
+    setSavedSuccess(true);
+    setTimeout(() => {
+      onClose();
+    }, 400);
+  };
 
   const handleSave = () => {
     if (!content.trim()) return;
@@ -126,6 +204,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
       if (onSaveJot) {
         onSaveJot({
           pageId: selectedPageId,
+          sectionId: selectedSectionId || undefined,
           content: content.trim(),
           sourceUrl,
           sourceTitle,
@@ -136,6 +215,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
       if (onSaveField) {
         onSaveField({
           pageId: selectedPageId,
+          sectionId: selectedSectionId || undefined,
           key: fieldKey.trim(),
           value: content.trim(),
           sourceUrl,
@@ -148,30 +228,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
     setTimeout(() => {
       setSavedSuccess(false);
       onClose();
-    }, 600);
-  };
-
-  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (searchResults.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      setSearchIndex((prev) => (prev + 1) % searchResults.length);
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSearchIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      const item = searchResults[searchIndex];
-      if (item) {
-        if (onCopySearchResult) onCopySearchResult(item);
-        navigator.clipboard?.writeText(item.content);
-        setSavedSuccess(true);
-        setTimeout(() => {
-          onClose();
-        }, 500);
-      }
-    }
+    }, 400);
   };
 
   return (
@@ -193,302 +250,215 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
           className
         )}
       >
-        {/* Top Header & Mode Switcher */}
+        {/* Top Header: Target Page & Mode Switcher */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-black/5 dark:border-white/8">
-          {/* Segmented Mode Control */}
-          <div className="flex items-center p-0.5 rounded-xl bg-black/5 dark:bg-white/5 border border-raycast-light-border dark:border-white/5">
-            <button
-              type="button"
-              onClick={() => setMode('capture')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-raycast',
-                mode === 'capture'
-                  ? 'bg-raycast-light-surface dark:bg-raycast-dark-surface text-raycast-light-text dark:text-raycast-dark-text shadow-sm'
-                  : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text'
-              )}
-            >
-              <Sparkles className="w-3.5 h-3.5 text-raycast-coral" />
-              <span>快速記錄 (Capture)</span>
-            </button>
+          {/* Target Page Pill & Section Selector */}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium bg-black/5 dark:bg-white/5 border border-raycast-light-border dark:border-white/5">
+              <Globe className="w-3.5 h-3.5 text-raycast-coral" />
+              <select
+                value={selectedPageId}
+                onChange={(e) => setSelectedPageId(e.target.value)}
+                className="bg-transparent border-none outline-none font-medium cursor-pointer text-raycast-light-text dark:text-raycast-dark-text"
+              >
+                {pages.map((p) => (
+                  <option key={p.id} value={p.id} className="bg-white dark:bg-raycast-dark-surface">
+                    {p.title}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-            <button
-              type="button"
-              onClick={() => setMode('search')}
-              className={cn(
-                'flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-medium transition-all duration-200 ease-raycast',
-                mode === 'search'
-                  ? 'bg-raycast-light-surface dark:bg-raycast-dark-surface text-raycast-light-text dark:text-raycast-dark-text shadow-sm'
-                  : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text'
-              )}
-            >
-              <Search className="w-3.5 h-3.5 text-raycast-amber" />
-              <span>全域搜尋 (Search)</span>
-            </button>
-          </div>
-
-          {/* Close button */}
-          <button
-            onClick={onClose}
-            className="p-1 rounded-lg text-raycast-light-subtle hover:text-raycast-light-text dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-
-        {/* Mode 1: Quick Capture */}
-        {mode === 'capture' ? (
-          <div className="p-4 flex flex-col gap-3">
-            {/* Target Page Selector & Capture Type Toggle */}
-            <div className="flex items-center justify-between gap-3">
-              {/* Type pill: Jot vs Field */}
-              <div className="flex items-center gap-1 bg-black/5 dark:bg-white/5 p-0.5 rounded-lg text-xs">
-                <button
-                  type="button"
-                  onClick={() => setCaptureType('jot')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
-                    captureType === 'jot'
-                      ? 'bg-raycast-light-surface dark:bg-raycast-dark-surface shadow-xs text-raycast-light-text dark:text-raycast-dark-text font-semibold'
-                      : 'text-raycast-light-muted dark:text-raycast-dark-muted'
-                  )}
-                >
-                  隨筆 (Jot)
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setCaptureType('field')}
-                  className={cn(
-                    'px-2.5 py-1 rounded-md text-[11px] font-medium transition-all',
-                    captureType === 'field'
-                      ? 'bg-raycast-light-surface dark:bg-raycast-dark-surface shadow-xs text-raycast-light-text dark:text-raycast-dark-text font-semibold'
-                      : 'text-raycast-light-muted dark:text-raycast-dark-muted'
-                  )}
-                >
-                  欄位 (Key-Value)
-                </button>
-              </div>
-
-              {/* Destination Page Selector */}
-              <div className="flex items-center gap-1.5 text-xs text-raycast-light-muted dark:text-raycast-dark-muted">
-                <span>存入:</span>
+            {/* Target Section (if any available) */}
+            {availableSections.length > 0 && (
+              <div className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] text-raycast-light-muted dark:text-raycast-dark-muted bg-black/5 dark:bg-white/5">
+                <Layers className="w-3 h-3 text-raycast-amber" />
                 <select
-                  value={selectedPageId}
-                  onChange={(e) => setSelectedPageId(e.target.value)}
-                  className={cn(
-                    'px-2 py-1 rounded-lg border text-xs font-medium outline-none cursor-pointer',
-                    'bg-raycast-light-bg border-raycast-light-border text-raycast-light-text',
-                    'dark:bg-raycast-dark-surface dark:border-white/10 dark:text-raycast-dark-text'
-                  )}
+                  value={selectedSectionId}
+                  onChange={(e) => setSelectedSectionId(e.target.value)}
+                  className="bg-transparent border-none outline-none cursor-pointer text-raycast-light-text dark:text-raycast-dark-text"
                 >
-                  {pages.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.isSystem ? '🌍 ' : ''}
-                      {p.title}
+                  {availableSections.map((s) => (
+                    <option key={s.id} value={s.id} className="bg-white dark:bg-raycast-dark-surface">
+                      {s.title}
                     </option>
                   ))}
                 </select>
               </div>
-            </div>
-
-            {/* Field Key (if Field mode) */}
-            {captureType === 'field' && (
-              <div className="flex flex-col gap-1 animate-in fade-in duration-150">
-                <label className="text-[11px] font-semibold tracking-wider uppercase text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                  欄位名稱 (Key)
-                </label>
-                <input
-                  ref={inputRef}
-                  type="text"
-                  value={fieldKey}
-                  onChange={(e) => setFieldKey(e.target.value)}
-                  placeholder="例如：專案描述、英文職稱、推薦信..."
-                  className={cn(
-                    'w-full px-3 py-2 rounded-xl border text-xs outline-none transition-all duration-150',
-                    'bg-black/[0.02] dark:bg-white/[0.03] border-raycast-light-border dark:border-white/10',
-                    'focus:ring-2 focus:ring-raycast-coral/30 focus:border-raycast-coral/50'
-                  )}
-                />
-              </div>
             )}
+          </div>
 
-            {/* Content / Value Textarea */}
+          {/* Mode Pill Toggle: Jot vs Field */}
+          <div className="flex items-center gap-1 p-0.5 rounded-xl bg-black/5 dark:bg-white/5 border border-raycast-light-border dark:border-white/5 text-xs">
+            <button
+              type="button"
+              onClick={() => setCaptureType('jot')}
+              className={cn(
+                'px-2.5 py-1 rounded-lg font-medium transition-all duration-200 ease-raycast',
+                captureType === 'jot'
+                  ? 'bg-raycast-light-surface dark:bg-raycast-dark-surface text-raycast-light-text dark:text-raycast-dark-text shadow-sm'
+                  : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text'
+              )}
+            >
+              隨筆 (Jot)
+            </button>
+            <button
+              type="button"
+              onClick={() => setCaptureType('field')}
+              className={cn(
+                'px-2.5 py-1 rounded-lg font-medium transition-all duration-200 ease-raycast',
+                captureType === 'field'
+                  ? 'bg-raycast-light-surface dark:bg-raycast-dark-surface text-raycast-light-text dark:text-raycast-dark-text shadow-sm'
+                  : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text'
+              )}
+            >
+              欄位 (Field)
+            </button>
+          </div>
+        </div>
+
+        {/* Input Area */}
+        <div className="p-4 flex flex-col gap-3">
+          {captureType === 'field' && (
             <div className="flex flex-col gap-1">
-              <label className="text-[11px] font-semibold tracking-wider uppercase text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                {captureType === 'field' ? '欄位內容 (Value)' : '隨筆內容 (Content)'}
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-raycast-light-subtle dark:text-raycast-dark-subtle">
+                欄位名稱 (Key)
               </label>
-              <textarea
-                ref={textareaRef}
-                rows={4}
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
+              <input
+                ref={inputKeyRef}
+                type="text"
+                value={fieldKey}
+                onChange={(e) => handleKeyChange(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  if (e.key === 'Enter' && !e.shiftKey && searchIndex === -1) {
                     e.preventDefault();
-                    handleSave();
+                    textareaRef.current?.focus();
                   }
                 }}
-                placeholder={
-                  captureType === 'field'
-                    ? '輸入欲一鍵複製的內容...'
-                    : '快速記錄想法、網頁地址、備忘記事... (支援 Cmd/Ctrl+Enter 儲存)'
-                }
+                placeholder="例如：現職職稱、常用 Email、帳號代碼..."
                 className={cn(
-                  'w-full px-3 py-2.5 rounded-xl border text-xs font-mono outline-none resize-none transition-all duration-150 leading-relaxed',
-                  'bg-black/[0.02] dark:bg-white/[0.03] border-raycast-light-border dark:border-white/10',
-                  'focus:ring-2 focus:ring-raycast-coral/30 focus:border-raycast-coral/50'
+                  'w-full px-3 py-2 rounded-xl text-xs outline-none transition-all duration-200',
+                  'bg-black/5 border border-raycast-light-border focus:border-raycast-amber focus:ring-2 focus:ring-raycast-amber/20',
+                  'dark:bg-white/5 dark:border-white/10 dark:focus:border-raycast-amber dark:focus:ring-raycast-amber/20'
                 )}
               />
             </div>
+          )}
 
-            {/* Source preview badge if available */}
-            {sourceUrl && (
-              <div className="flex items-center gap-1.5 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle truncate">
-                <Globe className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">來源: {sourceTitle || sourceUrl}</span>
-              </div>
-            )}
-          </div>
-        ) : (
-          /* Mode 2: Search */
-          <div className="p-4 flex flex-col gap-3">
-            <div
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-xl border',
-                'bg-black/[0.02] dark:bg-white/[0.03] border-raycast-light-border dark:border-white/10',
-                'focus-within:ring-2 focus-within:ring-raycast-amber/30 focus-within:border-raycast-amber/50'
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center justify-between">
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-raycast-light-subtle dark:text-raycast-dark-subtle">
+                {captureType === 'field' ? '欄位內容 (Value)' : '隨筆內容 (打字即時搜尋既有筆記)'}
+              </label>
+              {sourceUrl && (
+                <span className="text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1 font-mono">
+                  <ExternalLink className="w-2.5 h-2.5" />
+                  來源將自動記錄
+                </span>
               )}
-            >
-              <Search className="w-4 h-4 text-raycast-light-subtle dark:text-raycast-dark-subtle flex-shrink-0" />
-              <input
-                autoFocus
-                type="text"
-                value={searchQuery}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setSearchIndex(0);
-                  if (onSearchQueryChange) onSearchQueryChange(e.target.value);
-                }}
-                onKeyDown={handleSearchKeyDown}
-                placeholder="輸入關鍵字即時跨頁搜尋..."
-                className="w-full bg-transparent text-xs outline-none text-raycast-light-text dark:text-raycast-dark-text"
-              />
             </div>
+            <textarea
+              ref={textareaRef}
+              rows={3}
+              value={content}
+              onChange={(e) => handleContentChange(e.target.value)}
+              onKeyDown={(e) => {
+                // Ctrl+Enter or Cmd+Enter directly saves
+                if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  handleSave();
+                } else if (e.key === 'Enter' && !e.shiftKey && captureType === 'jot' && searchIndex === -1) {
+                  // Direct Enter in jot saves
+                  e.preventDefault();
+                  handleSave();
+                }
+              }}
+              placeholder={
+                captureType === 'field'
+                  ? '輸入欄位內容（點擊即可一鍵複製）...'
+                  : '輸入隨手靈感、備忘或網址，打字可即時搜尋匹配既有筆記...'
+              }
+              className={cn(
+                'w-full p-3 rounded-xl text-xs outline-none resize-none transition-all duration-200',
+                'bg-black/5 border border-raycast-light-border focus:border-raycast-coral focus:ring-2 focus:ring-raycast-coral/20',
+                'dark:bg-white/5 dark:border-white/10 dark:focus:border-raycast-coral dark:focus:ring-raycast-coral/20'
+              )}
+            />
+          </div>
 
-            {/* Search Results list */}
-            <div className="max-h-60 overflow-y-auto flex flex-col gap-1.5 pr-1">
-              {searchResults.length === 0 ? (
-                <div className="py-8 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                  {searchQuery ? '無相符結果' : '輸入關鍵字開始搜尋'}
-                </div>
-              ) : (
-                searchResults.map((item, idx) => {
-                  const isSelected = idx === searchIndex;
+          {/* Real-time Spotlight Search Matches (ADR-0003 & Spec L139) */}
+          {searchResults.length > 0 && (
+            <div className="flex flex-col gap-1.5 pt-2 border-t border-black/5 dark:border-white/8">
+              <div className="flex items-center justify-between text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-medium">
+                <span className="flex items-center gap-1">
+                  <Search className="w-3 h-3 text-raycast-amber" />
+                  找到 {searchResults.length} 項既有筆記 (按 ↑↓ 選擇，↵ 複製)：
+                </span>
+              </div>
+
+              <div className="max-h-36 overflow-y-auto no-scrollbar flex flex-col gap-1">
+                {searchResults.map((item, idx) => {
+                  const isHighlighted = idx === searchIndex;
                   return (
                     <div
                       key={item.id}
-                      onClick={() => {
-                        if (onCopySearchResult) onCopySearchResult(item);
-                        navigator.clipboard?.writeText(item.content);
-                        setSavedSuccess(true);
-                        setTimeout(() => onClose(), 500);
-                      }}
+                      onClick={() => handleCopySearchResult(item)}
                       className={cn(
-                        'flex flex-col gap-1 p-2.5 rounded-xl cursor-pointer transition-all duration-150',
-                        isSelected
-                          ? 'bg-black/5 dark:bg-white/10 shadow-sm'
-                          : 'hover:bg-black/[0.03] dark:hover:bg-white/[0.04]'
+                        'flex items-center justify-between p-2 rounded-xl text-xs cursor-pointer transition-all duration-150 ease-raycast',
+                        isHighlighted
+                          ? 'bg-raycast-amber/15 text-raycast-amber border border-raycast-amber/30'
+                          : 'bg-black/5 dark:bg-white/5 hover:bg-black/10 dark:hover:bg-white/10'
                       )}
                     >
-                      <div className="flex items-center justify-between text-[10px] text-raycast-light-muted dark:text-raycast-dark-muted">
-                        <span className="flex items-center gap-1">
-                          {item.type === 'field' ? (
-                            <Layers className="w-3 h-3 text-raycast-coral" />
-                          ) : (
-                            <Sparkles className="w-3 h-3 text-raycast-amber" />
-                          )}
-                          <span>
-                            {item.pageTitle} &gt; {item.sectionTitle}
-                          </span>
-                        </span>
-                        <span className="font-mono text-[9px] text-raycast-light-subtle">
-                          ↵ 複製
+                      <div className="flex flex-col min-w-0 pr-2">
+                        <div className="flex items-center gap-1.5 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle truncate">
+                          <span>{item.sourcePath}</span>
+                        </div>
+                        <span className="font-medium truncate text-raycast-light-text dark:text-raycast-dark-text">
+                          {item.title}: {item.content}
                         </span>
                       </div>
-                      <div className="text-xs font-mono text-raycast-light-text dark:text-raycast-dark-text truncate">
-                        {item.title ? `${item.title}: ` : ''}
-                        {item.content}
-                      </div>
+                      <span className="text-[10px] font-mono flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-black/10 dark:bg-white/10 flex-shrink-0">
+                        <CornerDownLeft className="w-2.5 h-2.5" />
+                        複製
+                      </span>
                     </div>
                   );
-                })
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Modal Footer with Actions and Keyboard Shortcuts */}
-        <div className="flex items-center justify-between px-4 py-3 bg-black/[0.02] dark:bg-white/[0.02] border-t border-black/5 dark:border-white/8 text-[11px]">
-          {/* Shortcuts Legend */}
-          <div className="flex items-center gap-3 text-raycast-light-subtle dark:text-raycast-dark-subtle">
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border text-[10px] font-mono bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10">
-                ↵
-              </kbd>
-              <span>{mode === 'capture' ? '儲存' : '複製'}</span>
-            </span>
-
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border text-[10px] font-mono bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10">
-                Tab
-              </kbd>
-              <span>切換模式</span>
-            </span>
-
-            <span className="flex items-center gap-1">
-              <kbd className="px-1.5 py-0.5 rounded border text-[10px] font-mono bg-black/5 dark:bg-white/5 border-black/10 dark:border-white/10">
-                Esc
-              </kbd>
-              <span>關閉</span>
-            </span>
-          </div>
-
-          {/* Action buttons (in Capture mode) */}
-          {mode === 'capture' && (
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="px-3 py-1.5 rounded-lg text-raycast-light-muted hover:text-raycast-light-text dark:text-raycast-dark-muted dark:hover:text-raycast-dark-text transition-colors"
-              >
-                取消
-              </button>
-
-              <button
-                type="button"
-                onClick={handleSave}
-                disabled={!content.trim() || (captureType === 'field' && !fieldKey.trim())}
-                className={cn(
-                  'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg font-medium shadow-sm transition-all duration-200 ease-raycast active:scale-95',
-                  content.trim() && (captureType === 'jot' || fieldKey.trim())
-                    ? 'bg-raycast-coral text-white hover:bg-raycast-coral/90 cursor-pointer'
-                    : 'bg-black/10 dark:bg-white/10 text-raycast-light-subtle dark:text-raycast-dark-subtle cursor-not-allowed',
-                  savedSuccess && 'bg-emerald-500 text-white'
-                )}
-              >
-                {savedSuccess ? (
-                  <>
-                    <Check className="w-3.5 h-3.5" />
-                    <span>已儲存!</span>
-                  </>
-                ) : (
-                  <>
-                    <span>儲存</span>
-                    <CornerDownLeft className="w-3 h-3" />
-                  </>
-                )}
-              </button>
+                })}
+              </div>
             </div>
           )}
+
+          {/* Action Row */}
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
+              Tab 切換模式 ‧ Esc 關閉
+            </span>
+
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!content.trim() || (captureType === 'field' && !fieldKey.trim())}
+              className={cn(
+                'flex items-center gap-1.5 px-4 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 ease-raycast active:scale-95 outline-none',
+                savedSuccess
+                  ? 'bg-raycast-emerald text-white'
+                  : 'bg-raycast-coral hover:bg-raycast-coral/90 text-white shadow-sm disabled:opacity-40 disabled:cursor-not-allowed'
+              )}
+            >
+              {savedSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5" />
+                  <span>已儲存!</span>
+                </>
+              ) : (
+                <>
+                  <CornerDownLeft className="w-3.5 h-3.5" />
+                  <span>儲存至筆記</span>
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Globe, Plus, Hash } from 'lucide-react';
 import { cn } from '../utils';
 
-export interface TabItem {
+export interface PageItem {
   id: string;
   title: string;
   isSystem?: boolean;
@@ -10,23 +10,38 @@ export interface TabItem {
   isPrimary?: boolean;
 }
 
+// Deprecated alias for backwards compatibility
+export type TabItem = PageItem;
+
 export interface PageTabsProps {
-  tabs: TabItem[];
-  activeTabId: string;
-  onSelectTab: (tabId: string) => void;
+  pages: PageItem[];
+  activePageId: string;
+  onSelectPage: (pageId: string) => void;
   onAddPage?: () => void;
   className?: string;
+
+  // Deprecated props supported for transitional compatibility
+  tabs?: PageItem[];
+  activeTabId?: string;
+  onSelectTab?: (tabId: string) => void;
 }
 
 export const PageTabs: React.FC<PageTabsProps> = ({
+  pages: directPages,
+  activePageId: directActivePageId,
+  onSelectPage: directOnSelectPage,
+  onAddPage,
+  className,
   tabs,
   activeTabId,
   onSelectTab,
-  onAddPage,
-  className,
 }) => {
+  const pages = directPages || tabs || [];
+  const activePageId = directActivePageId || activeTabId || '';
+  const onSelectPage = directOnSelectPage || onSelectTab || (() => {});
+
   const containerRef = useRef<HTMLDivElement>(null);
-  const tabRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const pageRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
   const [indicatorStyle, setIndicatorStyle] = useState<{
     left: number;
     width: number;
@@ -37,13 +52,13 @@ export const PageTabs: React.FC<PageTabsProps> = ({
     opacity: 0,
   });
 
-  // Ensure Global Page is sorted or pinned first if present
-  const globalTab = tabs.find((t) => t.isSystem || t.id === 'SYSTEM_GLOBAL_PAGE');
-  const otherTabs = tabs.filter((t) => t !== globalTab);
-  const sortedTabs = globalTab ? [globalTab, ...otherTabs] : tabs;
+  // Ensure Global Page is pinned first
+  const globalPage = pages.find((p) => p.isSystem || p.id === 'SYSTEM_GLOBAL_PAGE');
+  const otherPages = pages.filter((p) => p !== globalPage);
+  const sortedPages = globalPage ? [globalPage, ...otherPages] : pages;
 
   useEffect(() => {
-    const activeEl = tabRefs.current.get(activeTabId);
+    const activeEl = pageRefs.current.get(activePageId);
     const container = containerRef.current;
 
     if (activeEl && container) {
@@ -56,14 +71,14 @@ export const PageTabs: React.FC<PageTabsProps> = ({
         opacity: 1,
       });
 
-      // Auto-scroll active tab into view gently
+      // Auto-scroll active page tab into view gently
       activeEl.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
         inline: 'nearest',
       });
     }
-  }, [activeTabId, tabs]);
+  }, [activePageId, pages]);
 
   return (
     <div
@@ -78,7 +93,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
         ref={containerRef}
         className="relative flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth flex-1 py-0.5"
       >
-        {/* Sliding Tab Indicator Pill */}
+        {/* Sliding Page Indicator Pill */}
         <div
           className="absolute top-0.5 bottom-0.5 rounded-lg pointer-events-none transition-all duration-300 ease-raycast"
           style={{
@@ -96,19 +111,19 @@ export const PageTabs: React.FC<PageTabsProps> = ({
           />
         </div>
 
-        {/* Tab Buttons */}
-        {sortedTabs.map((tab) => {
-          const isActive = tab.id === activeTabId;
-          const isGlobal = tab.isSystem || tab.id === 'SYSTEM_GLOBAL_PAGE';
+        {/* Page Buttons */}
+        {sortedPages.map((page) => {
+          const isActive = page.id === activePageId;
+          const isGlobal = page.isSystem || page.id === 'SYSTEM_GLOBAL_PAGE';
 
           return (
             <button
-              key={tab.id}
+              key={page.id}
               ref={(el) => {
-                if (el) tabRefs.current.set(tab.id, el);
-                else tabRefs.current.delete(tab.id);
+                if (el) pageRefs.current.set(page.id, el);
+                else pageRefs.current.delete(page.id);
               }}
-              onClick={() => onSelectTab(tab.id)}
+              onClick={() => onSelectPage(page.id)}
               className={cn(
                 'relative z-10 flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium whitespace-nowrap outline-none',
                 'transition-all duration-200 ease-raycast active:scale-[0.98]',
@@ -136,9 +151,9 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                   )}
                 />
               )}
-              <span>{tab.title}</span>
+              <span>{page.title}</span>
 
-              {tab.domains && tab.domains.length > 0 && !isGlobal && (
+              {page.domains && page.domains.length > 0 && !isGlobal && (
                 <span
                   className={cn(
                     'ml-0.5 text-[10px] px-1.5 py-0.2 rounded-full border leading-tight font-mono',
@@ -147,8 +162,8 @@ export const PageTabs: React.FC<PageTabsProps> = ({
                       : 'border-transparent text-raycast-light-subtle dark:text-raycast-dark-subtle'
                   )}
                 >
-                  {tab.domains[0]}
-                  {tab.domains.length > 1 ? ` +${tab.domains.length - 1}` : ''}
+                  {page.domains[0]}
+                  {page.domains.length > 1 ? ` +${page.domains.length - 1}` : ''}
                 </span>
               )}
             </button>

@@ -8,6 +8,7 @@ import {
   MoreVertical,
   Trash2,
   FolderUp,
+  Download,
 } from 'lucide-react';
 import { cn } from '../utils';
 
@@ -21,6 +22,7 @@ export interface SectionContainerProps {
   onExtractToPage?: (sectionId: string) => void;
   onAddItem?: (sectionId: string) => void;
   onDeleteSection?: (sectionId: string) => void;
+  onExportPage?: () => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -35,6 +37,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   onExtractToPage,
   onAddItem,
   onDeleteSection,
+  onExportPage,
   children,
   className,
 }) => {
@@ -164,6 +167,20 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                   >
                     <Plus className="w-3.5 h-3.5 text-raycast-light-muted dark:text-raycast-dark-muted" />
                     <span>{isFields ? '新增欄位' : '新增隨筆'}</span>
+                  </button>
+                )}
+
+                {/* Export Page JSON */}
+                {onExportPage && (
+                  <button
+                    onClick={() => {
+                      setShowMenu(false);
+                      onExportPage();
+                    }}
+                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-left hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                  >
+                    <Download className="w-3.5 h-3.5 text-raycast-amber" />
+                    <span>匯出本頁 JSON</span>
                   </button>
                 )}
 

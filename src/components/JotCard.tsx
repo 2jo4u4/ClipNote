@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Copy, Check, Clock, ExternalLink, Trash2, Edit2, MoreHorizontal } from 'lucide-react';
-import { cn, formatRelativeTime } from '../utils';
+import { Copy, Check, Clock, ExternalLink, Trash2, Edit2, MoreHorizontal, ArrowRightLeft } from 'lucide-react';
+import { cn, formatRelativeTime, getDomainFromUrl } from '../utils';
 
 export interface JotCardProps {
   id: string;
@@ -11,6 +11,7 @@ export interface JotCardProps {
   onCopy?: (content: string) => void;
   onDelete?: (id: string) => void;
   onEdit?: (id: string) => void;
+  onMove?: (id: string) => void;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export const JotCard: React.FC<JotCardProps> = ({
   onCopy,
   onDelete,
   onEdit,
+  onMove,
   className,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -41,15 +43,6 @@ export const JotCard: React.FC<JotCardProps> = ({
     setTimeout(() => {
       setCopied(false);
     }, 1200);
-  };
-
-  const getDomainFromUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      return parsed.hostname.replace('www.', '');
-    } catch {
-      return url;
-    }
   };
 
   return (
@@ -93,7 +86,7 @@ export const JotCard: React.FC<JotCardProps> = ({
             )}
           </button>
 
-          {(onEdit || onDelete) && (
+          {(onEdit || onMove || onDelete) && (
             <div className="relative">
               <button
                 onClick={(e) => {
@@ -123,6 +116,18 @@ export const JotCard: React.FC<JotCardProps> = ({
                     >
                       <Edit2 className="w-3 h-3" />
                       <span>編輯</span>
+                    </button>
+                  )}
+                  {onMove && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onMove(id);
+                      }}
+                      className="w-full flex items-center gap-1.5 px-2.5 py-1 text-xs text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <ArrowRightLeft className="w-3 h-3" />
+                      <span>移動至...</span>
                     </button>
                   )}
                   {onDelete && (

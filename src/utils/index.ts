@@ -21,3 +21,13 @@ export function formatRelativeTime(timestamp: number): string {
     day: 'numeric',
   });
 }
+
+export function getDomainFromUrl(url: string): string {
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    return parsed.hostname.replace(/^www\./, '');
+  } catch {
+    return url;
+  }
+}

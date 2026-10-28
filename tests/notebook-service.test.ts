@@ -375,7 +375,7 @@ describe('NotebookService Core Business Logic', () => {
     });
 
     it('prioritizes isPrimary when multiple pages match the same domain', async () => {
-      await service.createPage({
+      const secondaryPage = await service.createPage({
         title: '次要履歷頁',
         domains: ['cake.me'],
         isPrimary: false,
@@ -389,6 +389,11 @@ describe('NotebookService Core Business Logic', () => {
 
       const resolved = await service.resolveActivePage('https://cake.me/jobs');
       expect(resolved.id).toBe(primaryPage.id);
+
+      // Session memory overrides isPrimary when user explicitly selects another page
+      service.recordSessionActivePage('cake.me', secondaryPage.id);
+      const sessionResolved = await service.resolveActivePage('https://cake.me/jobs');
+      expect(sessionResolved.id).toBe(secondaryPage.id);
     });
 
     it('universally falls back to SYSTEM_GLOBAL_PAGE on unmatched domains', async () => {
@@ -424,50 +429,38 @@ describe('NotebookService Core Business Logic', () => {
       });
     });
 
-    it('searches across Page title, Section title, Field Key, Field Value, and Jot', async () => {
-      // 1. Match Page title
-      const pageResults = await service.search('工程經歷');
-      expect(pageResults.some((r) => r.type === 'page' && r.sourcePath === '[工程經歷與專案]')).toBe(
-        true
-      );
-
-      // 2. Match Section title
-      const secResults = await service.search('技術棧');
-      expect(
-        secResults.some(
-          (r) => r.type === 'section' && r.sourcePath === '[工程經歷與專案] > [技術棧]'
-        )
-      ).toBe(true);
-
-      // 3. Match Field Key
+    it('searches across Field Key, Field Value, and Jot content returning copyable flat items', async () => {
+      // 1. Match Field Key
       const keyResults = await service.search('核心語言');
       expect(
         keyResults.some(
           (r) =>
             r.type === 'field' &&
-            r.sourcePath === '[工程經歷與專案] > [技術棧] ‧ 核心語言' &&
-            r.content === 'TypeScript 與 React'
+            r.title === '核心語言' &&
+            r.content === 'TypeScript 與 React' &&
+            r.sourcePath === '來自 [工程經歷與專案] > [技術棧] ‧ 核心語言'
         )
       ).toBe(true);
 
-      // 4. Match Field Value
+      // 2. Match Field Value
       const valResults = await service.search('微前端');
       expect(
         valResults.some(
           (r) =>
             r.type === 'field' &&
-            r.sourcePath === '[工程經歷與專案] > [技術棧] ‧ 專長說明' &&
-            r.content === '專精微前端與性能優化'
+            r.title === '專長說明' &&
+            r.content === '專精微前端與性能優化' &&
+            r.sourcePath === '來自 [工程經歷與專案] > [技術棧] ‧ 專長說明'
         )
       ).toBe(true);
 
-      // 5. Match Jot content
+      // 3. Match Jot content
       const jotResults = await service.search('面試');
       expect(
         jotResults.some(
           (r) =>
             r.type === 'jot' &&
-            r.sourcePath === '[工程經歷與專案] > [雜記隨筆]' &&
+            r.sourcePath === '來自 [工程經歷與專案] > [雜記隨筆]' &&
             r.content.includes('面試')
         )
       ).toBe(true);
@@ -639,6 +632,22 @@ describe('NotebookService Core Business Logic', () => {
 
       const retrievedPages = await freshService.getAllPages();
       expect(retrievedPages.some((p) => p.title === '匯出測試頁')).toBe(true);
+    });
+
+    it('exports a single Page as an independent JSON string', async () => {
+      const page = await service.createPage({ title: '單頁匯出測試', domains: ['single.org'] });
+      await service.createSection(page.id, { title: '測試區段', type: 'fields' });
+
+      const pageJson = await service.exportPageAsJson(page.id);
+      expect(typeof pageJson).toBe('string');
+      const parsed = JSON.parse(pageJson);
+      expect(parsed.id).toBe(page.id);
+      expect(parsed.title).toBe('單頁匯出測試');
+      expect(parsed.sections.length).toBe(1);
+
+      await expect(service.exportPageAsJson('non-existent-page')).rejects.toThrow(
+        'Page not found: non-existent-page'
+      );
     });
 
     it('rejects invalid or malformed JSON payloads with descriptive errors', async () => {

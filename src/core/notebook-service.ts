@@ -127,10 +127,21 @@ export class NotebookService {
   private storageKey: string;
   private cachedData: NotebookStorage | null = null;
   private initialized = false;
+  private sessionActivePages = new Map<string, string>();
 
   constructor(storage?: StorageAdapter, storageKey = DEFAULT_STORAGE_KEY) {
     this.storage = storage || new MemoryStorageAdapter();
     this.storageKey = storageKey;
+  }
+
+  /**
+   * Records the last active page selected for a given URL/domain during this session.
+   */
+  recordSessionActivePage(urlOrHostname: string, pageId: string): void {
+    const hostname = extractHostname(urlOrHostname);
+    if (hostname) {
+      this.sessionActivePages.set(hostname, pageId);
+    }
   }
 
   /**
@@ -597,7 +608,17 @@ export class NotebookService {
       );
 
       if (matches.length > 0) {
-        // Multi-match resolution: prioritize isPrimary
+        // Multi-match resolution:
+        // 1. Check if user previously selected a page for this domain in the active session
+        const sessionPageId = this.sessionActivePages.get(hostname);
+        if (sessionPageId) {
+          const sessionMatch = matches.find((p) => p.id === sessionPageId);
+          if (sessionMatch) {
+            return this.clone(sessionMatch);
+          }
+        }
+
+        // 2. Prioritize isPrimary
         const primary = matches.find((p) => p.isPrimary);
         return this.clone(primary || matches[0]);
       }
@@ -642,7 +663,7 @@ export class NotebookService {
 
   /**
    * Searches across all Pages, Sections, Fields (Key/Value), and Jots.
-   * Returns formatted sourcePath: `[Page] > [Section] ‧ Key` or `[Page] > [Section]`
+   * Exclusively returns copyable Fields and Jots with flat metadata.
    */
   async search(query: string): Promise<SearchResult[]> {
     const data = await this.ensureInitialized();
@@ -654,37 +675,9 @@ export class NotebookService {
     const results: SearchResult[] = [];
 
     for (const page of Object.values(data.pages)) {
-      // 1. Check Page Title
-      if (page.title.toLowerCase().includes(trimmed)) {
-        results.push({
-          type: 'page',
-          pageId: page.id,
-          pageTitle: page.title,
-          item: this.clone(page),
-          matchedField: 'title',
-          content: page.title,
-          sourcePath: `[${page.title}]`,
-        });
-      }
-
       // Check Sections
       for (const section of page.sections) {
-        // 2. Check Section Title
-        if (section.title.toLowerCase().includes(trimmed)) {
-          results.push({
-            type: 'section',
-            pageId: page.id,
-            pageTitle: page.title,
-            sectionId: section.id,
-            sectionTitle: section.title,
-            item: this.clone(section),
-            matchedField: 'title',
-            content: section.title,
-            sourcePath: `[${page.title}] > [${section.title}]`,
-          });
-        }
-
-        // 3. Check Fields
+        // 1. Check Fields
         if (section.type === 'fields') {
           for (const field of section.fields) {
             const keyMatch = field.key.toLowerCase().includes(trimmed);
@@ -692,34 +685,40 @@ export class NotebookService {
 
             if (keyMatch || valMatch) {
               results.push({
+                id: field.id,
                 type: 'field',
                 pageId: page.id,
                 pageTitle: page.title,
                 sectionId: section.id,
                 sectionTitle: section.title,
-                item: this.clone(field),
-                matchedField: keyMatch ? 'key' : 'value',
+                title: field.key,
                 content: field.value,
-                sourcePath: `[${page.title}] > [${section.title}] ‧ ${field.key}`,
+                sourcePath: `來自 [${page.title}] > [${section.title}] ‧ ${field.key}`,
+                sourceUrl: field.sourceUrl,
+                sourceTitle: field.sourceTitle,
+                matchedField: keyMatch ? 'key' : 'value',
               });
             }
           }
         }
 
-        // 4. Check Jots
+        // 2. Check Jots
         if (section.type === 'jots') {
           for (const jot of section.jots) {
             if (jot.content.toLowerCase().includes(trimmed)) {
               results.push({
+                id: jot.id,
                 type: 'jot',
                 pageId: page.id,
                 pageTitle: page.title,
                 sectionId: section.id,
                 sectionTitle: section.title,
-                item: this.clone(jot),
-                matchedField: 'content',
+                title: jot.content.length > 30 ? jot.content.slice(0, 30) + '...' : jot.content,
                 content: jot.content,
-                sourcePath: `[${page.title}] > [${section.title}]`,
+                sourcePath: `來自 [${page.title}] > [${section.title}]`,
+                sourceUrl: jot.sourceUrl,
+                sourceTitle: jot.sourceTitle,
+                matchedField: 'content',
               });
             }
           }
@@ -809,28 +808,24 @@ export class NotebookService {
       );
     }
 
-    const now = Date.now();
+    const moveWithinList = <T extends { id: string }>(sourceList: T[], targetList: T[]) => {
+      const idx = sourceList.findIndex((item) => item.id === params.itemId);
+      if (idx === -1) {
+        throw new Error(`Item not found: ${params.itemId}`);
+      }
+      const [item] = sourceList.splice(idx, 1);
+      const insertIndex =
+        params.targetIndex !== undefined ? params.targetIndex : targetList.length;
+      targetList.splice(insertIndex, 0, item);
+    };
 
     if (sourceSection.type === 'fields' && targetSection.type === 'fields') {
-      const fieldIndex = sourceSection.fields.findIndex((f) => f.id === params.itemId);
-      if (fieldIndex === -1) {
-        throw new Error(`Field not found: ${params.itemId}`);
-      }
-      const [field] = sourceSection.fields.splice(fieldIndex, 1);
-      const insertIndex =
-        params.targetIndex !== undefined ? params.targetIndex : targetSection.fields.length;
-      targetSection.fields.splice(insertIndex, 0, field);
+      moveWithinList(sourceSection.fields, targetSection.fields);
     } else if (sourceSection.type === 'jots' && targetSection.type === 'jots') {
-      const jotIndex = sourceSection.jots.findIndex((j) => j.id === params.itemId);
-      if (jotIndex === -1) {
-        throw new Error(`Jot not found: ${params.itemId}`);
-      }
-      const [jot] = sourceSection.jots.splice(jotIndex, 1);
-      const insertIndex =
-        params.targetIndex !== undefined ? params.targetIndex : targetSection.jots.length;
-      targetSection.jots.splice(insertIndex, 0, jot);
+      moveWithinList(sourceSection.jots, targetSection.jots);
     }
 
+    const now = Date.now();
     sourceSection.updatedAt = now;
     targetSection.updatedAt = now;
     sourcePage.updatedAt = now;
@@ -843,9 +838,23 @@ export class NotebookService {
   // JSON Import & Export
   // ==========================================
 
+  /**
+   * Exports the entire Notebook storage as a formatted JSON string.
+   */
   async exportNotebookAsJson(): Promise<string> {
     const data = await this.ensureInitialized();
     return JSON.stringify(data, null, 2);
+  }
+
+  /**
+   * Exports a single Page and its sections as an independent JSON string.
+   */
+  async exportPageAsJson(pageId: string): Promise<string> {
+    const page = await this.getPage(pageId);
+    if (!page) {
+      throw new Error(`Page not found: ${pageId}`);
+    }
+    return JSON.stringify(page, null, 2);
   }
 
   async importNotebookFromJson(jsonStr: string): Promise<NotebookStorage> {

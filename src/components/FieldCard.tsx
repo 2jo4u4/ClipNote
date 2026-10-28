@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Copy, Check, ChevronDown, ChevronUp, ExternalLink, MoreVertical, Trash2, Edit2 } from 'lucide-react';
-import { cn } from '../utils';
+import { Copy, Check, ChevronDown, ChevronUp, ExternalLink, MoreVertical, Trash2, Edit2, ArrowRightLeft } from 'lucide-react';
+import { cn, getDomainFromUrl } from '../utils';
 
 export interface FieldCardProps {
   id: string;
@@ -11,6 +11,7 @@ export interface FieldCardProps {
   onCopy?: (value: string) => void;
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
+  onMove?: (id: string) => void;
   className?: string;
 }
 
@@ -23,6 +24,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
   onCopy,
   onEdit,
   onDelete,
+  onMove,
   className,
 }) => {
   const [copied, setCopied] = useState(false);
@@ -45,15 +47,6 @@ export const FieldCard: React.FC<FieldCardProps> = ({
     setTimeout(() => {
       setCopied(false);
     }, 1200);
-  };
-
-  const getDomainFromUrl = (url: string) => {
-    try {
-      const parsed = new URL(url);
-      return parsed.hostname.replace('www.', '');
-    } catch {
-      return url;
-    }
   };
 
   return (
@@ -95,7 +88,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
             </a>
           )}
 
-          {(onEdit || onDelete) && (
+          {(onEdit || onMove || onDelete) && (
             <div className="relative">
               <button
                 onClick={(e) => {
@@ -125,6 +118,18 @@ export const FieldCard: React.FC<FieldCardProps> = ({
                     >
                       <Edit2 className="w-3 h-3" />
                       <span>編輯</span>
+                    </button>
+                  )}
+                  {onMove && (
+                    <button
+                      onClick={() => {
+                        setShowMenu(false);
+                        onMove(id);
+                      }}
+                      className="w-full flex items-center gap-1.5 px-2.5 py-1 text-xs text-raycast-light-text dark:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
+                    >
+                      <ArrowRightLeft className="w-3 h-3" />
+                      <span>移動至...</span>
                     </button>
                   )}
                   {onDelete && (

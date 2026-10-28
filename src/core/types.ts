@@ -57,18 +57,21 @@ export interface NotebookStorage {
   systemGlobalPageId: string; // "SYSTEM_GLOBAL_PAGE"
 }
 
-export type SearchResultType = 'field' | 'jot' | 'section' | 'page';
+export type SearchResultType = 'field' | 'jot';
 
 export interface SearchResult {
+  id: string; // Field ID or Jot ID
   type: SearchResultType;
   pageId: string;
   pageTitle: string;
-  sectionId?: string;
-  sectionTitle?: string;
-  item: Field | Jot | Section | Page;
-  matchedField: 'title' | 'key' | 'value' | 'content';
-  content: string;
-  sourcePath: string;
+  sectionId: string;
+  sectionTitle: string;
+  title: string; // Key name for field, or truncated content for jot
+  content: string; // Value to copy
+  sourcePath: string; // e.g., "來自 [104 中文經歷] > [基本資料]"
+  sourceUrl?: string;
+  sourceTitle?: string;
+  matchedField?: 'key' | 'value' | 'content';
 }
 
 export interface MoveItemParams {
