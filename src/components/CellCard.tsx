@@ -78,7 +78,7 @@ export const CellCard: React.FC<CellCardProps> = ({
       className={cn(
         'group relative flex flex-col p-3 rounded-xl border select-none cursor-pointer',
         'transition-all duration-200 ease-raycast active:scale-[0.98]',
-        'bg-raycast-light-surface/60 border-raycast-light-border/70 hover:border-raycast-amber/50 hover:shadow-sm',
+        'bg-raycast-light-surface border-raycast-light-border hover:border-raycast-amber/50 hover:shadow-sm',
         'dark:bg-raycast-dark-surface/50 dark:border-white/10 dark:hover:border-raycast-amber/40 dark:hover:bg-raycast-dark-surface/80',
         copied &&
           'border-raycast-emerald bg-raycast-emerald/5 ring-1 ring-raycast-emerald/40 dark:border-raycast-emerald dark:bg-raycast-emerald/10',
@@ -207,7 +207,7 @@ export const CellCard: React.FC<CellCardProps> = ({
 
       {/* Footer: Source URL link chip */}
       {sourceUrl && (
-        <div className="mt-2.5 pt-2 border-t border-raycast-light-border/40 dark:border-white/5 flex items-center justify-between">
+        <div className="mt-2.5 pt-2 border-t border-black/5 dark:border-white/5 flex items-center justify-between">
           <a
             href={sourceUrl}
             target="_blank"

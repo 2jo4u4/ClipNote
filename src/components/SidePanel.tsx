@@ -514,7 +514,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <header
           className={cn(
             'flex items-center justify-between px-3.5 py-2.5 border-b flex-shrink-0',
-            'bg-raycast-light-surface/70 border-raycast-light-border/80 backdrop-blur-md',
+            'bg-raycast-light-surface/70 border-raycast-light-border backdrop-blur-md',
             'dark:bg-raycast-dark-surface/60 dark:border-white/10'
           )}
         >

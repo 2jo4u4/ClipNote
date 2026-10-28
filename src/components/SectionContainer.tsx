@@ -66,7 +66,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
     <div
       className={cn(
         'group/section flex flex-col rounded-2xl border transition-all duration-300 ease-raycast',
-        'bg-raycast-light-surface/60 border-raycast-light-border/80 shadow-[0_2px_8px_rgba(0,0,0,0.03)]',
+        'bg-raycast-light-surface/60 border-raycast-light-border shadow-[0_2px_8px_rgba(0,0,0,0.03)]',
         'dark:bg-raycast-dark-surface/50 dark:border-white/8 dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
         className
       )}
