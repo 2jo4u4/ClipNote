@@ -1,5 +1,16 @@
 import React, { useState } from 'react';
-import { Copy, Check, ChevronDown, ChevronUp, ExternalLink, MoreVertical, Trash2, Edit2, ArrowRightLeft } from 'lucide-react';
+import {
+  Copy,
+  Check,
+  Tag,
+  ExternalLink,
+  MoreHorizontal,
+  Trash2,
+  Edit2,
+  ArrowRightLeft,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react';
 import { cn, getDomainFromUrl } from '../utils';
 
 export interface FieldCardProps {
@@ -31,11 +42,8 @@ export const FieldCard: React.FC<FieldCardProps> = ({
   const [isExpanded, setIsExpanded] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
 
-  // Check if text is long enough to benefit from clamping (> 90 characters or multi-line)
-  const isLongText = value.length > 90 || value.includes('\n');
-
-  const handleCopy = async (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleCopy = async (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     try {
       await navigator.clipboard.writeText(value);
     } catch {
@@ -49,44 +57,56 @@ export const FieldCard: React.FC<FieldCardProps> = ({
     }, 1200);
   };
 
+  const isLongText = value.length > 80 || value.includes('\n');
+
   return (
     <div
       className={cn(
-        'group relative flex flex-col gap-1.5 p-2.5 rounded-xl border transition-all duration-200 ease-raycast',
+        'group relative flex flex-col gap-2 p-3 rounded-xl border transition-all duration-200 ease-raycast',
         'bg-raycast-light-surface/90 border-raycast-light-border hover:border-black/15 shadow-sm',
         'dark:bg-raycast-dark-surface/90 dark:border-white/8 dark:hover:border-white/20',
         copied && 'ring-2 ring-emerald-500/25 border-emerald-500/40 dark:border-emerald-500/40',
         className
       )}
     >
-      {/* Header: Key Label & Actions */}
+      {/* Top Meta: Field Key (Label) & Action Buttons */}
       <div className="flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            'text-[11px] font-semibold tracking-wider uppercase select-none transition-colors duration-150',
-            'text-raycast-light-subtle dark:text-raycast-dark-subtle'
-          )}
-        >
-          {fieldKey}
-        </span>
+        <div className="flex items-center gap-1.5 min-w-0">
+          <Tag className="w-3 h-3 text-raycast-coral flex-shrink-0" />
+          <span
+            className={cn(
+              'text-xs font-semibold tracking-wide truncate select-none',
+              'text-raycast-light-text dark:text-raycast-dark-text'
+            )}
+            title={fieldKey}
+          >
+            {fieldKey}
+          </span>
+        </div>
 
+        {/* Hover Action Buttons */}
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-150">
-          {sourceUrl && (
-            <a
-              href={sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              onClick={(e) => e.stopPropagation()}
-              title={sourceTitle || sourceUrl}
-              className={cn(
-                'inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-mono transition-colors',
-                'text-raycast-light-muted hover:text-raycast-coral bg-black/5 dark:bg-white/5 dark:text-raycast-dark-muted dark:hover:text-raycast-coral'
-              )}
-            >
-              <span>{getDomainFromUrl(sourceUrl)}</span>
-              <ExternalLink className="w-2.5 h-2.5" />
-            </a>
-          )}
+          <button
+            onClick={handleCopy}
+            title="複製內容"
+            className={cn(
+              'flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium outline-none transition-all duration-150',
+              'text-raycast-light-muted hover:text-raycast-light-text hover:bg-black/5',
+              'dark:text-raycast-dark-muted dark:hover:text-raycast-dark-text dark:hover:bg-white/5 active:scale-95'
+            )}
+          >
+            {copied ? (
+              <span className="flex items-center gap-1 text-emerald-500">
+                <Check className="w-3 h-3" />
+                <span className="text-[10px]">已複製</span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-1">
+                <Copy className="w-3 h-3" />
+                <span className="text-[10px]">複製</span>
+              </span>
+            )}
+          </button>
 
           {(onEdit || onMove || onDelete) && (
             <div className="relative">
@@ -97,7 +117,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
                 }}
                 className="p-1 rounded text-raycast-light-subtle hover:text-raycast-light-text dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
               >
-                <MoreVertical className="w-3 h-3" />
+                <MoreHorizontal className="w-3.5 h-3.5" />
               </button>
 
               {showMenu && (
@@ -151,7 +171,7 @@ export const FieldCard: React.FC<FieldCardProps> = ({
         </div>
       </div>
 
-      {/* Tactile Card: Value Area with One-Click Copy */}
+      {/* Content Body: Direct Text with Click-to-Copy */}
       <div
         role="button"
         tabIndex={0}
@@ -159,62 +179,58 @@ export const FieldCard: React.FC<FieldCardProps> = ({
         onKeyDown={(e) => {
           if (e.key === 'Enter' || e.key === ' ') {
             e.preventDefault();
-            handleCopy(e as unknown as React.MouseEvent);
+            handleCopy();
           }
         }}
         title="點擊複製內容"
         className={cn(
-          'relative p-2.5 rounded-lg border text-left cursor-pointer outline-none select-text',
-          'transition-all duration-200 ease-raycast active:scale-[0.98]',
-          'bg-black/[0.02] hover:bg-black/[0.04] border-black/5',
-          'dark:bg-white/[0.03] dark:hover:bg-white/[0.06] dark:border-white/5',
-          copied && 'bg-emerald-500/[0.08] dark:bg-emerald-500/[0.1] border-emerald-500/30'
+          'text-xs text-raycast-light-text dark:text-raycast-dark-text break-words leading-relaxed cursor-pointer font-sans select-text',
+          'p-1.5 -mx-1.5 rounded-lg transition-all duration-150 active:scale-[0.99] hover:bg-black/[0.02] dark:hover:bg-white/[0.02]',
+          !isExpanded && isLongText && 'line-clamp-3'
         )}
       >
-        <div className="flex items-start justify-between gap-2.5">
-          {/* Value Content */}
-          <p
+        {value}
+      </div>
+
+      {/* Bottom Row: Source URL & Expand Toggle */}
+      <div className="flex items-center justify-between pt-0.5 min-h-[22px]">
+        {/* Source URL Pill */}
+        {sourceUrl ? (
+          <a
+            href={sourceUrl}
+            target="_blank"
+            rel="noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            title={sourceTitle || sourceUrl}
             className={cn(
-              'text-xs font-mono text-raycast-light-text dark:text-raycast-dark-text break-words whitespace-pre-wrap leading-relaxed flex-1',
-              !isExpanded && isLongText && 'line-clamp-3'
+              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-mono border transition-all duration-200',
+              'text-raycast-light-muted hover:text-raycast-coral hover:border-raycast-coral/30 border-raycast-light-border bg-black/[0.02]',
+              'dark:text-raycast-dark-muted dark:hover:text-raycast-coral dark:hover:border-raycast-coral/30 dark:border-white/8 dark:bg-white/[0.02]'
             )}
           >
-            {value}
-          </p>
+            <ExternalLink className="w-2.5 h-2.5" />
+            <span>{getDomainFromUrl(sourceUrl)}</span>
+          </a>
+        ) : (
+          <div />
+        )}
 
-          {/* Copy Icon Feedback Flip */}
-          <div className="flex items-center gap-1 flex-shrink-0 pt-0.5">
-            {copied ? (
-              <div className="flex items-center gap-1 text-emerald-500 text-[11px] font-sans font-medium animate-in fade-in zoom-in duration-200">
-                <span>已複製!</span>
-                <Check className="w-3.5 h-3.5" />
-              </div>
-            ) : (
-              <span className="text-raycast-light-subtle dark:text-raycast-dark-subtle group-hover:text-raycast-light-muted dark:group-hover:text-raycast-dark-muted transition-colors">
-                <Copy className="w-3.5 h-3.5" />
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Long Text Expand/Collapse Toggle Button */}
+        {/* Expand/Collapse Toggle for Long Text */}
         {isLongText && (
-          <div className="mt-2 pt-1 border-t border-black/5 dark:border-white/5 flex justify-end">
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                setIsExpanded(!isExpanded);
-              }}
-              className={cn(
-                'inline-flex items-center gap-1 text-[11px] font-sans transition-colors',
-                'text-raycast-light-muted hover:text-raycast-light-text dark:text-raycast-dark-muted dark:hover:text-raycast-dark-text'
-              )}
-            >
-              <span>{isExpanded ? '收合' : '展開完整內容'}</span>
-              {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-            </button>
-          </div>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setIsExpanded(!isExpanded);
+            }}
+            className={cn(
+              'flex items-center gap-0.5 text-[10px] font-medium outline-none transition-colors px-1.5 py-0.5 rounded',
+              'text-raycast-light-subtle hover:text-raycast-light-text dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text',
+              'hover:bg-black/5 dark:hover:bg-white/5'
+            )}
+          >
+            <span>{isExpanded ? '收合' : '展開'}</span>
+            {isExpanded ? <ChevronUp className="w-2.5 h-2.5" /> : <ChevronDown className="w-2.5 h-2.5" />}
+          </button>
         )}
       </div>
     </div>
