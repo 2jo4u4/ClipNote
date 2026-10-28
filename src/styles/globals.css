@@ -1,0 +1,9 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased font-sans bg-raycast-light-bg text-raycast-light-text dark:bg-raycast-dark-bg dark:text-raycast-dark-text;
+  }
+}
