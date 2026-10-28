@@ -293,7 +293,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                   : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text'
               )}
             >
-              隨筆 (Jot)
+              隨筆
             </button>
             <button
               type="button"
@@ -305,7 +305,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                   : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text'
               )}
             >
-              欄位 (Field)
+              欄位
             </button>
           </div>
         </div>
@@ -315,7 +315,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
           {captureType === 'field' && (
             <div className="flex flex-col gap-1">
               <label className="text-[11px] font-semibold uppercase tracking-wider text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                欄位名稱 (Key)
+                欄位名稱
               </label>
               <input
                 ref={inputKeyRef}
@@ -341,7 +341,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
           <div className="flex flex-col gap-1">
             <div className="flex items-center justify-between">
               <label className="text-[11px] font-semibold uppercase tracking-wider text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                {captureType === 'field' ? '欄位內容 (Value)' : '隨筆內容 (打字即時搜尋既有筆記)'}
+                {captureType === 'field' ? '欄位內容' : '隨筆內容'}
               </label>
               {sourceUrl && (
                 <span className="text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1 font-mono">
