@@ -33,6 +33,7 @@ export interface SidePanelProps {
   initialPages?: Page[];
   initialActivePageId?: string;
   onPagesChange?: (pages: Page[]) => void;
+  onActivePageChange?: (pageId: string) => void;
   language?: Language;
   initialLanguage?: Language;
   className?: string;
@@ -171,6 +172,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   initialPages = defaultDemoPages,
   initialActivePageId,
   onPagesChange,
+  onActivePageChange,
   language: controlledLanguage,
   initialLanguage = 'zh-TW',
   className,
@@ -201,26 +203,34 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
     const basePages = controlledPages || initialPages;
-    const matched = basePages.find(
-      (p) =>
-        p.domains &&
-        p.domains.some((pattern) => matchDomain(currentDomain, pattern))
+    const candidates = basePages.filter((p) => !p.isSystem);
+    const matches = candidates.filter((p) =>
+      p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
-    return matched ? matched.id : basePages[0]?.id || 'SYSTEM_GLOBAL_PAGE';
+    const primary = matches.find((p) => p.isPrimary);
+    return primary ? primary.id : matches[0]?.id || basePages[0]?.id || 'SYSTEM_GLOBAL_PAGE';
   });
+
+  const handleSelectPage = (pageId: string) => {
+    setActivePageId(pageId);
+    if (onActivePageChange) {
+      onActivePageChange(pageId);
+    }
+  };
 
   // Automatically focus matching page when user switches tab domain in browser
   useEffect(() => {
     if (!currentDomain) return;
-    const matched = pages.find(
-      (p) =>
-        p.domains &&
-        p.domains.some((pattern) => matchDomain(currentDomain, pattern))
+    const candidates = pages.filter((p) => !p.isSystem);
+    const matches = candidates.filter((p) =>
+      p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
-    if (matched) {
-      setActivePageId(matched.id);
+    const primary = matches.find((p) => p.isPrimary);
+    const target = primary || matches[0];
+    if (target) {
+      setActivePageId(target.id);
     }
-  }, [currentDomain, pages]);
+  }, [currentDomain]);
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
@@ -667,7 +677,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             currentDomain={currentDomain}
             onBindDomain={handleBindDomain}
             onSelectItem={(item) => {
-              setActivePageId(item.pageId);
+              handleSelectPage(item.pageId);
               showToast(t.sidePanel.copyAndLocateToast(item.title));
             }}
           />
@@ -679,7 +689,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             language={language}
             pages={pageTabItems}
             activePageId={activePageId}
-            onSelectPage={setActivePageId}
+            onSelectPage={handleSelectPage}
             onAddPage={() => setIsNewPageModalOpen(true)}
           />
         </div>

@@ -177,6 +177,28 @@ export class NotebookService {
     return this.clone(data);
   }
 
+  /**
+   * Invalidates memory cache. Next access will re-fetch from underlying storage.
+   */
+  invalidateCache(): void {
+    this.initialized = false;
+    this.cachedData = null;
+  }
+
+  /**
+   * Reloads data from underlying storage or takes incoming storage payload.
+   */
+  async reload(freshData?: NotebookStorage): Promise<NotebookStorage> {
+    if (freshData && freshData.pages && freshData.systemGlobalPageId) {
+      this.cachedData = this.clone(freshData);
+      this.initialized = true;
+      return this.clone(freshData);
+    }
+    this.initialized = false;
+    this.cachedData = null;
+    return this.init();
+  }
+
   private async ensureInitialized(): Promise<NotebookStorage> {
     if (!this.initialized || !this.cachedData) {
       await this.init();
@@ -309,6 +331,7 @@ export class NotebookService {
    * Persists the entire set of pages, preserving the system global page invariant.
    */
   async saveAllPages(pages: Page[]): Promise<void> {
+    await this.reload();
     const data = await this.ensureInitialized();
     const newPagesRecord: Record<string, Page> = {};
     for (const page of pages) {
@@ -441,18 +464,31 @@ export class NotebookService {
 
   async createCell(
     pageId: string,
-    sectionId: string,
+    sectionId: string | undefined,
     params: CreateCellInput
   ): Promise<Cell> {
+    await this.reload();
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
     if (!page) {
       throw new Error(`Page not found: ${pageId}`);
     }
 
-    const section = page.sections.find((s) => s.id === sectionId);
+    let section = sectionId ? page.sections.find((s) => s.id === sectionId) : undefined;
+    if (!section && page.sections.length > 0) {
+      section = page.sections[0];
+    }
     if (!section) {
-      throw new Error(`Section not found: ${sectionId}`);
+      const now = Date.now();
+      section = {
+        id: generateId(),
+        title: '預設分類',
+        items: [],
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+      page.sections.push(section);
     }
 
     const now = Date.now();

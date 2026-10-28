@@ -8,7 +8,7 @@ import {
   DEFAULT_STORAGE_KEY,
 } from '../../core/notebook-service';
 import { ChromeStorageAdapter } from '../../core/storage';
-import { Page } from '../../core/types';
+import { Page, NotebookStorage } from '../../core/types';
 
 const storageAdapter = new ChromeStorageAdapter();
 const notebookService = new NotebookService(storageAdapter);
@@ -20,8 +20,9 @@ function ExtensionSidePanelApp() {
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 1. Initial load from NotebookService
-  const loadNotebookData = useCallback(async () => {
+  const loadNotebookData = useCallback(async (freshData?: NotebookStorage) => {
     try {
+      await notebookService.reload(freshData);
       const allPages = await notebookService.getAllPages();
       setPages(allPages);
     } catch (err) {
@@ -74,7 +75,8 @@ function ExtensionSidePanelApp() {
     // Listen to storage changes from Content Script or other contexts
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
       if (areaName === 'local' && changes[DEFAULT_STORAGE_KEY]) {
-        loadNotebookData();
+        const fresh = changes[DEFAULT_STORAGE_KEY].newValue as NotebookStorage | undefined;
+        loadNotebookData(fresh);
       }
     };
 
@@ -105,6 +107,12 @@ function ExtensionSidePanelApp() {
     }
   };
 
+  const handleActivePageChange = (pageId: string) => {
+    if (currentDomain) {
+      notebookService.recordSessionActivePage(currentDomain, pageId);
+    }
+  };
+
   if (!isLoaded) {
     return (
       <div className="flex items-center justify-center h-full w-full bg-raycast-light-bg dark:bg-raycast-dark-bg text-raycast-amber text-xs font-mono">
@@ -119,6 +127,7 @@ function ExtensionSidePanelApp() {
       currentDomain={currentDomain}
       currentUrl={currentUrl}
       onPagesChange={handlePagesChange}
+      onActivePageChange={handleActivePageChange}
       className="h-full w-full"
     />
   );

@@ -23,7 +23,7 @@ It provides:
 ## User Stories
 
 ### Capture & Recording
-1. As a web user reading an online post, I want to right-click selected text and choose "存為全域隨筆", so that I can capture an address or quote in one second without any modal interrupting my browsing.
+1. As a web user reading an online post, I want to right-click selected text and choose "新增筆記", so that I can open the quick capture palette prefilled with the selected text, source URL, and page title to review or adjust the destination page and category before saving.
 2. As a web user capturing snippets from diverse websites, I want the extension to automatically record the source URL and page title on each Cell, so that I can revisit the original post or article anytime in the future.
 3. As a web user on a specific website, I want to press `Alt+N` to summon a lightweight in-page modal, so that I can quickly record notes or search saved snippets without opening the larger Side Panel.
 4. As a user recording a structured datum, I want to optionally specify a "欄位名稱 (Key)", so that the Cell is rendered and treated as a reusable key-value Field rather than an unlabelled memo.
@@ -58,7 +58,7 @@ It provides:
 24. As a user browsing search results, I want each result card to show its source path (`來自 [Page] > [Section]`) and type badge (`[欄位]` or `[隨筆]`), so that I understand the context before copying.
 
 ### Data Freedom & Backup
-25. As a privacy-conscious user, I want all my notes, rules, and cells stored entirely in local browser storage (`chrome.storage.local`), so that none of my personal or resume data leaves my device.
+25. As a privacy-conscious user, I want all my notes, rules, and cells stored entirely in local browser storage (`chrome.storage.local`), so that none of my personal or resume data leaves my device. (Note: Extension declares `tabs` permission solely to read `tab.url` on `chrome.tabs.onActivated` for Side Panel domain awareness; no tab content or browsing activity is tracked or transmitted).
 26. As a power user, I want to export my entire Notebook or individual Pages as standard JSON files, so that I can back up, migrate, or programmatically edit my notes.
 27. As a user setting up a new device, I want to import a previously exported JSON file, so that all my Pages, Sections, Cells, and Domain Bindings are restored accurately.
 

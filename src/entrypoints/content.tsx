@@ -4,8 +4,6 @@ import '../styles/globals.css';
 import { QuickCaptureModal, QuickCapturePageOption, QuickCaptureSectionOption } from '../components/QuickCaptureModal';
 import {
   NotebookService,
-  extractHostname,
-  matchDomain,
 } from '../core/notebook-service';
 import { ChromeStorageAdapter } from '../core/storage';
 import { SearchResult, CreateCellInput } from '../types';
@@ -36,6 +34,7 @@ function InPageQuickCaptureWrapper({
   // Load notebook pages and auto-resolve matching page for current hostname
   const loadData = useCallback(async () => {
     try {
+      await notebookService.reload();
       const currentPages = await notebookService.getAllPages();
 
       const pageOptions: QuickCapturePageOption[] = currentPages.map((p: Page) => ({
@@ -58,16 +57,10 @@ function InPageQuickCaptureWrapper({
       setPages(pageOptions);
       setSections(sectionOptions);
 
-      // Auto-resolve domain
-      const host = extractHostname(sourceUrl || window.location.href);
-      const matched = currentPages.find(
-        (p: Page) =>
-          p.domains &&
-          p.domains.some((pattern: string) => matchDomain(host, pattern))
-      );
-      if (matched) {
-        setActivePageId(matched.id);
-      }
+      // Auto-resolve active page with prioritization
+      const targetUrl = sourceUrl || window.location.href;
+      const resolved = await notebookService.resolveActivePage(targetUrl);
+      setActivePageId(resolved.id);
     } catch (err) {
       console.warn('[Notebook] Content script failed to load data:', err);
     }
@@ -94,26 +87,12 @@ function InPageQuickCaptureWrapper({
     data: CreateCellInput & { pageId: string; sectionId?: string }
   ) => {
     try {
-      const allPages = await notebookService.getAllPages();
-      const targetPage = allPages.find((p) => p.id === data.pageId);
-      let targetSectionId = data.sectionId;
-
-      if (!targetSectionId) {
-        targetSectionId = targetPage?.sections[0]?.id;
-      }
-      if (!targetSectionId && targetPage) {
-        const newSec = await notebookService.createSection(targetPage.id, { title: '預設分類' });
-        targetSectionId = newSec.id;
-      }
-
-      if (targetSectionId) {
-        await notebookService.createCell(data.pageId, targetSectionId, {
-          key: data.key,
-          value: data.value,
-          sourceUrl: data.sourceUrl || sourceUrl || window.location.href,
-          sourceTitle: data.sourceTitle || sourceTitle || document.title,
-        });
-      }
+      await notebookService.createCell(data.pageId, data.sectionId, {
+        key: data.key,
+        value: data.value,
+        sourceUrl: data.sourceUrl || sourceUrl || window.location.href,
+        sourceTitle: data.sourceTitle || sourceTitle || document.title,
+      });
     } catch (err) {
       console.warn('[Notebook] Failed to create cell:', err);
     }

@@ -459,5 +459,49 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
         'Missing systemGlobalPageId or pages dictionary'
       );
     });
+
+    it('reloads fresh data across multiple service instances sharing underlying storage', async () => {
+      // Simulate two separate extension contexts sharing the same storage
+      const sharedStorage = new MemoryStorageAdapter();
+      const serviceA = new NotebookService(sharedStorage);
+      const serviceB = new NotebookService(sharedStorage);
+
+      await serviceA.init();
+      await serviceB.init();
+
+      // serviceA creates a new page
+      const newPage = await serviceA.createPage({ title: 'Context A Page' });
+
+      // serviceB's cache would be stale without reload()
+      await serviceB.reload();
+      const pageFromB = await serviceB.getPage(newPage.id);
+      expect(pageFromB?.title).toBe('Context A Page');
+    });
+
+    it('falls back to first section if sectionId is undefined or omitted in createCell', async () => {
+      const page = await service.createPage({ title: 'Fallback Page' });
+      await service.createSection(page.id, { title: 'First Section' });
+      await service.createSection(page.id, { title: 'Second Section' });
+
+      const cell = await service.createCell(page.id, undefined, { value: 'Auto Section Cell' });
+      expect(cell.value).toBe('Auto Section Cell');
+
+      const pageAfter = await service.getPage(page.id);
+      expect(pageAfter?.sections[0].items[0].id).toBe(cell.id);
+    });
+
+    it('auto-creates a default section titled 預設分類 if target page has no sections', async () => {
+      const page = await service.createPage({ title: 'Empty Sections Page' });
+      // page currently has 0 sections
+      expect(page.sections.length).toBe(0);
+
+      const cell = await service.createCell(page.id, undefined, { value: 'No Section Cell' });
+      expect(cell.value).toBe('No Section Cell');
+
+      const pageAfter = await service.getPage(page.id);
+      expect(pageAfter?.sections.length).toBe(1);
+      expect(pageAfter?.sections[0].title).toBe('預設分類');
+      expect(pageAfter?.sections[0].items[0].id).toBe(cell.id);
+    });
   });
 });

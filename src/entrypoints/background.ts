@@ -1,4 +1,4 @@
-import { createDefaultSeedData, DEFAULT_STORAGE_KEY } from '../core/notebook-service';
+import { NotebookService } from '../core/notebook-service';
 import { ChromeStorageAdapter } from '../core/storage';
 
 export default defineBackground(() => {
@@ -11,14 +11,11 @@ export default defineBackground(() => {
 
   // 2. Initialize Seed Data and Context Menus on Installation
   chrome.runtime.onInstalled.addListener(async () => {
-    // Seed initial demo data if storage is empty
+    // Seed initial demo data via NotebookService if storage is empty
     const storageAdapter = new ChromeStorageAdapter();
-    const existing = await storageAdapter.get(DEFAULT_STORAGE_KEY);
-    if (!existing) {
-      const seed = createDefaultSeedData();
-      await storageAdapter.set(DEFAULT_STORAGE_KEY, seed);
-      console.log('[Notebook] Initialized default seed data in storage.');
-    }
+    const service = new NotebookService(storageAdapter);
+    await service.init();
+    console.log('[Notebook] Ensured notebook storage initialized on install.');
 
     // Register Right-Click Context Menu for selected text
     chrome.contextMenus.create({
