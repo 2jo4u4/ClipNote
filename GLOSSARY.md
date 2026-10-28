@@ -19,16 +19,14 @@ The single, system-created, non-deletable Page that applies universally across a
 _Avoid_: Global Notes, Master Page, Common Page, Default Note
 
 **Section (分區 / 區段)**:
-A typed sub-grouping within a Page used to organize content. A Section is strictly typed as either a `FieldsSection` (structured key-values) or a `JotsSection` (chronological plain text entries).
+A flexible sub-grouping within a Page used to organize content. A Section contains an ordered array of `Cell` items and can hold both named fields and free-form jots simultaneously.
 _Avoid_: Category, Block, Group, Session
 
-**Field (欄位)**:
-A single structured key-value pair within a `FieldsSection`, requiring a mandatory key name (`key`) and string value (`value`) optimized for one-click copying.
-_Avoid_: Property, Attribute, Item, KeyValue
-
-**Jot (隨筆)**:
-An unstructured, keyless, timestamped plain text entry captured quickly into a `JotsSection` or Global Page.
-_Avoid_: Memo, Scratchpad, QuickNote, Snippet
+**Cell (單元項 / 筆記單元)**:
+The fundamental, atomic unit of content within a Section. A Cell holds a mandatory string `value`, creation/update timestamps, and optional source attribution (`sourceUrl`, `sourceTitle`). It dynamically represents either a structured Field or a free-form Jot depending on whether it has a `key`:
+- **Field (欄位)**: A Cell with a non-empty `key` (e.g. `key: "職稱"`, `value: "資深前端架構工程師"`), optimized for one-click key-value copying.
+- **Jot (隨筆)**: A Cell with no `key` (key is omitted or empty), representing an unstructured, timestamped plain text note or quote.
+_Avoid_: Property, Attribute, KeyValue, Snippet, Memo
 
 ### Association & Resolution (關聯與解析)
 
