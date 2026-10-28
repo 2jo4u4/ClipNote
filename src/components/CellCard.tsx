@@ -279,11 +279,11 @@ export const CellCard: React.FC<CellCardProps> = ({
 
       {/* Source URL Pill */}
       {sourceUrl && (
-        <div
-          onClick={(e) => {
-            e.stopPropagation();
-            window.open(sourceUrl, '_blank', 'noopener,noreferrer');
-          }}
+        <a
+          href={sourceUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
           className={cn(
             'mt-2 pt-1.5 border-t border-black/5 dark:border-white/5 flex items-center gap-1.5 text-[10px] font-mono',
             'text-raycast-light-subtle dark:text-raycast-dark-subtle hover:text-raycast-amber transition-colors truncate'
@@ -293,7 +293,7 @@ export const CellCard: React.FC<CellCardProps> = ({
           <span className="truncate">
             {sourceTitle || getDomainFromUrl(sourceUrl)}
           </span>
-        </div>
+        </a>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Trash2, CheckSquare, Square, Globe } from 'lucide-react';
+import { X, Lock, Trash2, CheckSquare, Square, Globe, Edit2, Check } from 'lucide-react';
 import { cn } from '../utils';
 import { Page, SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
@@ -10,6 +10,7 @@ export interface ManagePagesModalProps {
   language?: Language;
   onClose: () => void;
   onDeletePages: (pageIds: string[]) => void;
+  onRenamePage?: (pageId: string, newTitle: string) => void;
 }
 
 export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
@@ -18,10 +19,13 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
   language = 'zh-TW',
   onClose,
   onDeletePages,
+  onRenamePage,
 }) => {
   const t = getTranslations(language);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [editingPageId, setEditingPageId] = useState<string | null>(null);
+  const [editingTitleInput, setEditingTitleInput] = useState('');
 
   if (!isOpen) return null;
 
@@ -40,6 +44,21 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
     setSelectedIds((prev) =>
       prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
     );
+  };
+
+  const handleStartRename = (e: React.MouseEvent, page: Page) => {
+    e.stopPropagation();
+    setEditingPageId(page.id);
+    setEditingTitleInput(page.title);
+  };
+
+  const handleSaveRename = (e: React.MouseEvent | React.KeyboardEvent, pageId: string) => {
+    e.stopPropagation();
+    const trimmed = editingTitleInput.trim();
+    if (trimmed && onRenamePage) {
+      onRenamePage(pageId, trimmed);
+    }
+    setEditingPageId(null);
   };
 
   const handleConfirmDelete = () => {
@@ -115,15 +134,63 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
 
                   <span className="text-base select-none flex-shrink-0">{page.icon || '📄'}</span>
 
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
-                        {page.title}
-                      </span>
-                      {isSystem && (
-                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-black/5 dark:bg-white/10 text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
-                          {t.managePagesModal.lockedBadge}
-                        </span>
+                      {editingPageId === page.id ? (
+                        <div
+                          className="flex items-center gap-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <input
+                            type="text"
+                            value={editingTitleInput}
+                            autoFocus
+                            onChange={(e) => setEditingTitleInput(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') handleSaveRename(e, page.id);
+                              if (e.key === 'Escape') setEditingPageId(null);
+                            }}
+                            className="text-xs font-semibold px-2 py-0.5 rounded border border-raycast-amber bg-raycast-light-surface dark:bg-raycast-dark-surface outline-none text-raycast-light-text dark:text-raycast-dark-text"
+                          />
+                          <button
+                            type="button"
+                            onClick={(e) => handleSaveRename(e, page.id)}
+                            className="p-1 rounded text-raycast-emerald hover:bg-black/5 dark:hover:bg-white/10"
+                          >
+                            <Check className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setEditingPageId(null);
+                            }}
+                            className="p-1 rounded text-raycast-light-muted dark:text-raycast-dark-muted hover:bg-black/5 dark:hover:bg-white/10"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1.5 group/rename">
+                          <span className="text-xs font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
+                            {page.title}
+                          </span>
+                          {onRenamePage && (
+                            <button
+                              type="button"
+                              onClick={(e) => handleStartRename(e, page)}
+                              title="重新命名此頁"
+                              className="p-0.5 rounded opacity-0 group-hover/rename:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                          {isSystem && (
+                            <span className="px-1.5 py-0.5 rounded text-[10px] bg-black/5 dark:bg-white/10 text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
+                              {t.managePagesModal.lockedBadge}
+                            </span>
+                          )}
+                        </div>
                       )}
                     </div>
 

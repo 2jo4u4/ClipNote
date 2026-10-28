@@ -278,10 +278,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [selectedCellTargets, setSelectedCellTargets] = useState<CellTarget[]>([]);
   const [showBatchConfirm, setShowBatchConfirm] = useState(false);
 
-  const standaloneSelectedCellsCount = useMemo(() => {
-    return selectedCellTargets.filter((t) => !selectedSectionIds.includes(t.sectionId)).length;
-  }, [selectedCellTargets, selectedSectionIds]);
-
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -647,18 +643,42 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
   // Batch Selection Handlers
   const handleToggleSelectSection = (sectionId: string) => {
-    setSelectedSectionIds((prev) =>
-      prev.includes(sectionId) ? prev.filter((id) => id !== sectionId) : [...prev, sectionId]
-    );
+    const isCurrentlySelected = selectedSectionIds.includes(sectionId);
+    const targetSec = activePage.sections.find((s) => s.id === sectionId);
+    const secCells: CellTarget[] = targetSec
+      ? targetSec.items.map((c) => ({ sectionId, cellId: c.id }))
+      : [];
+
+    if (isCurrentlySelected) {
+      setSelectedSectionIds((prev) => prev.filter((id) => id !== sectionId));
+      setSelectedCellTargets((prev) => prev.filter((t) => t.sectionId !== sectionId));
+    } else {
+      setSelectedSectionIds((prev) => [...prev, sectionId]);
+      setSelectedCellTargets((prev) => {
+        const remaining = prev.filter((t) => t.sectionId !== sectionId);
+        return [...remaining, ...secCells];
+      });
+    }
   };
 
   const handleToggleSelectCell = (sectionId: string, cellId: string) => {
     setSelectedCellTargets((prev) => {
       const exists = prev.some((t) => t.sectionId === sectionId && t.cellId === cellId);
       if (exists) {
+        setSelectedSectionIds((cats) => cats.filter((id) => id !== sectionId));
         return prev.filter((t) => !(t.sectionId === sectionId && t.cellId === cellId));
       } else {
-        return [...prev, { sectionId, cellId }];
+        const next = [...prev, { sectionId, cellId }];
+        const targetSec = activePage.sections.find((s) => s.id === sectionId);
+        if (targetSec && targetSec.items.length > 0) {
+          const allSelected = targetSec.items.every((c) =>
+            next.some((t) => t.sectionId === sectionId && t.cellId === c.id)
+          );
+          if (allSelected) {
+            setSelectedSectionIds((cats) => (cats.includes(sectionId) ? cats : [...cats, sectionId]));
+          }
+        }
+        return next;
       }
     });
   };
@@ -1136,7 +1156,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           <div className="p-2 border-t border-raycast-amber/30 bg-raycast-amber/10 dark:bg-raycast-dark-surface/95 backdrop-blur-md flex items-center justify-between text-xs animate-in slide-in-from-bottom-2 duration-150 flex-shrink-0">
             <div className="flex items-center gap-2">
               <span className="font-medium text-raycast-amber">
-                {t.sidePanel.batchStats(selectedSectionIds.length, standaloneSelectedCellsCount)}
+                {t.sidePanel.batchStats(selectedSectionIds.length, selectedCellTargets.length)}
               </span>
             </div>
             <div className="flex items-center gap-1.5">
@@ -1204,7 +1224,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   <p className="text-xs text-raycast-light-muted dark:text-raycast-dark-muted mt-0.5">
                     {t.sidePanel.batchConfirmDeleteDesc(
                       selectedSectionIds.length,
-                      standaloneSelectedCellsCount
+                      selectedCellTargets.length
                     )}
                   </p>
                 </div>
@@ -1288,6 +1308,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           pages={pages}
           onClose={() => setIsManagePagesModalOpen(false)}
           onDeletePages={handleBatchDeletePages}
+          onRenamePage={(pageId, newTitle) => {
+            setPages((prev) =>
+              prev.map((p) => (p.id === pageId ? { ...p, title: newTitle, updatedAt: Date.now() } : p))
+            );
+            showToast(t.sidePanel.renamedPageToast(newTitle));
+          }}
         />
       </div>
     </div>

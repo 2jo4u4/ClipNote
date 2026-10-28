@@ -41,7 +41,7 @@ It provides:
 12. As a content creator drafting posts for multiple social platforms, I want to bind a single "社交平台貼文" Page to multiple domains (e.g., `x.com`, `threads.net`, `facebook.com`), so that the exact same drafting notes and hashtags appear by default whenever I visit any of these sites.
 13. As a user visiting an arbitrary or unknown website, I want the extension to automatically default to the system `Global Page`, so that I never face an empty screen or broken navigation.
 14. As a user with multiple Pages associated with the same domain, I want to designate a primary Page or have the system remember my last active Page tab on that site, so that I land on the most relevant page without repetitive clicking.
-15. As a user reviewing my notes on a matched domain, I want a permanent `[ 🌐 全域筆記頁 ]` tab pinned at the top of the Side Panel, so that I can instantly switch between domain-specific notes and universal notes.
+15. As a user reviewing my notes on a matched domain, I want a permanent `[ 🌐 第一頁 ]` tab pinned at the top of the Side Panel, so that I can instantly switch between domain-specific notes and universal notes.
 16. As a user personalizing my workspace, I want to assign custom Emoji icons (e.g., `💼`, `📝`, `💬`, `🚀`) to my Pages, so that I can recognize them visually at a glance in the tab bar.
 16.b. As a user with many Pages in the tab bar, I want the tab bar to support horizontal mouse wheel scrolling and display smooth Chevron navigation buttons when overflowing, with domain badges kept clean and hidden by default, so that navigating across many tabs is effortless and compact.
 17. As a user organizing my knowledge base, I want to click the `+` button on the tab bar to open a dialog for creating a new Page with title, icon, and optional bound domains, so that I can structure new projects easily.
@@ -56,14 +56,14 @@ It provides:
 24. As a user organizing or clearing notebook items, I want batch selection and deletion for Pages, Categories, and Cells, so that I can select multiple unwanted items and delete them in one step.
 
 ### Discovery & Search
-22. As a user on a new job website (`cake.me`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `104 中文經歷`.
-23. As a user discovering a Cell from another Page via search, I want an option to bind the current domain to that Page with one click, so that future visits automatically prioritize that Page.
-24. As a user browsing search results, I want each result card to show its source path (`來自 [Page] > [Section]`) and type badge (`[欄位]` or `[隨筆]`), so that I understand the context before copying.
+25. As a user on a new job website (`cake.me`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `104 中文經歷`.
+26. As a user discovering a Cell from another Page via search, I want an option to bind the current domain to that Page with one click, so that future visits automatically prioritize that Page.
+27. As a user browsing search results, I want each result card to show its source path (`來自 [Page] > [Section]`) and type badge (`[欄位]` or `[隨筆]`), so that I understand the context before copying.
 
 ### Data Freedom & Backup
-25. As a privacy-conscious user, I want all my notes, rules, and cells stored entirely in local browser storage (`chrome.storage.local`), so that none of my personal or resume data leaves my device. (Note: Extension declares `tabs` permission solely to read `tab.url` on `chrome.tabs.onActivated` for Side Panel domain awareness; no tab content or browsing activity is tracked or transmitted).
-26. As a power user, I want to export my entire Notebook or individual Pages as standard JSON files, so that I can back up, migrate, or programmatically edit my notes.
-27. As a user setting up a new device, I want to import a previously exported JSON file, so that all my Pages, Sections, Cells, and Domain Bindings are restored accurately.
+28. As a privacy-conscious user, I want all my notes, rules, and cells stored entirely in local browser storage (`chrome.storage.local`), so that none of my personal or resume data leaves my device. (Note: Extension declares `tabs` permission solely to read `tab.url` on `chrome.tabs.onActivated` for Side Panel domain awareness; no tab content or browsing activity is tracked or transmitted).
+29. As a power user, I want to export my entire Notebook or individual Pages as standard JSON files, so that I can back up, migrate, or programmatically edit my notes.
+30. As a user setting up a new device, I want to import a previously exported JSON file, so that all my Pages, Sections, Cells, and Domain Bindings are restored accurately.
 
 ---
 
