@@ -6,3 +6,4 @@ export * from './OmniSearchBar';
 export * from './QuickCaptureModal';
 export * from './Dropdown';
 export * from './NewPageModal';
+export * from './SidePanel';
