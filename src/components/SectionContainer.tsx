@@ -15,7 +15,7 @@ import { cn } from '../utils';
 export interface SectionContainerProps {
   id: string;
   title: string;
-  type: 'fields' | 'jots';
+  type?: 'fields' | 'jots' | 'mixed';
   itemCount: number;
   isCollapsible?: boolean;
   defaultExpanded?: boolean;
@@ -30,7 +30,7 @@ export interface SectionContainerProps {
 export const SectionContainer: React.FC<SectionContainerProps> = ({
   id,
   title,
-  type,
+  type = 'mixed',
   itemCount,
   isCollapsible = true,
   defaultExpanded = true,
@@ -45,6 +45,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   const [showMenu, setShowMenu] = useState(false);
 
   const isFields = type === 'fields';
+  const isJots = type === 'jots';
 
   return (
     <div
@@ -74,11 +75,13 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
               'flex items-center justify-center w-6 h-6 rounded-lg transition-colors flex-shrink-0',
               isFields
                 ? 'bg-raycast-coral/10 text-raycast-coral border border-raycast-coral/20'
+                : isJots
+                ? 'bg-raycast-amber/10 text-raycast-amber border border-raycast-amber/20'
                 : 'bg-raycast-amber/10 text-raycast-amber border border-raycast-amber/20'
             )}
-            title={isFields ? '欄位分區 (結構化鍵值對)' : '隨筆分區 (時間軸記事)'}
+            title="筆記分區"
           >
-            {isFields ? <Layers className="w-3.5 h-3.5" /> : <Sparkles className="w-3.5 h-3.5" />}
+            {isJots ? <Sparkles className="w-3.5 h-3.5" /> : <Layers className="w-3.5 h-3.5" />}
           </div>
 
           <div className="flex items-center gap-2 min-w-0">

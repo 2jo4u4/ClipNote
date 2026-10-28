@@ -5,6 +5,7 @@ import { cn } from '../utils';
 export interface DropdownOption {
   id: string;
   label: string;
+  value?: string;
   icon?: React.ReactNode;
 }
 

@@ -12,11 +12,10 @@ import { cn } from '../utils';
 import { PageTabs, PageItem } from './PageTabs';
 import { OmniSearchBar } from './OmniSearchBar';
 import { SectionContainer } from './SectionContainer';
-import { FieldCard } from './FieldCard';
-import { JotCard } from './JotCard';
+import { CellCard } from './CellCard';
 import { QuickCaptureModal } from './QuickCaptureModal';
 import { NewPageModal, NewPageData } from './NewPageModal';
-import type { Page, Field, Jot, FieldsSection, JotsSection, SearchResult } from '../types';
+import type { Page, Section, Cell, SearchResult } from '../types';
 
 export interface SidePanelProps {
   currentDomain?: string;
@@ -26,7 +25,7 @@ export interface SidePanelProps {
   className?: string;
 }
 
-// Built-in rich demo dataset
+// Built-in rich demo dataset using unified Cell and Section
 const defaultDemoPages: Page[] = [
   {
     id: 'SYSTEM_GLOBAL_PAGE',
@@ -40,36 +39,36 @@ const defaultDemoPages: Page[] = [
       {
         id: 'sec-global-fields',
         title: '常用填表資訊',
-        type: 'fields',
         order: 0,
         createdAt: Date.now() - 86400000 * 2,
         updatedAt: Date.now() - 3600000,
-        fields: [
-          { id: 'f-1', key: '全名', value: '王小明', createdAt: Date.now() - 86400000 * 2 },
-          { id: 'f-2', key: 'Email', value: 'xiaoming.wang@example.com', createdAt: Date.now() - 86400000 * 2 },
-          { id: 'f-3', key: '電話號碼', value: '0912-345-678', createdAt: Date.now() - 86400000 * 2 },
-          { id: 'f-4', key: '個人作品集', value: 'https://github.com/xiaoming', createdAt: Date.now() - 86400000 },
+        items: [
+          { id: 'f-1', key: '全名', value: '王小明', createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
+          { id: 'f-2', key: 'Email', value: 'xiaoming.wang@example.com', createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
+          { id: 'f-3', key: '電話號碼', value: '0912-345-678', createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
+          { id: 'f-4', key: '個人作品集', value: 'https://github.com/xiaoming', createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000 },
         ],
       },
       {
         id: 'sec-global-jots',
         title: '全網通用備忘隨筆',
-        type: 'jots',
         order: 1,
         createdAt: Date.now() - 86400000,
         updatedAt: Date.now() - 1800000,
-        jots: [
+        items: [
           {
             id: 'j-1',
-            content: '歡迎使用 Notebook 側邊欄！在此處點擊任何欄位即可一秒複製。使用右鍵或 Alt+N 可隨時快速捕獲。',
+            value: '歡迎使用 Notebook 側邊欄！在此處點擊任何欄位即可一秒複製。使用右鍵或 Alt+N 可隨時快速捕獲。',
             createdAt: Date.now() - 7200000,
+            updatedAt: Date.now() - 7200000,
           },
           {
             id: 'j-2',
-            content: '這個全域分頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
+            value: '這個全域分頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
             sourceUrl: 'https://google.com',
             sourceTitle: 'Google 首頁',
             createdAt: Date.now() - 3600000,
+            updatedAt: Date.now() - 3600000,
           },
         ],
       },
@@ -85,57 +84,39 @@ const defaultDemoPages: Page[] = [
     sections: [
       {
         id: 'sec-104-job-fields',
-        title: '工作經驗欄位',
-        type: 'fields',
+        title: '工作經驗與技能 (欄位與備忘混合)',
         order: 0,
         createdAt: Date.now() - 86400000 * 2,
         updatedAt: Date.now() - 1200000,
-        fields: [
+        items: [
           {
             id: 'f-104-1',
             key: '職稱',
             value: '資深前端架構工程師 (Senior Frontend Architect)',
             createdAt: Date.now() - 86400000,
+            updatedAt: Date.now() - 86400000,
           },
           {
             id: 'f-104-2',
             key: '任職公司',
             value: '極速科技有限公司 (Speedy Tech Co.)',
             createdAt: Date.now() - 86400000,
+            updatedAt: Date.now() - 86400000,
           },
           {
             id: 'f-104-3',
-            key: '在職年資',
-            value: '2021/03 ~ 至今 (4 年)',
-            createdAt: Date.now() - 86400000,
-          },
-          {
-            id: 'f-104-4',
             key: '核心技術棧',
             value: 'React, TypeScript, Next.js, Tailwind CSS, Chrome Extension, Vitest',
             createdAt: Date.now() - 43200000,
+            updatedAt: Date.now() - 43200000,
           },
-        ],
-      },
-      {
-        id: 'sec-104-intro-jots',
-        title: '自傳與求職亮點隨筆',
-        type: 'jots',
-        order: 1,
-        createdAt: Date.now() - 86400000,
-        updatedAt: Date.now() - 600000,
-        jots: [
           {
             id: 'j-104-1',
-            content: '具備 6 年以上大型 Web 產品開發經驗，主導千萬級流量前端微服務架構重構，使頁面加載速度提升 42%，並建立無障礙規範與自動化 CI/CD 測試流程。',
+            value: '具備 6 年以上大型 Web 產品開發經驗，主導千萬級流量前端微服務架構重構，使頁面加載速度提升 42%，並建立自動化 CI/CD 流程。',
             sourceUrl: 'https://104.com.tw/resume',
             sourceTitle: '104 人力銀行 - 我的履歷表',
             createdAt: Date.now() - 1800000,
-          },
-          {
-            id: 'j-104-2',
-            content: '擅長推動領域驅動設計 (DDD) 與深模組架構，將複雜狀態簡化，並指導 5 名工程師順利落地微前端生態。',
-            createdAt: Date.now() - 600000,
+            updatedAt: Date.now() - 1800000,
           },
         ],
       },
@@ -152,49 +133,17 @@ const defaultDemoPages: Page[] = [
       {
         id: 'sec-social-jots',
         title: '短影音與社群靈感',
-        type: 'jots',
         order: 0,
         createdAt: Date.now() - 86400000,
         updatedAt: Date.now() - 7200000,
-        jots: [
+        items: [
           {
             id: 'j-soc-1',
-            content: '如何用 Raycast 式的極簡流暢動態打造讓人愛不釋手的 Chrome 擴充功能？重點在於細膩的過渡曲線與零多餘線條。',
+            value: '如何用 Raycast 式的極簡流暢動態打造讓人愛不釋手的 Chrome 擴充功能？重點在於細膩的過渡曲線與零多餘線條。',
             sourceUrl: 'https://x.com/design_gems',
             sourceTitle: 'X / Design Gems',
             createdAt: Date.now() - 7200000,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'page-cake',
-    title: 'CakeResume 英文檔案',
-    icon: '📝',
-    domains: ['cakeresume.com'],
-    createdAt: Date.now() - 86400000 * 4,
-    updatedAt: Date.now() - 86400000,
-    sections: [
-      {
-        id: 'sec-cake-fields',
-        title: 'English Profile Summary',
-        type: 'fields',
-        order: 0,
-        createdAt: Date.now() - 86400000 * 4,
-        updatedAt: Date.now() - 86400000,
-        fields: [
-          {
-            id: 'f-ck-1',
-            key: 'English Name',
-            value: 'Jay Wang',
-            createdAt: Date.now() - 86400000 * 4,
-          },
-          {
-            id: 'f-ck-2',
-            key: 'Headline',
-            value: 'Senior Frontend Architect & Developer Experience Enthusiast',
-            createdAt: Date.now() - 86400000 * 4,
+            updatedAt: Date.now() - 7200000,
           },
         ],
       },
@@ -212,7 +161,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [pages, setPages] = useState<Page[]>(initialPages);
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
-    // Auto-match current domain
     const matched = initialPages.find(
       (p) =>
         p.domains &&
@@ -242,43 +190,27 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const list: SearchResult[] = [];
     for (const page of pages) {
       for (const sec of page.sections) {
-        if (sec.type === 'fields') {
-          for (const field of sec.fields) {
-            list.push({
-              id: field.id,
-              type: 'field',
-              title: field.key,
-              content: field.value,
-              pageId: page.id,
-              pageTitle: page.title,
-              sectionId: sec.id,
-              sectionTitle: sec.title,
-              sourcePath: `${page.title} > ${sec.title}`,
-            });
-          }
-        } else {
-          for (const jot of sec.jots) {
-            list.push({
-              id: jot.id,
-              type: 'jot',
-              title: jot.content.slice(0, 24),
-              content: jot.content,
-              pageId: page.id,
-              pageTitle: page.title,
-              sectionId: sec.id,
-              sectionTitle: sec.title,
-              sourcePath: `${page.title} > ${sec.title}`,
-              sourceUrl: jot.sourceUrl,
-              sourceTitle: jot.sourceTitle,
-            });
-          }
+        for (const cell of sec.items) {
+          const isField = Boolean(cell.key);
+          list.push({
+            id: cell.id,
+            type: isField ? 'field' : 'jot',
+            title: cell.key || (cell.value.length > 24 ? cell.value.slice(0, 24) + '...' : cell.value),
+            content: cell.value,
+            pageId: page.id,
+            pageTitle: page.title,
+            sectionId: sec.id,
+            sectionTitle: sec.title,
+            sourcePath: `${page.title} > ${sec.title}${cell.key ? ` ‧ ${cell.key}` : ''}`,
+            sourceUrl: cell.sourceUrl,
+            sourceTitle: cell.sourceTitle,
+          });
         }
       }
     }
     return list;
   }, [pages]);
 
-  // Page tabs conversion
   const pageTabItems: PageItem[] = useMemo(() => {
     return pages.map((p) => ({
       id: p.id,
@@ -290,7 +222,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     }));
   }, [pages]);
 
-  // Action handlers
   const handleCreatePage = (data: NewPageData) => {
     const newId = `page-${Date.now()}`;
     const newPage: Page = {
@@ -302,22 +233,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       updatedAt: Date.now(),
       sections: [
         {
-          id: `sec-${Date.now()}-fields`,
-          title: '常用欄位',
-          type: 'fields',
+          id: `sec-${Date.now()}-default`,
+          title: '常用筆記分區',
           order: 0,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          fields: [],
-        },
-        {
-          id: `sec-${Date.now()}-jots`,
-          title: '備忘隨筆',
-          type: 'jots',
-          order: 1,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          jots: [],
+          items: [],
         },
       ],
     };
@@ -331,135 +252,79 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(`已複製「${label}」`);
   };
 
-  const handleDeleteField = (pageId: string, sectionId: string, fieldId: string) => {
+  const handleDeleteCell = (pageId: string, sectionId: string, cellId: string) => {
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== pageId) return p;
         return {
           ...p,
           sections: p.sections.map((s) => {
-            if (s.id !== sectionId || s.type !== 'fields') return s;
+            if (s.id !== sectionId) return s;
             return {
               ...s,
-              fields: (s as FieldsSection).fields.filter((f) => f.id !== fieldId),
+              items: s.items.filter((c) => c.id !== cellId),
+              updatedAt: Date.now(),
             };
           }),
+          updatedAt: Date.now(),
         };
       })
     );
-    showToast('已刪除欄位');
+    showToast('已刪除筆記項目');
   };
 
-  const handleDeleteJot = (pageId: string, sectionId: string, jotId: string) => {
-    setPages((prev) =>
-      prev.map((p) => {
-        if (p.id !== pageId) return p;
-        return {
-          ...p,
-          sections: p.sections.map((s) => {
-            if (s.id !== sectionId || s.type !== 'jots') return s;
-            return {
-              ...s,
-              jots: (s as JotsSection).jots.filter((j) => j.id !== jotId),
-            };
-          }),
-        };
-      })
-    );
-    showToast('已刪除隨筆');
-  };
-
-  const handleQuickSaveJot = (data: {
+  const handleQuickSaveCell = (data: {
     pageId: string;
     sectionId?: string;
-    content: string;
-    sourceUrl?: string;
-    sourceTitle?: string;
-  }) => {
-    setPages((prev) =>
-      prev.map((p) => {
-        if (p.id !== data.pageId) return p;
-        // Find existing jots section or first jots section
-        let secIndex = p.sections.findIndex(
-          (s) => s.id === data.sectionId || s.type === 'jots'
-        );
-        const newJot: Jot = {
-          id: `j-${Date.now()}`,
-          content: data.content,
-          sourceUrl: data.sourceUrl,
-          sourceTitle: data.sourceTitle,
-          createdAt: Date.now(),
-        };
-
-        if (secIndex === -1) {
-          const newSec: JotsSection = {
-            id: `sec-${Date.now()}-jots`,
-            title: '隨筆記要',
-            type: 'jots',
-            order: p.sections.length,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            jots: [newJot],
-          };
-          return { ...p, sections: [...p.sections, newSec] };
-        }
-
-        const updatedSections = [...p.sections];
-        const targetSec = updatedSections[secIndex] as JotsSection;
-        updatedSections[secIndex] = {
-          ...targetSec,
-          jots: [newJot, ...targetSec.jots],
-        };
-        return { ...p, sections: updatedSections };
-      })
-    );
-    showToast('已儲存隨筆！');
-  };
-
-  const handleQuickSaveField = (data: {
-    pageId: string;
-    sectionId?: string;
-    key: string;
+    key?: string;
     value: string;
     sourceUrl?: string;
     sourceTitle?: string;
   }) => {
+    const now = Date.now();
+    const newCell: Cell = {
+      id: `c-${Date.now()}`,
+      key: data.key,
+      value: data.value,
+      sourceUrl: data.sourceUrl,
+      sourceTitle: data.sourceTitle,
+      createdAt: now,
+      updatedAt: now,
+    };
+
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== data.pageId) return p;
-        let secIndex = p.sections.findIndex(
-          (s) => s.id === data.sectionId || s.type === 'fields'
-        );
-        const newField: Field = {
-          id: `f-${Date.now()}`,
-          key: data.key,
-          value: data.value,
-          createdAt: Date.now(),
-        };
+
+        let secIndex = p.sections.findIndex((s) => s.id === data.sectionId);
+        if (secIndex === -1 && p.sections.length > 0) {
+          secIndex = 0;
+        }
 
         if (secIndex === -1) {
-          const newSec: FieldsSection = {
-            id: `sec-${Date.now()}-fields`,
-            title: '常用欄位',
-            type: 'fields',
+          const newSec: Section = {
+            id: `sec-${Date.now()}`,
+            title: '預設分區',
             order: 0,
-            createdAt: Date.now(),
-            updatedAt: Date.now(),
-            fields: [newField],
+            createdAt: now,
+            updatedAt: now,
+            items: [newCell],
           };
-          return { ...p, sections: [newSec, ...p.sections] };
+          return { ...p, sections: [newSec], updatedAt: now };
         }
 
         const updatedSections = [...p.sections];
-        const targetSec = updatedSections[secIndex] as FieldsSection;
+        const targetSec = updatedSections[secIndex];
         updatedSections[secIndex] = {
           ...targetSec,
-          fields: [...targetSec.fields, newField],
+          items: [newCell, ...targetSec.items],
+          updatedAt: now,
         };
-        return { ...p, sections: updatedSections };
+        return { ...p, sections: updatedSections, updatedAt: now };
       })
     );
-    showToast(`已儲存欄位「${data.key}」！`);
+
+    showToast(data.key ? `已儲存欄位「${data.key}」！` : '已儲存隨筆！');
   };
 
   const handleExportJson = () => {
@@ -475,7 +340,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast('已匯出分頁 JSON');
   };
 
-  // Convert pages for quick capture modal dropdowns
   const quickCapturePages = useMemo(() => {
     return pages.map((p) => ({
       id: p.id,
@@ -484,7 +348,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       sections: p.sections.map((s) => ({
         id: s.id,
         title: s.title,
-        type: s.type,
         pageId: p.id,
       })),
     }));
@@ -505,9 +368,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           'dark:bg-raycast-dark-bg dark:text-raycast-dark-text dark:border-raycast-dark-border'
         )}
       >
-        {/* ========================================================= */}
-        {/* Top Header: App Branding + Current Domain + Utility Icons */}
-        {/* ========================================================= */}
+        {/* Header */}
         <header
           className={cn(
             'flex items-center justify-between px-3.5 py-2.5 border-b flex-shrink-0',
@@ -515,7 +376,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             'dark:bg-raycast-dark-surface/60 dark:border-white/10'
           )}
         >
-          {/* Brand & Active Domain */}
           <div className="flex items-center gap-2 min-w-0">
             <div className="w-5 h-5 rounded-md bg-raycast-amber flex items-center justify-center text-raycast-dark-bg font-black text-[11px] shadow-sm flex-shrink-0">
               N
@@ -524,7 +384,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               筆記本
             </span>
 
-            {/* Current Domain Pill */}
             {currentDomain && (
               <span
                 title={`目前頁面網域: ${currentDomain}`}
@@ -539,9 +398,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             )}
           </div>
 
-          {/* Quick Actions */}
           <div className="flex items-center gap-1 flex-shrink-0">
-            {/* Quick Capture Button */}
             <button
               onClick={() => setIsQuickCaptureOpen(true)}
               title="快速輸入備忘 (Alt+N)"
@@ -554,7 +411,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               <span>快速捕獲</span>
             </button>
 
-            {/* Export JSON Button */}
             <button
               onClick={handleExportJson}
               title="匯出此分頁 JSON"
@@ -567,7 +423,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               <Download className="w-3.5 h-3.5" />
             </button>
 
-            {/* Dark / Light Toggle */}
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
               title={isDarkMode ? '切換為亮色主題' : '切換為深色主題'}
@@ -586,9 +441,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           </div>
         </header>
 
-        {/* ========================================================= */}
         {/* Omni-Search Bar */}
-        {/* ========================================================= */}
         <div className="p-3 border-b border-raycast-light-border dark:border-raycast-dark-border flex-shrink-0">
           <OmniSearchBar
             results={allSearchResults}
@@ -600,9 +453,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           />
         </div>
 
-        {/* ========================================================= */}
-        {/* PageTabs Bar (with custom icons & add button) */}
-        {/* ========================================================= */}
+        {/* PageTabs */}
         <div className="flex-shrink-0">
           <PageTabs
             pages={pageTabItems}
@@ -612,11 +463,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           />
         </div>
 
-        {/* ========================================================= */}
-        {/* Active Page Body (Scrollable Sections) */}
-        {/* ========================================================= */}
+        {/* Active Page Body */}
         <main className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
-          {/* Active Page Header Banner */}
           <div className="flex items-center justify-between pb-1">
             <div className="flex items-center gap-1.5">
               <span className="text-base select-none">{activePage.icon || '📄'}</span>
@@ -631,83 +479,42 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             )}
           </div>
 
-          {/* Page Sections */}
           {activePage.sections && activePage.sections.length > 0 ? (
-            activePage.sections.map((section) => {
-              if (section.type === 'fields') {
-                const fieldsSec = section as FieldsSection;
-                return (
-                  <SectionContainer
-                    key={fieldsSec.id}
-                    id={fieldsSec.id}
-                    title={fieldsSec.title}
-                    type="fields"
-                    itemCount={fieldsSec.fields.length}
-                    onAddItem={() => setIsQuickCaptureOpen(true)}
-                    onExportPage={handleExportJson}
-                  >
-                    {fieldsSec.fields.length > 0 ? (
-                      <div className="space-y-2">
-                        {fieldsSec.fields.map((field) => (
-                          <FieldCard
-                            key={field.id}
-                            id={field.id}
-                            fieldKey={field.key}
-                            value={field.value}
-                            createdAt={field.createdAt}
-                            sourceUrl={field.sourceUrl}
-                            onCopy={() => handleCopy(field.value, field.key)}
-                            onDelete={() =>
-                              handleDeleteField(activePage.id, fieldsSec.id, field.id)
-                            }
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-6 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                        尚無欄位，點擊「快速捕獲」或右上角「+」新增
-                      </div>
-                    )}
-                  </SectionContainer>
-                );
-              } else {
-                const jotsSec = section as JotsSection;
-                return (
-                  <SectionContainer
-                    key={jotsSec.id}
-                    id={jotsSec.id}
-                    title={jotsSec.title}
-                    type="jots"
-                    itemCount={jotsSec.jots.length}
-                    onAddItem={() => setIsQuickCaptureOpen(true)}
-                    onExportPage={handleExportJson}
-                  >
-                    {jotsSec.jots.length > 0 ? (
-                      <div className="space-y-2">
-                        {jotsSec.jots.map((jot) => (
-                          <JotCard
-                            key={jot.id}
-                            id={jot.id}
-                            content={jot.content}
-                            createdAt={jot.createdAt}
-                            sourceUrl={jot.sourceUrl}
-                            sourceTitle={jot.sourceTitle}
-                            onCopy={() => handleCopy(jot.content, '隨筆')}
-                            onDelete={() =>
-                              handleDeleteJot(activePage.id, jotsSec.id, jot.id)
-                            }
-                          />
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="py-6 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                        尚無隨筆，選取網頁文字後右鍵即可存入此處
-                      </div>
-                    )}
-                  </SectionContainer>
-                );
-              }
-            })
+            activePage.sections.map((section) => (
+              <SectionContainer
+                key={section.id}
+                id={section.id}
+                title={section.title}
+                type="mixed"
+                itemCount={section.items.length}
+                onAddItem={() => setIsQuickCaptureOpen(true)}
+                onExportPage={handleExportJson}
+              >
+                {section.items.length > 0 ? (
+                  <div className="space-y-2">
+                    {section.items.map((cell) => (
+                      <CellCard
+                        key={cell.id}
+                        id={cell.id}
+                        cellKey={cell.key}
+                        value={cell.value}
+                        createdAt={cell.createdAt}
+                        sourceUrl={cell.sourceUrl}
+                        sourceTitle={cell.sourceTitle}
+                        onCopy={() => handleCopy(cell.value, cell.key || '隨筆')}
+                        onDelete={() =>
+                          handleDeleteCell(activePage.id, section.id, cell.id)
+                        }
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="py-6 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
+                    分區尚無單元項，點擊右上角「+」或快速捕獲新增
+                  </div>
+                )}
+              </SectionContainer>
+            ))
           ) : (
             <div className="py-12 flex flex-col items-center justify-center text-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-raycast-amber/10 border border-raycast-amber/30 flex items-center justify-center text-raycast-amber">
@@ -731,9 +538,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           )}
         </main>
 
-        {/* ========================================================= */}
-        {/* Bottom Status Bar */}
-        {/* ========================================================= */}
+        {/* Footer */}
         <footer
           className={cn(
             'flex items-center justify-between px-3 py-1.5 text-[11px] border-t flex-shrink-0 select-none',
@@ -754,9 +559,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           </div>
         </footer>
 
-        {/* ========================================================= */}
         {/* Floating Toast Notification */}
-        {/* ========================================================= */}
         {toastMessage && (
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-3 py-1.5 rounded-xl bg-raycast-dark-surface border border-white/15 text-raycast-dark-text text-xs shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-200">
             <Check className="w-3.5 h-3.5 text-raycast-emerald" />
@@ -764,9 +567,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           </div>
         )}
 
-        {/* ========================================================= */}
-        {/* Modals: Quick Capture & New Page */}
-        {/* ========================================================= */}
+        {/* Quick Capture Modal */}
         <QuickCaptureModal
           isOpen={isQuickCaptureOpen}
           onClose={() => setIsQuickCaptureOpen(false)}
@@ -775,8 +576,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           sourceUrl={currentUrl}
           sourceTitle="當前瀏覽網頁"
           searchResults={allSearchResults}
-          onSaveJot={handleQuickSaveJot}
-          onSaveField={handleQuickSaveField}
+          onSaveCell={handleQuickSaveCell}
           onCopySearchResult={(item) => {
             handleCopy(item.content, item.title);
           }}

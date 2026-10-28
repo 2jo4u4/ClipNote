@@ -1,51 +1,60 @@
+/**
+ * NotebookService - Core Business Logic Engine
+ *
+ * Implements the single-seam domain layer:
+ * - Deterministic Active Page Resolution with session memory
+ * - Section & Cell CRUD with automatic updatedAt timestamp synchronization
+ * - Omni-Search across all Pages, Sections, and Cells
+ * - Section Extraction & Cross-Section Cell Moving
+ * - Full & Single-Page JSON Import / Export
+ */
+
 import {
-  Field,
-  Jot,
-  Section,
-  Page,
   NotebookStorage,
+  Page,
+  Section,
+  Cell,
   SearchResult,
-  MoveItemParams,
+  MoveCellParams,
   SYSTEM_GLOBAL_PAGE_ID,
 } from './types';
 import { StorageAdapter, MemoryStorageAdapter } from './storage';
 
-export const DEFAULT_STORAGE_KEY = 'notebook_storage';
+export const DEFAULT_STORAGE_KEY = 'notebook_storage_v1';
 
-export function generateId(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+function generateId(): string {
+  if (typeof crypto !== 'undefined' && crypto.randomUUID) {
     return crypto.randomUUID();
   }
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-    const r = (Math.random() * 16) | 0;
-    const v = c === 'x' ? r : (r & 0x3) | 0x8;
-    return v.toString(16);
-  });
+  return 'id-' + Math.random().toString(36).substring(2, 11) + '-' + Date.now().toString(36);
 }
 
-export function extractHostname(urlOrHost: string): string {
-  if (!urlOrHost || typeof urlOrHost !== 'string') return '';
-  const trimmed = urlOrHost.trim().toLowerCase();
+/**
+ * Extracts and normalizes the hostname from a URL or raw domain.
+ */
+export function extractHostname(urlOrDomain: string): string {
+  const trimmed = urlOrDomain.trim();
+  if (!trimmed) return '';
+
   try {
     if (trimmed.includes('://')) {
-      return new URL(trimmed).hostname;
+      return new URL(trimmed).hostname.toLowerCase();
     }
-    const slashIdx = trimmed.indexOf('/');
-    const hostWithPort = slashIdx !== -1 ? trimmed.slice(0, slashIdx) : trimmed;
-    const colonIdx = hostWithPort.indexOf(':');
-    return colonIdx !== -1 ? hostWithPort.slice(0, colonIdx) : hostWithPort;
+    // Attempt parsing as URL with protocol
+    const parsed = new URL(`https://${trimmed}`);
+    return parsed.hostname.toLowerCase();
   } catch {
-    return trimmed;
+    // Fallback: strip port and paths manually
+    return trimmed.split('/')[0].split(':')[0].toLowerCase();
   }
 }
 
+/**
+ * Matches a target hostname against a domain pattern (supports exact & *.domain.com wildcard).
+ */
 export function matchDomain(hostname: string, pattern: string): boolean {
-  if (!hostname || !pattern) return false;
-  hostname = hostname.toLowerCase();
-  pattern = pattern.toLowerCase();
-
   if (pattern === '*') return true;
-  if (pattern === hostname) return true;
+  if (hostname === pattern) return true;
 
   if (pattern.startsWith('*.')) {
     const root = pattern.slice(2);
@@ -70,45 +79,51 @@ export function createDefaultSeedData(): NotebookStorage {
       {
         id: 'welcome-fields',
         title: '常用快速填表 (點擊即複製)',
-        type: 'fields',
         order: 0,
         createdAt: now,
         updatedAt: now,
-        fields: [
+        items: [
           {
-            id: 'field-1',
+            id: 'cell-1',
             key: '姓名',
             value: '王小明',
+            createdAt: now,
+            updatedAt: now,
           },
           {
-            id: 'field-2',
+            id: 'cell-2',
             key: 'Email',
             value: 'xiaoming@example.com',
+            createdAt: now,
+            updatedAt: now,
           },
           {
-            id: 'field-3',
+            id: 'cell-3',
             key: '電話',
             value: '0912-345-678',
+            createdAt: now,
+            updatedAt: now,
           },
         ],
       },
       {
         id: 'welcome-jots',
         title: '快速隨筆 (全網通用備忘)',
-        type: 'jots',
         order: 1,
         createdAt: now,
         updatedAt: now,
-        jots: [
+        items: [
           {
-            id: 'jot-1',
-            content: '歡迎使用 Notebook 擴充功能！使用 Alt+N 可以隨時喚起快速輸入與搜尋。',
+            id: 'cell-4',
+            value: '歡迎使用 Notebook 擴充功能！使用 Alt+N 可以隨時喚起快速輸入與搜尋。',
             createdAt: now,
+            updatedAt: now,
           },
           {
-            id: 'jot-2',
-            content: '反白網頁文字後，右鍵「存為全域隨筆」可直接保存，並記錄來源網址。',
+            id: 'cell-5',
+            value: '反白網頁文字後，右鍵「存為全域隨筆」可直接保存，並記錄來源網址。',
             createdAt: now,
+            updatedAt: now,
           },
         ],
       },
@@ -163,18 +178,20 @@ export class NotebookService {
 
   private async ensureInitialized(): Promise<NotebookStorage> {
     if (!this.initialized || !this.cachedData) {
-      return this.init();
+      await this.init();
     }
-    return this.cachedData;
+    return this.cachedData!;
   }
 
   private async persist(): Promise<void> {
-    if (this.cachedData) {
-      await this.storage.set(this.storageKey, this.cachedData);
-    }
+    if (!this.cachedData) return;
+    await this.storage.set(this.storageKey, this.cachedData);
   }
 
   private clone<T>(val: T): T {
+    if (typeof structuredClone === 'function') {
+      return structuredClone(val);
+    }
     return JSON.parse(JSON.stringify(val));
   }
 
@@ -184,7 +201,9 @@ export class NotebookService {
 
   async getAllPages(): Promise<Page[]> {
     const data = await this.ensureInitialized();
-    return Object.values(data.pages).map((p) => this.clone(p));
+    const globalPage = data.pages[data.systemGlobalPageId];
+    const userPages = Object.values(data.pages).filter((p) => p.id !== data.systemGlobalPageId);
+    return [this.clone(globalPage), ...userPages.map((p) => this.clone(p))];
   }
 
   async getPage(id: string): Promise<Page | undefined> {
@@ -278,7 +297,7 @@ export class NotebookService {
 
   async createSection(
     pageId: string,
-    params: { title: string; type: 'fields' | 'jots'; order?: number }
+    params: { title: string; order?: number }
   ): Promise<Section> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
@@ -290,28 +309,14 @@ export class NotebookService {
     const id = generateId();
     const order = params.order !== undefined ? params.order : page.sections.length;
 
-    let newSection: Section;
-    if (params.type === 'fields') {
-      newSection = {
-        id,
-        title: params.title.trim(),
-        type: 'fields',
-        order,
-        fields: [],
-        createdAt: now,
-        updatedAt: now,
-      };
-    } else {
-      newSection = {
-        id,
-        title: params.title.trim(),
-        type: 'jots',
-        order,
-        jots: [],
-        createdAt: now,
-        updatedAt: now,
-      };
-    }
+    const newSection: Section = {
+      id,
+      title: params.title.trim(),
+      order,
+      items: [],
+      createdAt: now,
+      updatedAt: now,
+    };
 
     page.sections.push(newSection);
     page.updatedAt = now;
@@ -387,7 +392,6 @@ export class NotebookService {
       }
     });
 
-    // Append any remaining sections that were not in sectionIds list
     for (const remaining of sectionMap.values()) {
       remaining.order = reordered.length;
       remaining.updatedAt = now;
@@ -401,14 +405,14 @@ export class NotebookService {
   }
 
   // ==========================================
-  // Field Operations
+  // Cell Operations (Unified Field & Jot)
   // ==========================================
 
-  async createField(
+  async createCell(
     pageId: string,
     sectionId: string,
-    params: { key: string; value: string; sourceUrl?: string; sourceTitle?: string }
-  ): Promise<Field> {
+    params: { key?: string; value: string; sourceUrl?: string; sourceTitle?: string }
+  ): Promise<Cell> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
     if (!page) {
@@ -419,14 +423,11 @@ export class NotebookService {
     if (!section) {
       throw new Error(`Section not found: ${sectionId}`);
     }
-    if (section.type !== 'fields') {
-      throw new Error(`Section ${sectionId} is not a fields section`);
-    }
 
     const now = Date.now();
-    const field: Field = {
+    const cell: Cell = {
       id: generateId(),
-      key: params.key.trim(),
+      key: params.key?.trim() ? params.key.trim() : undefined,
       value: params.value,
       createdAt: now,
       updatedAt: now,
@@ -434,81 +435,19 @@ export class NotebookService {
       sourceTitle: params.sourceTitle,
     };
 
-    section.fields.push(field);
+    section.items.push(cell);
     section.updatedAt = now;
     page.updatedAt = now;
     await this.persist();
-    return this.clone(field);
+    return this.clone(cell);
   }
 
-  async updateField(
+  async updateCell(
     pageId: string,
     sectionId: string,
-    fieldId: string,
-    updates: Partial<Omit<Field, 'id'>>
-  ): Promise<Field> {
-    const data = await this.ensureInitialized();
-    const page = data.pages[pageId];
-    if (!page) {
-      throw new Error(`Page not found: ${pageId}`);
-    }
-
-    const section = page.sections.find((s) => s.id === sectionId);
-    if (!section || section.type !== 'fields') {
-      throw new Error(`Fields section not found: ${sectionId}`);
-    }
-
-    const field = section.fields.find((f) => f.id === fieldId);
-    if (!field) {
-      throw new Error(`Field not found: ${fieldId}`);
-    }
-
-    if (updates.key !== undefined) field.key = updates.key.trim();
-    if (updates.value !== undefined) field.value = updates.value;
-    if (updates.sourceUrl !== undefined) field.sourceUrl = updates.sourceUrl;
-    if (updates.sourceTitle !== undefined) field.sourceTitle = updates.sourceTitle;
-
-    const now = Date.now();
-    field.updatedAt = now;
-    section.updatedAt = now;
-    page.updatedAt = now;
-    await this.persist();
-    return this.clone(field);
-  }
-
-  async deleteField(pageId: string, sectionId: string, fieldId: string): Promise<void> {
-    const data = await this.ensureInitialized();
-    const page = data.pages[pageId];
-    if (!page) {
-      throw new Error(`Page not found: ${pageId}`);
-    }
-
-    const section = page.sections.find((s) => s.id === sectionId);
-    if (!section || section.type !== 'fields') {
-      throw new Error(`Fields section not found: ${sectionId}`);
-    }
-
-    const index = section.fields.findIndex((f) => f.id === fieldId);
-    if (index === -1) {
-      throw new Error(`Field not found: ${fieldId}`);
-    }
-
-    section.fields.splice(index, 1);
-    const now = Date.now();
-    section.updatedAt = now;
-    page.updatedAt = now;
-    await this.persist();
-  }
-
-  // ==========================================
-  // Jot Operations
-  // ==========================================
-
-  async createJot(
-    pageId: string,
-    sectionId: string,
-    params: { content: string; sourceUrl?: string; sourceTitle?: string }
-  ): Promise<Jot> {
+    cellId: string,
+    updates: Partial<Omit<Cell, 'id' | 'createdAt'>>
+  ): Promise<Cell> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
     if (!page) {
@@ -519,32 +458,34 @@ export class NotebookService {
     if (!section) {
       throw new Error(`Section not found: ${sectionId}`);
     }
-    if (section.type !== 'jots') {
-      throw new Error(`Section ${sectionId} is not a jots section`);
+
+    const cell = section.items.find((c) => c.id === cellId);
+    if (!cell) {
+      throw new Error(`Cell not found: ${cellId}`);
+    }
+
+    if (updates.key !== undefined) {
+      cell.key = updates.key.trim() ? updates.key.trim() : undefined;
+    }
+    if (updates.value !== undefined) {
+      cell.value = updates.value;
+    }
+    if (updates.sourceUrl !== undefined) {
+      cell.sourceUrl = updates.sourceUrl;
+    }
+    if (updates.sourceTitle !== undefined) {
+      cell.sourceTitle = updates.sourceTitle;
     }
 
     const now = Date.now();
-    const jot: Jot = {
-      id: generateId(),
-      content: params.content,
-      createdAt: now,
-      sourceUrl: params.sourceUrl,
-      sourceTitle: params.sourceTitle,
-    };
-
-    section.jots.push(jot);
+    cell.updatedAt = now;
     section.updatedAt = now;
     page.updatedAt = now;
     await this.persist();
-    return this.clone(jot);
+    return this.clone(cell);
   }
 
-  async updateJot(
-    pageId: string,
-    sectionId: string,
-    jotId: string,
-    updates: Partial<Omit<Jot, 'id' | 'createdAt'>>
-  ): Promise<Jot> {
+  async deleteCell(pageId: string, sectionId: string, cellId: string): Promise<void> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
     if (!page) {
@@ -552,60 +493,74 @@ export class NotebookService {
     }
 
     const section = page.sections.find((s) => s.id === sectionId);
-    if (!section || section.type !== 'jots') {
-      throw new Error(`Jots section not found: ${sectionId}`);
+    if (!section) {
+      throw new Error(`Section not found: ${sectionId}`);
     }
 
-    const jot = section.jots.find((j) => j.id === jotId);
-    if (!jot) {
-      throw new Error(`Jot not found: ${jotId}`);
-    }
-
-    if (updates.content !== undefined) jot.content = updates.content;
-    if (updates.sourceUrl !== undefined) jot.sourceUrl = updates.sourceUrl;
-    if (updates.sourceTitle !== undefined) jot.sourceTitle = updates.sourceTitle;
-
-    const now = Date.now();
-    section.updatedAt = now;
-    page.updatedAt = now;
-    await this.persist();
-    return this.clone(jot);
-  }
-
-  async deleteJot(pageId: string, sectionId: string, jotId: string): Promise<void> {
-    const data = await this.ensureInitialized();
-    const page = data.pages[pageId];
-    if (!page) {
-      throw new Error(`Page not found: ${pageId}`);
-    }
-
-    const section = page.sections.find((s) => s.id === sectionId);
-    if (!section || section.type !== 'jots') {
-      throw new Error(`Jots section not found: ${sectionId}`);
-    }
-
-    const index = section.jots.findIndex((j) => j.id === jotId);
+    const index = section.items.findIndex((c) => c.id === cellId);
     if (index === -1) {
-      throw new Error(`Jot not found: ${jotId}`);
+      throw new Error(`Cell not found: ${cellId}`);
     }
 
-    section.jots.splice(index, 1);
+    section.items.splice(index, 1);
     const now = Date.now();
     section.updatedAt = now;
     page.updatedAt = now;
     await this.persist();
+  }
+
+  async moveCell(params: MoveCellParams): Promise<Cell> {
+    const data = await this.ensureInitialized();
+    const sourcePage = data.pages[params.sourcePageId];
+    if (!sourcePage) {
+      throw new Error(`Source page not found: ${params.sourcePageId}`);
+    }
+
+    const targetPage = data.pages[params.targetPageId];
+    if (!targetPage) {
+      throw new Error(`Target page not found: ${params.targetPageId}`);
+    }
+
+    const sourceSection = sourcePage.sections.find((s) => s.id === params.sourceSectionId);
+    if (!sourceSection) {
+      throw new Error(`Source section not found: ${params.sourceSectionId}`);
+    }
+
+    const targetSection = targetPage.sections.find((s) => s.id === params.targetSectionId);
+    if (!targetSection) {
+      throw new Error(`Target section not found: ${params.targetSectionId}`);
+    }
+
+    const cellIndex = sourceSection.items.findIndex((c) => c.id === params.cellId);
+    if (cellIndex === -1) {
+      throw new Error(`Cell not found: ${params.cellId}`);
+    }
+
+    const [cell] = sourceSection.items.splice(cellIndex, 1);
+    const insertIndex =
+      params.targetIndex !== undefined ? params.targetIndex : targetSection.items.length;
+    targetSection.items.splice(insertIndex, 0, cell);
+
+    const now = Date.now();
+    cell.updatedAt = now;
+    sourceSection.updatedAt = now;
+    targetSection.updatedAt = now;
+    sourcePage.updatedAt = now;
+    targetPage.updatedAt = now;
+
+    await this.persist();
+    return this.clone(cell);
+  }
+
+  // Alias for backward compatibility
+  async moveItem(params: MoveCellParams): Promise<void> {
+    await this.moveCell(params);
   }
 
   // ==========================================
   // Domain Resolution Engine
   // ==========================================
 
-  /**
-   * Resolves the active Page for a given URL or hostname.
-   * Matches against domain bindings (exact or wildcard).
-   * Prioritizes isPrimary if multiple matches exist.
-   * Universally falls back to SYSTEM_GLOBAL_PAGE if no match is found.
-   */
   async resolveActivePage(urlOrHostname: string): Promise<Page> {
     const data = await this.ensureInitialized();
     const hostname = extractHostname(urlOrHostname);
@@ -617,8 +572,7 @@ export class NotebookService {
       );
 
       if (matches.length > 0) {
-        // Multi-match resolution:
-        // 1. Check if user previously selected a page for this domain in the active session
+        // 1. Check if user previously selected a page for this domain in active session
         const sessionPageId = this.sessionActivePages.get(hostname);
         if (sessionPageId) {
           const sessionMatch = matches.find((p) => p.id === sessionPageId);
@@ -638,13 +592,6 @@ export class NotebookService {
     return this.clone(globalPage);
   }
 
-  // ==========================================
-  // Smart Domain Binding
-  // ==========================================
-
-  /**
-   * Associates a domain to a target Page.
-   */
   async bindDomainToPage(domain: string, pageId: string): Promise<Page> {
     const data = await this.ensureInitialized();
     if (pageId === data.systemGlobalPageId || pageId === SYSTEM_GLOBAL_PAGE_ID) {
@@ -670,10 +617,6 @@ export class NotebookService {
   // Omni-Search Engine
   // ==========================================
 
-  /**
-   * Searches across all Pages, Sections, Fields (Key/Value), and Jots.
-   * Exclusively returns copyable Fields and Jots with flat metadata.
-   */
   async search(query: string): Promise<SearchResult[]> {
     const data = await this.ensureInitialized();
     const trimmed = query.trim().toLowerCase();
@@ -684,52 +627,27 @@ export class NotebookService {
     const results: SearchResult[] = [];
 
     for (const page of Object.values(data.pages)) {
-      // Check Sections
       for (const section of page.sections) {
-        // 1. Check Fields
-        if (section.type === 'fields') {
-          for (const field of section.fields) {
-            const keyMatch = field.key.toLowerCase().includes(trimmed);
-            const valMatch = field.value.toLowerCase().includes(trimmed);
+        for (const cell of section.items) {
+          const keyMatch = cell.key ? cell.key.toLowerCase().includes(trimmed) : false;
+          const valMatch = cell.value.toLowerCase().includes(trimmed);
 
-            if (keyMatch || valMatch) {
-              results.push({
-                id: field.id,
-                type: 'field',
-                pageId: page.id,
-                pageTitle: page.title,
-                sectionId: section.id,
-                sectionTitle: section.title,
-                title: field.key,
-                content: field.value,
-                sourcePath: `來自 [${page.title}] > [${section.title}] ‧ ${field.key}`,
-                sourceUrl: field.sourceUrl,
-                sourceTitle: field.sourceTitle,
-                matchedField: keyMatch ? 'key' : 'value',
-              });
-            }
-          }
-        }
-
-        // 2. Check Jots
-        if (section.type === 'jots') {
-          for (const jot of section.jots) {
-            if (jot.content.toLowerCase().includes(trimmed)) {
-              results.push({
-                id: jot.id,
-                type: 'jot',
-                pageId: page.id,
-                pageTitle: page.title,
-                sectionId: section.id,
-                sectionTitle: section.title,
-                title: jot.content.length > 30 ? jot.content.slice(0, 30) + '...' : jot.content,
-                content: jot.content,
-                sourcePath: `來自 [${page.title}] > [${section.title}]`,
-                sourceUrl: jot.sourceUrl,
-                sourceTitle: jot.sourceTitle,
-                matchedField: 'content',
-              });
-            }
+          if (keyMatch || valMatch) {
+            const isField = Boolean(cell.key);
+            results.push({
+              id: cell.id,
+              type: isField ? 'field' : 'jot',
+              pageId: page.id,
+              pageTitle: page.title,
+              sectionId: section.id,
+              sectionTitle: section.title,
+              title: cell.key || (cell.value.length > 30 ? cell.value.slice(0, 30) + '...' : cell.value),
+              content: cell.value,
+              sourcePath: `來自 [${page.title}] > [${section.title}]${cell.key ? ` ‧ ${cell.key}` : ''}`,
+              sourceUrl: cell.sourceUrl,
+              sourceTitle: cell.sourceTitle,
+              matchedField: keyMatch ? 'key' : 'value',
+            });
           }
         }
       }
@@ -742,10 +660,6 @@ export class NotebookService {
   // Progressive Refactoring
   // ==========================================
 
-  /**
-   * Promotes an existing section directly into a new independent Page.
-   * Removes the section from the source Page.
-   */
   async extractSectionToPage(
     sourcePageId: string,
     sectionId: string,
@@ -786,78 +700,15 @@ export class NotebookService {
     return this.clone(newPage);
   }
 
-  /**
-   * Moves a Field or Jot across Pages or Sections.
-   */
-  async moveItem(params: MoveItemParams): Promise<void> {
-    const data = await this.ensureInitialized();
-    const sourcePage = data.pages[params.sourcePageId];
-    if (!sourcePage) {
-      throw new Error(`Source page not found: ${params.sourcePageId}`);
-    }
-
-    const targetPage = data.pages[params.targetPageId];
-    if (!targetPage) {
-      throw new Error(`Target page not found: ${params.targetPageId}`);
-    }
-
-    const sourceSection = sourcePage.sections.find((s) => s.id === params.sourceSectionId);
-    if (!sourceSection) {
-      throw new Error(`Source section not found: ${params.sourceSectionId}`);
-    }
-
-    const targetSection = targetPage.sections.find((s) => s.id === params.targetSectionId);
-    if (!targetSection) {
-      throw new Error(`Target section not found: ${params.targetSectionId}`);
-    }
-
-    if (sourceSection.type !== targetSection.type) {
-      throw new Error(
-        `Cannot move item between mismatched section types (${sourceSection.type} -> ${targetSection.type})`
-      );
-    }
-
-    const moveWithinList = <T extends { id: string }>(sourceList: T[], targetList: T[]) => {
-      const idx = sourceList.findIndex((item) => item.id === params.itemId);
-      if (idx === -1) {
-        throw new Error(`Item not found: ${params.itemId}`);
-      }
-      const [item] = sourceList.splice(idx, 1);
-      const insertIndex =
-        params.targetIndex !== undefined ? params.targetIndex : targetList.length;
-      targetList.splice(insertIndex, 0, item);
-    };
-
-    if (sourceSection.type === 'fields' && targetSection.type === 'fields') {
-      moveWithinList(sourceSection.fields, targetSection.fields);
-    } else if (sourceSection.type === 'jots' && targetSection.type === 'jots') {
-      moveWithinList(sourceSection.jots, targetSection.jots);
-    }
-
-    const now = Date.now();
-    sourceSection.updatedAt = now;
-    targetSection.updatedAt = now;
-    sourcePage.updatedAt = now;
-    targetPage.updatedAt = now;
-
-    await this.persist();
-  }
-
   // ==========================================
   // JSON Import & Export
   // ==========================================
 
-  /**
-   * Exports the entire Notebook storage as a formatted JSON string.
-   */
   async exportNotebookAsJson(): Promise<string> {
     const data = await this.ensureInitialized();
     return JSON.stringify(data, null, 2);
   }
 
-  /**
-   * Exports a single Page and its sections as an independent JSON string.
-   */
   async exportPageAsJson(pageId: string): Promise<string> {
     const page = await this.getPage(pageId);
     if (!page) {
@@ -899,7 +750,6 @@ export class NotebookService {
       );
     }
 
-    // Validate each page and section structure
     for (const [pageId, p] of Object.entries(pages)) {
       if (!p || typeof p !== 'object') {
         throw new Error(`Invalid notebook JSON format: Page ${pageId} is not an object`);
@@ -929,19 +779,9 @@ export class NotebookService {
         if (!section.title || typeof section.title !== 'string') {
           throw new Error(`Invalid notebook JSON format: Section missing title in ${pageId}`);
         }
-        if (section.type !== 'fields' && section.type !== 'jots') {
+        if (!Array.isArray(section.items)) {
           throw new Error(
-            `Invalid notebook JSON format: Section type must be 'fields' or 'jots' in ${pageId}`
-          );
-        }
-        if (section.type === 'fields' && !Array.isArray(section.fields)) {
-          throw new Error(
-            `Invalid notebook JSON format: fields array missing in section ${section.id}`
-          );
-        }
-        if (section.type === 'jots' && !Array.isArray(section.jots)) {
-          throw new Error(
-            `Invalid notebook JSON format: jots array missing in section ${section.id}`
+            `Invalid notebook JSON format: items array missing in section ${section.id}`
           );
         }
       }

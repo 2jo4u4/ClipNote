@@ -5,48 +5,40 @@
 
 export const SYSTEM_GLOBAL_PAGE_ID = 'SYSTEM_GLOBAL_PAGE';
 
-export interface Field {
+/**
+ * Cell is the atomic unit of content in a Section.
+ * - If key is present and non-empty: treated as a Field (key-value pair).
+ * - If key is omitted or empty: treated as a Jot (freeform memo/note).
+ */
+export interface Cell {
   id: string;
-  key: string;
+  key?: string;
   value: string;
-  createdAt?: number;
-  updatedAt?: number;
-  sourceUrl?: string;
-  sourceTitle?: string;
-}
-
-export interface Jot {
-  id: string;
-  content: string;
   createdAt: number;
+  updatedAt: number;
   sourceUrl?: string;
   sourceTitle?: string;
 }
 
-export interface BaseSection {
+/**
+ * Section is a flexible container within a Page holding an ordered list of Cells.
+ */
+export interface Section {
   id: string;
   title: string;
+  items: Cell[];
   order: number;
   createdAt: number;
   updatedAt: number;
 }
 
-export interface FieldsSection extends BaseSection {
-  type: 'fields';
-  fields: Field[];
-}
-
-export interface JotsSection extends BaseSection {
-  type: 'jots';
-  jots: Jot[];
-}
-
-export type Section = FieldsSection | JotsSection;
-
+/**
+ * Page is a thematic document or workspace tab that binds to target web domains.
+ */
 export interface Page {
   id: string;
   title: string;
-  icon?: string; // Optional custom emoji or icon identifier, e.g. "💼", "💬", "📝"
+  icon?: string;
   domains: string[];
   isPrimary?: boolean;
   isSystem?: boolean;
@@ -63,25 +55,28 @@ export interface NotebookStorage {
 export type SearchResultType = 'field' | 'jot';
 
 export interface SearchResult {
-  id: string; // Field ID or Jot ID
-  type: SearchResultType;
+  id: string; // Cell ID
+  type: SearchResultType; // 'field' if cell.key exists, otherwise 'jot'
   pageId: string;
   pageTitle: string;
   sectionId: string;
   sectionTitle: string;
-  title: string; // Key name for field, or truncated content for jot
-  content: string; // Value to copy
-  sourcePath: string; // e.g., "來自 [104 中文經歷] > [基本資料]"
+  title: string; // Key name for field, or truncated value for jot
+  content: string; // cell.value
+  sourcePath: string; // e.g. "104 中文經歷 > 工作經驗欄位"
   sourceUrl?: string;
   sourceTitle?: string;
-  matchedField?: 'key' | 'value' | 'content';
+  matchedField?: 'key' | 'value';
 }
 
-export interface MoveItemParams {
-  itemId: string;
+export interface MoveCellParams {
+  cellId: string;
   sourcePageId: string;
   sourceSectionId: string;
   targetPageId: string;
   targetSectionId: string;
   targetIndex?: number;
 }
+
+// Transitional alias for backwards compatibility
+export type MoveItemParams = MoveCellParams;

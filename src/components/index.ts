@@ -1,4 +1,5 @@
 export * from './PageTabs';
+export * from './CellCard';
 export * from './FieldCard';
 export * from './JotCard';
 export * from './SectionContainer';
