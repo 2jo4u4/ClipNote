@@ -137,7 +137,7 @@ export const CellCard: React.FC<CellCardProps> = ({
               handleCopy(e);
             }}
             onMouseDown={(e) => e.stopPropagation()}
-            title={copied ? t.common.copied : t.common.copy}
+            title={copied ? t.common.copied : t.common.clickToCopy}
             className={cn(
               'flex items-center gap-1 px-1.5 py-0.5 rounded text-[11px] font-medium transition-all duration-150',
               copied

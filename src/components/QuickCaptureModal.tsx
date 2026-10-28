@@ -383,7 +383,10 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             {/* Optional Key Input */}
             <div>
               <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1 flex items-center justify-between">
-                <span>{t.quickCapture.titlePlaceholder}</span>
+                <span>{t.quickCapture.keyLabel}</span>
+                <span className="text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-normal">
+                  {t.quickCapture.keyHint}
+                </span>
               </label>
               <input
                 type="text"
@@ -402,7 +405,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             {/* Content Payload (Value) */}
             <div>
               <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
-                {t.quickCapture.contentPlaceholder}
+                {t.quickCapture.contentLabel} <span className="text-raycast-coral">*</span>
               </label>
               <textarea
                 ref={textareaRef}
@@ -423,7 +426,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             {sourceUrl && (
               <div className="flex items-center gap-1.5 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono truncate">
                 <Globe className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">來源：{sourceTitle || sourceUrl}</span>
+                <span className="truncate">{t.quickCapture.sourcePrefix}{sourceTitle || sourceUrl}</span>
                 <ExternalLink className="w-2.5 h-2.5 opacity-60 flex-shrink-0" />
               </div>
             )}

@@ -489,7 +489,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       })
     );
 
-    showToast(t.sidePanel.copiedToast);
+    showToast(t.sidePanel.createdNoteToast(data.key));
   };
 
   const handleExportJson = () => {
@@ -794,22 +794,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <MoveCellModal
           isOpen={Boolean(movingCellTarget)}
           language={language}
-          cell={movingCellTarget?.cell || null}
-          sourcePageId={movingCellTarget?.sourcePageId || ''}
-          sourceSectionId={movingCellTarget?.sourceSectionId || ''}
-          pages={pages}
-          onClose={() => setMovingCellTarget(null)}
-          onConfirm={handleConfirmMoveCell}
-        />
-
-        <NewPageModal
-          isOpen={isNewPageModalOpen}
-          onClose={() => setIsNewPageModalOpen(false)}
-          onSubmit={handleCreatePage}
-        />
-
-        <MoveCellModal
-          isOpen={Boolean(movingCellTarget)}
           cell={movingCellTarget?.cell || null}
           sourcePageId={movingCellTarget?.sourcePageId || ''}
           sourceSectionId={movingCellTarget?.sourceSectionId || ''}

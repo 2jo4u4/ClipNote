@@ -37,6 +37,7 @@ export interface I18nTranslations {
     promotedPageToast: (title: string) => string;
     createdPageToast: (title: string) => string;
     createdCategoryToast: (title: string) => string;
+    createdNoteToast: (title?: string) => string;
     deletedCategoryToast: (title: string) => string;
     deletedNoteToast: (title?: string) => string;
     movedNoteToast: (page: string, category: string) => string;
@@ -68,19 +69,26 @@ export interface I18nTranslations {
   };
   newPageModal: {
     title: string;
+    description: string;
     nameLabel: string;
     namePlaceholder: string;
     iconLabel: string;
+    iconHint: string;
     domainLabel: string;
     domainPlaceholder: string;
+    domainHint: string;
     submitBtn: string;
   };
   quickCapture: {
     searchPlaceholder: string;
+    keyLabel: string;
+    keyHint: string;
     titlePlaceholder: string;
+    contentLabel: string;
     contentPlaceholder: string;
     targetPage: string;
     targetCategory: string;
+    sourcePrefix: string;
     submitBtn: string;
   };
 }

@@ -100,6 +100,9 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
               <h3 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
                 {t.newPageModal.title}
               </h3>
+              <p className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
+                {t.newPageModal.description}
+              </p>
             </div>
           </div>
           <button
@@ -136,6 +139,9 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
           <div>
             <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center justify-between">
               <span>{t.newPageModal.iconLabel}</span>
+              <span className="text-[11px] font-normal text-raycast-light-subtle dark:text-raycast-dark-subtle">
+                {t.newPageModal.iconHint}
+              </span>
             </label>
             <div className="flex items-center gap-2 mb-2">
               <input
@@ -190,6 +196,9 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 'focus:border-raycast-amber focus:ring-1 focus:ring-raycast-amber/50'
               )}
             />
+            <p className="mt-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
+              {t.newPageModal.domainHint}
+            </p>
           </div>
 
           {/* Actions Footer */}
