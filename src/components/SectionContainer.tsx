@@ -317,8 +317,8 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
       {/* Smooth Height Transition Content Accordion */}
       <div
         className={cn(
-          'grid transition-all duration-300 ease-raycast overflow-hidden',
-          isExpanded ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'
+          'grid transition-all duration-300 ease-raycast',
+          isExpanded ? 'grid-rows-[1fr] opacity-100 overflow-visible' : 'grid-rows-[0fr] opacity-0 overflow-hidden'
         )}
       >
         <div className="min-h-0">

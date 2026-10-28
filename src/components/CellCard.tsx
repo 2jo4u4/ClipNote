@@ -54,6 +54,7 @@ export const CellCard: React.FC<CellCardProps> = ({
   const t = getTranslations(language);
   const [copied, setCopied] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [openUpward, setOpenUpward] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const isField = Boolean(cellKey?.trim());
@@ -202,6 +203,11 @@ export const CellCard: React.FC<CellCardProps> = ({
                   type="button"
                   onClick={(e) => {
                     e.stopPropagation();
+                    if (!showMenu && menuRef.current) {
+                      const rect = menuRef.current.getBoundingClientRect();
+                      const spaceBelow = window.innerHeight - rect.bottom;
+                      setOpenUpward(spaceBelow < 150);
+                    }
                     setShowMenu((prev) => !prev);
                   }}
                   onMouseDown={(e) => e.stopPropagation()}
@@ -215,7 +221,11 @@ export const CellCard: React.FC<CellCardProps> = ({
                   <div
                     onClick={(e) => e.stopPropagation()}
                     onMouseDown={(e) => e.stopPropagation()}
-                    className="absolute right-0 top-full mt-1 w-32 rounded-lg border shadow-lg z-50 py-1 bg-raycast-light-surface border-raycast-light-border dark:bg-raycast-dark-surface dark:border-raycast-dark-border animate-in fade-in zoom-in-95 duration-100"
+                    className={cn(
+                      'absolute right-0 w-32 rounded-lg border shadow-lg z-50 py-1',
+                      'bg-raycast-light-surface border-raycast-light-border dark:bg-raycast-dark-surface dark:border-raycast-dark-border animate-in fade-in zoom-in-95 duration-100',
+                      openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
+                    )}
                   >
                     {onEdit && (
                       <button

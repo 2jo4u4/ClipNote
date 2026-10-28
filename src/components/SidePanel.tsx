@@ -11,7 +11,6 @@ import {
   Edit2,
   Trash2,
   CheckSquare,
-  AlertTriangle,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { PageTabs, PageItem } from './PageTabs';
@@ -24,6 +23,7 @@ import { MoveCellModal } from './MoveCellModal';
 import { CategoryModal } from './CategoryModal';
 import { EditNoteModal } from './EditNoteModal';
 import { ManagePagesModal } from './ManagePagesModal';
+import { ConfirmModal } from './ConfirmModal';
 import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
 import { Language, getTranslations } from '../i18n';
 import { matchDomain } from '../core/notebook-service';
@@ -277,6 +277,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [selectedSectionIds, setSelectedSectionIds] = useState<string[]>([]);
   const [selectedCellTargets, setSelectedCellTargets] = useState<CellTarget[]>([]);
   const [showBatchConfirm, setShowBatchConfirm] = useState(false);
+  const [showDeletePageConfirm, setShowDeletePageConfirm] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -380,13 +381,18 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(t.sidePanel.renamedPageToast(trimmed));
   };
 
-  const handleDeleteActivePage = () => {
+  const handleOpenDeletePageModal = () => {
     if (activePage.isSystem) return;
-    if (!window.confirm(t.sidePanel.confirmDeletePage(activePage.title))) return;
+    setShowDeletePageConfirm(true);
+  };
+
+  const handleConfirmDeleteActivePage = () => {
+    if (activePage.isSystem) return;
     const deletedTitle = activePage.title;
     const remaining = pages.filter((p) => p.id !== activePage.id);
     setPages(remaining);
     setActivePageId(remaining[0]?.id || 'SYSTEM_GLOBAL_PAGE');
+    setShowDeletePageConfirm(false);
     showToast(t.sidePanel.deletedPageToast(deletedTitle));
   };
 
@@ -1023,7 +1029,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
                   {!activePage.isSystem && (
                     <button
-                      onClick={handleDeleteActivePage}
+                      onClick={handleOpenDeletePageModal}
                       title={t.sidePanel.deletePage}
                       className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-rose-500/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-rose-500 transition-all"
                     >
@@ -1210,44 +1216,33 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         )}
 
         {/* Batch Delete Confirmation Dialog */}
-        {showBatchConfirm && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
-            <div className="w-full max-w-sm rounded-2xl bg-raycast-light-surface dark:bg-raycast-dark-surface border border-raycast-light-border dark:border-white/10 p-5 shadow-2xl space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-500/10 border border-rose-500/20 flex items-center justify-center text-rose-500 flex-shrink-0">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
-                    {t.sidePanel.batchConfirmDeleteTitle}
-                  </h3>
-                  <p className="text-xs text-raycast-light-muted dark:text-raycast-dark-muted mt-0.5">
-                    {t.sidePanel.batchConfirmDeleteDesc(
-                      selectedSectionIds.length,
-                      selectedCellTargets.length
-                    )}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowBatchConfirm(false)}
-                  className="px-3 py-1.5 rounded-xl text-xs font-medium border border-white/10 hover:bg-white/5 transition-colors"
-                >
-                  {t.common.cancel}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmExecuteBatchDelete}
-                  className="px-3.5 py-1.5 rounded-xl text-xs font-semibold bg-rose-500 hover:bg-rose-600 text-white shadow-sm transition-all"
-                >
-                  {t.common.delete}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        <ConfirmModal
+          isOpen={showBatchConfirm}
+          language={language}
+          title={t.sidePanel.batchConfirmDeleteTitle}
+          description={t.sidePanel.batchConfirmDeleteDesc(
+            selectedSectionIds.length,
+            selectedCellTargets.length
+          )}
+          confirmText={t.common.delete}
+          cancelText={t.common.cancel}
+          isDestructive={true}
+          onConfirm={handleConfirmExecuteBatchDelete}
+          onClose={() => setShowBatchConfirm(false)}
+        />
+
+        {/* Delete Single Page Confirmation Dialog */}
+        <ConfirmModal
+          isOpen={showDeletePageConfirm}
+          language={language}
+          title={t.sidePanel.deletePage}
+          description={t.sidePanel.confirmDeletePage(activePage.title)}
+          confirmText={t.common.delete}
+          cancelText={t.common.cancel}
+          isDestructive={true}
+          onConfirm={handleConfirmDeleteActivePage}
+          onClose={() => setShowDeletePageConfirm(false)}
+        />
 
         {/* Quick Capture Modal */}
         <QuickCaptureModal

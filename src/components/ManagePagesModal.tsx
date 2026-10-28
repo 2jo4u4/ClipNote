@@ -3,6 +3,7 @@ import { X, Lock, Trash2, CheckSquare, Square, Globe, Edit2, Check } from 'lucid
 import { cn } from '../utils';
 import { Page, SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
+import { ConfirmModal } from './ConfirmModal';
 
 export interface ManagePagesModalProps {
   isOpen: boolean;
@@ -211,12 +212,12 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
         </div>
 
         {/* Footer toolbar */}
-        <div className="p-3 border-t border-raycast-light-border dark:border-white/10 bg-raycast-light-surface/40 dark:bg-raycast-dark-surface/40 flex items-center justify-between gap-2 flex-shrink-0">
+        <div className="p-3 border-t border-raycast-light-border dark:border-white/10 bg-raycast-light-surface/40 dark:bg-raycast-dark-surface/40 flex items-center justify-between gap-2 flex-shrink-0 select-none">
           {customPages.length > 0 ? (
             <button
               type="button"
               onClick={toggleSelectAll}
-              className="flex items-center gap-1.5 text-xs text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text transition-colors"
+              className="flex items-center gap-1.5 text-xs text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text transition-colors whitespace-nowrap shrink-0"
             >
               {allCustomSelected ? (
                 <CheckSquare className="w-3.5 h-3.5 text-raycast-coral" />
@@ -226,66 +227,53 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
               <span>{t.managePagesModal.selectAll}</span>
             </button>
           ) : (
-            <span className="text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
+            <span
+              title={t.managePagesModal.emptyCustomPages}
+              className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle truncate min-w-0 flex-1 mr-2"
+            >
               {t.managePagesModal.emptyCustomPages}
             </span>
           )}
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text transition-colors"
+              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-black/10 dark:border-white/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-all whitespace-nowrap shrink-0 active:scale-95"
             >
               {t.common.cancel}
             </button>
-            <button
-              type="button"
-              disabled={selectedIds.length === 0}
-              onClick={() => setShowConfirm(true)}
-              className={cn(
-                'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
-                selectedIds.length > 0
-                  ? 'bg-raycast-coral text-white hover:brightness-110 active:scale-95 shadow-sm'
-                  : 'bg-black/10 dark:bg-white/10 text-raycast-light-subtle dark:text-raycast-dark-subtle cursor-not-allowed'
-              )}
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>{t.managePagesModal.deleteSelected(selectedIds.length)}</span>
-            </button>
+            {customPages.length > 0 && (
+              <button
+                type="button"
+                disabled={selectedIds.length === 0}
+                onClick={() => setShowConfirm(true)}
+                className={cn(
+                  'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 active:scale-95',
+                  selectedIds.length > 0
+                    ? 'bg-rose-500 hover:bg-rose-600 text-white shadow-sm'
+                    : 'bg-black/5 dark:bg-white/5 text-raycast-light-subtle dark:text-raycast-dark-subtle cursor-not-allowed'
+                )}
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>{t.managePagesModal.deleteSelected(selectedIds.length)}</span>
+              </button>
+            )}
           </div>
         </div>
 
-        {/* Delete confirmation sub-modal */}
-        {showConfirm && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-100">
-            <div className="w-full max-w-xs p-4 rounded-xl border bg-raycast-light-bg dark:bg-raycast-dark-bg border-raycast-light-border dark:border-white/15 text-raycast-light-text dark:text-raycast-dark-text shadow-xl space-y-3">
-              <h3 className="text-xs font-bold text-raycast-coral flex items-center gap-1.5">
-                <Trash2 className="w-4 h-4" />
-                <span>{t.common.confirm} {t.common.delete}</span>
-              </h3>
-              <p className="text-xs leading-relaxed text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                {t.managePagesModal.confirmDelete(selectedIds.length)}
-              </p>
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-raycast-light-border dark:border-white/10">
-                <button
-                  type="button"
-                  onClick={() => setShowConfirm(false)}
-                  className="px-2.5 py-1 rounded-lg text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text"
-                >
-                  {t.common.cancel}
-                </button>
-                <button
-                  type="button"
-                  onClick={handleConfirmDelete}
-                  className="px-3 py-1 rounded-lg text-xs font-medium bg-raycast-coral text-white hover:brightness-110 active:scale-95 shadow-sm"
-                >
-                  {t.common.confirm}
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
+        {/* Delete confirmation dialog */}
+        <ConfirmModal
+          isOpen={showConfirm}
+          language={language}
+          title={`${t.common.confirm} ${t.common.delete}`}
+          description={t.managePagesModal.confirmDelete(selectedIds.length)}
+          confirmText={t.common.delete}
+          cancelText={t.common.cancel}
+          isDestructive={true}
+          onConfirm={handleConfirmDelete}
+          onClose={() => setShowConfirm(false)}
+        />
       </div>
     </div>
   );
