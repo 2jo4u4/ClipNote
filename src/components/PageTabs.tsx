@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Globe, Plus, FileText } from 'lucide-react';
+import { Globe, Plus, FileText, ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '../utils';
 
 export interface PageItem {
@@ -15,10 +15,11 @@ export interface PageItem {
 export type TabItem = PageItem;
 
 export interface PageTabsProps {
-  pages: PageItem[];
-  activePageId: string;
-  onSelectPage: (pageId: string) => void;
+  pages?: PageItem[];
+  activePageId?: string;
+  onSelectPage?: (pageId: string) => void;
   onAddPage?: () => void;
+  showDomains?: boolean; // Default false to keep tabs clean and compact
   className?: string;
 
   // Deprecated props supported for transitional compatibility
@@ -32,6 +33,7 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   activePageId: directActivePageId,
   onSelectPage: directOnSelectPage,
   onAddPage,
+  showDomains = false,
   className,
   tabs,
   activeTabId,
@@ -43,6 +45,8 @@ export const PageTabs: React.FC<PageTabsProps> = ({
 
   const containerRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
   const [indicatorStyle, setIndicatorStyle] = useState<{
     left: number;
     width: number;
@@ -58,38 +62,102 @@ export const PageTabs: React.FC<PageTabsProps> = ({
   const otherPages = pages.filter((p) => p !== globalPage);
   const sortedPages = globalPage ? [globalPage, ...otherPages] : pages;
 
-  useEffect(() => {
+  const checkScrollable = () => {
+    const el = containerRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 2);
+    setCanScrollRight(el.scrollLeft < el.scrollWidth - el.clientWidth - 2);
+  };
+
+  const updateIndicator = () => {
     const activeEl = pageRefs.current.get(activePageId);
-    const container = containerRef.current;
-
-    if (activeEl && container) {
-      const containerRect = container.getBoundingClientRect();
-      const activeRect = activeEl.getBoundingClientRect();
-
+    if (activeEl) {
       setIndicatorStyle({
-        left: activeRect.left - containerRect.left + container.scrollLeft,
-        width: activeRect.width,
+        left: activeEl.offsetLeft,
+        width: activeEl.offsetWidth,
         opacity: 1,
       });
+    }
+  };
 
-      // Auto-scroll active page tab into view gently
+  // Wheel-to-horizontal-scroll listener for mouse users
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.deltaY !== 0 || e.deltaX !== 0) {
+        // Prevent default vertical window scroll when mouse is hovering the tabs
+        e.preventDefault();
+        const delta = e.deltaX !== 0 ? e.deltaX : e.deltaY;
+        el.scrollLeft += delta;
+        checkScrollable();
+      }
+    };
+
+    el.addEventListener('wheel', handleWheel, { passive: false });
+    el.addEventListener('scroll', checkScrollable);
+    window.addEventListener('resize', checkScrollable);
+
+    const observer = new ResizeObserver(() => {
+      checkScrollable();
+      updateIndicator();
+    });
+    observer.observe(el);
+
+    checkScrollable();
+    updateIndicator();
+
+    return () => {
+      el.removeEventListener('wheel', handleWheel);
+      el.removeEventListener('scroll', checkScrollable);
+      window.removeEventListener('resize', checkScrollable);
+      observer.disconnect();
+    };
+  }, [sortedPages]);
+
+  // Recalculate indicator position and auto-scroll active tab into view
+  useEffect(() => {
+    updateIndicator();
+    const activeEl = pageRefs.current.get(activePageId);
+    if (activeEl) {
       activeEl.scrollIntoView({
         behavior: 'smooth',
         block: 'nearest',
         inline: 'nearest',
       });
     }
+    checkScrollable();
   }, [activePageId, pages]);
+
+  const scrollByAmount = (amount: number) => {
+    if (containerRef.current) {
+      containerRef.current.scrollBy({ left: amount, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div
       className={cn(
-        'relative flex items-center gap-1.5 p-1.5 border-b select-none transition-colors duration-200',
+        'relative flex items-center gap-1 p-1.5 border-b select-none transition-colors duration-200',
         'border-raycast-light-border bg-raycast-light-bg/80 backdrop-blur-sm',
         'dark:border-raycast-dark-border dark:bg-raycast-dark-bg/80',
         className
       )}
     >
+      {/* Scroll Left Button */}
+      {canScrollLeft && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(-130)}
+          title="向左滾動筆記頁"
+          className="flex items-center justify-center p-1 rounded-md text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 flex-shrink-0 transition-all duration-150 active:scale-95"
+        >
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+      )}
+
+      {/* Horizontal Tabs Scroll Container */}
       <div
         ref={containerRef}
         className="relative flex items-center gap-1 overflow-x-auto no-scrollbar scroll-smooth flex-1 py-0.5"
@@ -163,7 +231,8 @@ export const PageTabs: React.FC<PageTabsProps> = ({
               )}
               <span>{page.title}</span>
 
-              {page.domains && page.domains.length > 0 && !isGlobal && (
+              {/* Optional domain tags (Hidden by default to keep tabs clean) */}
+              {showDomains && page.domains && page.domains.length > 0 && !isGlobal && (
                 <span
                   className={cn(
                     'ml-0.5 text-[10px] px-1.5 py-0.2 rounded-full border leading-tight font-mono',
@@ -180,6 +249,18 @@ export const PageTabs: React.FC<PageTabsProps> = ({
           );
         })}
       </div>
+
+      {/* Scroll Right Button */}
+      {canScrollRight && (
+        <button
+          type="button"
+          onClick={() => scrollByAmount(130)}
+          title="向右滾動筆記頁"
+          className="flex items-center justify-center p-1 rounded-md text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 flex-shrink-0 transition-all duration-150 active:scale-95"
+        >
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      )}
 
       {/* Add Page Action Button */}
       {onAddPage && (
