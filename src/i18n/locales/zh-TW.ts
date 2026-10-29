@@ -76,6 +76,8 @@ export const zhTW: I18nTranslations = {
     batchConfirmDeleteTitle: '確認一併刪除？',
     batchConfirmDeleteDesc: (categories, notes) =>
       `即將刪除選取的 ${categories > 0 ? `${categories} 個分類（含內部筆記）與 ` : ''}${notes} 則筆記。此動作無法復原。`,
+    collapseAllCategories: '全部折疊',
+    expandAllCategories: '全部展開',
   },
   pageTabs: {
     scrollLeft: '向左滾動',

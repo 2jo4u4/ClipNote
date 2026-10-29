@@ -10,6 +10,8 @@ import {
   Edit2,
   Trash2,
   CheckSquare,
+  ChevronsDownUp,
+  ChevronsUpDown,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { PageTabs, PageItem } from './PageTabs';
@@ -253,6 +255,45 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const activePage = useMemo(() => {
     return pages.find((p) => p.id === activePageId) || pages[0];
   }, [pages, activePageId]);
+
+  // Collapsed sections tracking
+  const [collapsedSectionIds, setCollapsedSectionIds] = useState<Set<string>>(new Set());
+
+  const allCategoriesCollapsed = useMemo(() => {
+    if (!activePage?.sections || activePage.sections.length === 0) return false;
+    return activePage.sections.every((s) => collapsedSectionIds.has(s.id));
+  }, [activePage?.sections, collapsedSectionIds]);
+
+  const handleToggleAllCategories = () => {
+    if (!activePage?.sections || activePage.sections.length === 0) return;
+    if (allCategoriesCollapsed) {
+      // Expand all in active page
+      setCollapsedSectionIds((prev) => {
+        const next = new Set(prev);
+        activePage.sections.forEach((s) => next.delete(s.id));
+        return next;
+      });
+    } else {
+      // Collapse all in active page
+      setCollapsedSectionIds((prev) => {
+        const next = new Set(prev);
+        activePage.sections.forEach((s) => next.add(s.id));
+        return next;
+      });
+    }
+  };
+
+  const handleToggleSectionCollapse = (sectionId: string) => {
+    setCollapsedSectionIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectionId)) {
+        next.delete(sectionId);
+      } else {
+        next.add(sectionId);
+      }
+      return next;
+    });
+  };
 
   // Flattened search items across all pages
   const allSearchResults: SearchResult[] = useMemo(() => {
@@ -1146,6 +1187,26 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 </span>
               </button>
 
+              {/* Collapse / Expand All Categories Toggle */}
+              {activePage.sections && activePage.sections.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleToggleAllCategories}
+                  title={allCategoriesCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
+                  aria-label={allCategoriesCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
+                  className={cn(
+                    'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
+                    'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
+                  )}
+                >
+                  {allCategoriesCollapsed ? (
+                    <ChevronsUpDown className="w-3.5 h-3.5" />
+                  ) : (
+                    <ChevronsDownUp className="w-3.5 h-3.5" />
+                  )}
+                </button>
+              )}
+
               {/* Add Category '+' button */}
               <button
                 type="button"
@@ -1195,6 +1256,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     type="mixed"
                     language={language}
                     itemCount={section.items.length}
+                    isExpanded={!collapsedSectionIds.has(section.id)}
+                    onToggleExpand={() => handleToggleSectionCollapse(section.id)}
                     isSelectMode={isBatchMode}
                     isSelected={selectedSectionIds.includes(section.id)}
                     isDragging={draggedSectionId === section.id}

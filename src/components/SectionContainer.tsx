@@ -24,6 +24,8 @@ export interface SectionContainerProps {
   itemCount: number;
   isCollapsible?: boolean;
   defaultExpanded?: boolean;
+  isExpanded?: boolean;
+  onToggleExpand?: () => void;
   language?: Language;
   isSelectMode?: boolean;
   isSelected?: boolean;
@@ -54,6 +56,8 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   itemCount,
   isCollapsible = true,
   defaultExpanded = true,
+  isExpanded: controlledExpanded,
+  onToggleExpand,
   language = 'zh-TW',
   isSelectMode = false,
   isSelected = false,
@@ -77,7 +81,8 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   className,
 }) => {
   const t = getTranslations(language);
-  const [isExpanded, setIsExpanded] = useState(defaultExpanded);
+  const [internalExpanded, setInternalExpanded] = useState(defaultExpanded);
+  const isExpanded = controlledExpanded !== undefined ? controlledExpanded : internalExpanded;
   const [showMenu, setShowMenu] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -124,7 +129,13 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           !isExpanded && 'rounded-b-2xl'
         )}
         onClick={() => {
-          if (isCollapsible) setIsExpanded(!isExpanded);
+          if (isCollapsible) {
+            if (onToggleExpand) {
+              onToggleExpand();
+            } else {
+              setInternalExpanded(!isExpanded);
+            }
+          }
         }}
       >
         {/* Left: Checkbox (Select Mode) + Type Icon + Title + Count Badge */}
@@ -343,7 +354,11 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                setIsExpanded(!isExpanded);
+                if (onToggleExpand) {
+                  onToggleExpand();
+                } else {
+                  setInternalExpanded(!isExpanded);
+                }
               }}
               className="p-1 rounded-md text-raycast-light-subtle hover:text-raycast-light-text dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text transition-colors"
             >

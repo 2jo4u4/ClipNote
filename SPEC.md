@@ -252,6 +252,18 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **Keyboard Shortcut Decoration Isolation**:
   - The footer keyboard shortcut guidance (`<kbd>Esc</kbd> · <kbd>Enter</kbd>`) is wrapped with `aria-hidden="true"` to prevent screen reader noise, relying on standard form submission and escape handlers.
 
+### 17. One-Click Category Collapse & Expansion (一鍵折疊與展開所有分類)
+- **Active Page Header Control**:
+  - A toggle button is placed alongside the Batch Mode and Add Category buttons in the active page title bar, visible when the active page contains at least 1 section.
+  - Features dynamic Raycast canonical icons: `ChevronsDownUp` when any categories are expanded (action collapses all), switching to `ChevronsUpDown` when all categories are collapsed (action expands all).
+- **Controlled & Uncontrolled Section Accordion**:
+  - `SectionContainer` supports controlled expansion through optional `isExpanded?: boolean` and `onToggleExpand?: () => void` props, while falling back gracefully to internal state for standalone usage.
+  - Individual category accordion toggles (clicking section header or chevron) remain fully functional and keep the global toggle button state synchronized.
+- **Bilingual i18n & Accessible Affordance**:
+  - Traditional Chinese (`zh-TW`): `全部折疊` / `全部展開`.
+  - English (`en`): `Collapse All` / `Expand All`.
+  - Fully accessible with dynamic `title` and `aria-label`.
+
 ---
 
 ## Testing Decisions
