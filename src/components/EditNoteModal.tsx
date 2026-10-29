@@ -100,7 +100,7 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
         </div>
 
         {/* Form Body */}
-        <form onSubmit={handleSubmit} className="p-4 space-y-3.5">
+        <div className="p-4 space-y-3.5">
           {/* Key (Field Name) */}
           <div>
             <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
@@ -111,6 +111,12 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
               type="text"
               value={key}
               onChange={(e) => setKey(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.nativeEvent.isComposing) {
+                  e.preventDefault();
+                  textareaRef.current?.focus();
+                }
+              }}
               placeholder={t.editNoteModal.keyPlaceholder}
               className={cn(
                 'w-full px-3 py-2 rounded-xl text-xs outline-none transition-all duration-150',
@@ -143,7 +149,10 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
 
           {/* Footer Actions */}
           <div className="flex items-center justify-between pt-2 border-t border-raycast-light-border dark:border-white/10">
-            <div className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1 font-mono">
+            <div className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1.5 font-mono whitespace-nowrap shrink-0">
+              <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">Esc</kbd>
+              <span>{t.common.cancel}</span>
+              <span className="mx-1 text-black/20 dark:text-white/20">·</span>
               <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 text-[10px]">Ctrl+Enter</kbd>
               <span>{t.common.confirm}</span>
             </div>
@@ -157,7 +166,8 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
                 {t.common.cancel}
               </button>
               <button
-                type="submit"
+                type="button"
+                onClick={() => handleSubmit()}
                 disabled={!value.trim()}
                 className={cn(
                   'flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200',
@@ -171,7 +181,7 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
               </button>
             </div>
           </div>
-        </form>
+        </div>
       </div>
     </div>
   );

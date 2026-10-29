@@ -416,6 +416,12 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                 type="text"
                 value={cellKey}
                 onChange={(e) => setCellKey(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.nativeEvent.isComposing) {
+                    e.preventDefault();
+                    textareaRef.current?.focus();
+                  }
+                }}
                 placeholder={t.quickCapture.titlePlaceholder}
                 className={cn(
                   'w-full px-3 py-2 rounded-lg text-xs outline-none transition-all duration-150',
