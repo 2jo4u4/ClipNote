@@ -75,7 +75,6 @@ export function createDefaultSeedData(): NotebookStorage {
     icon: '💡',
     domains: [],
     isPrimary: false,
-    isSystem: true,
     createdAt: now,
     updatedAt: now,
     sections: [
@@ -500,14 +499,17 @@ export class NotebookService {
    * Persists the entire set of pages, preserving the system global page invariant.
    */
   async saveAllPages(pages: Page[]): Promise<void> {
+    if (pages.length === 0) {
+      throw new Error('Cannot delete the last remaining page');
+    }
     await this.reload();
     const data = await this.ensureInitialized();
     const newPagesRecord: Record<string, Page> = {};
     for (const page of pages) {
       newPagesRecord[page.id] = this.normalizePage(page);
     }
-    if (!newPagesRecord[data.systemGlobalPageId] && data.pages[data.systemGlobalPageId]) {
-      newPagesRecord[data.systemGlobalPageId] = data.pages[data.systemGlobalPageId];
+    if (!newPagesRecord[data.systemGlobalPageId]) {
+      data.systemGlobalPageId = pages[0].id;
     }
     data.pages = newPagesRecord;
     this.cachedData = data;
@@ -876,12 +878,12 @@ export class NotebookService {
     if (preferredLocale) {
       if (preferredLocale.toLowerCase().startsWith('en')) {
         const enPage = Object.values(data.pages).find(
-          (p) => p.id === TUTORIAL_EN_PAGE_ID || p.title === 'Getting Started'
+          (p) => p.id === TUTORIAL_EN_PAGE_ID
         );
         if (enPage) return this.clone(enPage);
       } else if (preferredLocale.toLowerCase().startsWith('zh')) {
         const zhPage = Object.values(data.pages).find(
-          (p) => p.id === SYSTEM_GLOBAL_PAGE_ID || p.title === '使用教學'
+          (p) => p.id === SYSTEM_GLOBAL_PAGE_ID
         );
         if (zhPage) return this.clone(zhPage);
       }

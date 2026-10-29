@@ -59,7 +59,8 @@ function InPageQuickCaptureWrapper({
 
       // Auto-resolve active page with prioritization
       const targetUrl = sourceUrl || window.location.href;
-      const resolved = await notebookService.resolveActivePage(targetUrl);
+      const preferredLocale = typeof navigator !== 'undefined' ? navigator.language : undefined;
+      const resolved = await notebookService.resolveActivePage(targetUrl, preferredLocale);
       setActivePageId(resolved.id);
     } catch (err) {
       console.warn('[Notebook] Content script failed to load data:', err);

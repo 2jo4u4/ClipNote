@@ -199,6 +199,29 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       );
     });
 
+    it('allows deleting SYSTEM_GLOBAL_PAGE_ID first on fresh install and preserves deletion across saveAllPages', async () => {
+      const initialPages = await service.getAllPages();
+      expect(initialPages.length).toBe(2);
+
+      // Delete the Chinese tutorial page first
+      await service.deletePage(SYSTEM_GLOBAL_PAGE_ID);
+      expect(await service.getPage(SYSTEM_GLOBAL_PAGE_ID)).toBeUndefined();
+      expect(await service.getPage(TUTORIAL_EN_PAGE_ID)).toBeDefined();
+
+      const remainingPages = await service.getAllPages();
+      expect(remainingPages.length).toBe(1);
+
+      // Verify saveAllPages preserves deletion and does not resurrect SYSTEM_GLOBAL_PAGE_ID
+      await service.saveAllPages(remainingPages);
+      const afterSave = await service.getAllPages();
+      expect(afterSave.length).toBe(1);
+      expect(afterSave[0].id).toBe(TUTORIAL_EN_PAGE_ID);
+
+      await expect(service.deletePage(TUTORIAL_EN_PAGE_ID)).rejects.toThrow(
+        'Cannot delete the last remaining page'
+      );
+    });
+
     it('allows deleting SYSTEM_GLOBAL_PAGE if other pages exist', async () => {
       const page1 = await service.createPage({ title: 'New Secondary Page' });
       await service.deletePage(SYSTEM_GLOBAL_PAGE_ID);

@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { SidePanel } from './SidePanel';
 import { ArrowLeft, ArrowRight, RotateCw, PanelRight, Lock } from 'lucide-react';
+import { createDefaultSeedData } from '../core/notebook-service';
 
 const meta: Meta<typeof SidePanel> = {
   title: 'Raycast/SidePanel (完整側邊欄)',
@@ -114,6 +115,43 @@ export const InBrowserSidePanel: Story = {
             <SidePanel
               currentDomain="104.com.tw"
               currentUrl={url}
+              initialPages={[
+                ...Object.values(createDefaultSeedData().pages),
+                {
+                  id: 'page-104',
+                  title: '104 中文經歷',
+                  icon: '💼',
+                  domains: ['104.com.tw'],
+                  isPrimary: true,
+                  createdAt: Date.now(),
+                  updatedAt: Date.now(),
+                  sections: [
+                    {
+                      id: 'sec-104-exp',
+                      title: '工作經驗欄位',
+                      order: 0,
+                      createdAt: Date.now(),
+                      updatedAt: Date.now(),
+                      items: [
+                        {
+                          id: 'item-104-1',
+                          key: '應徵職缺',
+                          value: '資深前端架構工程師',
+                          createdAt: Date.now(),
+                          updatedAt: Date.now(),
+                        },
+                        {
+                          id: 'item-104-2',
+                          key: '主要技術棧',
+                          value: 'React, TypeScript, TailwindCSS',
+                          createdAt: Date.now(),
+                          updatedAt: Date.now(),
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ]}
             />
           </div>
         </div>

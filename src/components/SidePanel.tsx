@@ -44,6 +44,7 @@ export interface SidePanelProps {
   onActivePageChange?: (pageId: string) => void;
   language?: Language;
   initialLanguage?: Language;
+  onLanguageChange?: (language: Language) => void;
   defaultDarkMode?: boolean;
   className?: string;
 }
@@ -58,13 +59,18 @@ const getInitialLanguage = (controlled?: Language, initial?: Language): Language
       const saved = localStorage.getItem('notebook_language') as Language | null;
       if (saved === 'zh-TW' || saved === 'en') return saved;
     }
+  } catch {
+    // Ignore storage errors
+  }
+  if (initial) return initial;
+  try {
     if (typeof navigator !== 'undefined' && navigator.language) {
       return navigator.language.toLowerCase().startsWith('zh') ? 'zh-TW' : 'en';
     }
   } catch {
-    // Ignore storage errors
+    // Ignore navigator errors
   }
-  return initial || 'zh-TW';
+  return 'zh-TW';
 };
 
 export const SidePanel: React.FC<SidePanelProps> = ({
@@ -76,7 +82,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onPagesChange,
   onActivePageChange,
   language: controlledLanguage,
-  initialLanguage = 'zh-TW',
+  initialLanguage,
+  onLanguageChange,
   defaultDarkMode,
   className,
 }) => {
@@ -89,6 +96,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const handleToggleLanguage = () => {
     const nextLang: Language = language === 'zh-TW' ? 'en' : 'zh-TW';
     setInternalLanguage(nextLang);
+    onLanguageChange?.(nextLang);
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
         localStorage.setItem('notebook_language', nextLang);
@@ -130,14 +138,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
     // Language-aware fallback for tutorial onboarding pages
     if (language === 'en') {
-      const enPage = basePages.find(
-        (p) => p.id === TUTORIAL_EN_PAGE_ID || p.title === 'Getting Started'
-      );
+      const enPage = basePages.find((p) => p.id === TUTORIAL_EN_PAGE_ID);
       if (enPage) return enPage.id;
     } else {
-      const zhPage = basePages.find(
-        (p) => p.id === SYSTEM_GLOBAL_PAGE_ID || p.title === '使用教學'
-      );
+      const zhPage = basePages.find((p) => p.id === SYSTEM_GLOBAL_PAGE_ID);
       if (zhPage) return zhPage.id;
     }
 
