@@ -102,8 +102,7 @@ $cropY = [Math]::Max(0, [int]($minY - ($cropSize - $cropH) / 2))
 $cropRect = New-Object System.Drawing.Rectangle($cropX, $cropY, $cropSize, $cropSize)
 
 $destDirs = @(
-    "D:\project\note-ext\public\icons",
-    "D:\project\note-ext\src\public\icons"
+    "D:\project\note-ext\public\icons"
 )
 
 $sizes = @(16, 48, 128)

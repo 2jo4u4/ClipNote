@@ -11,8 +11,7 @@ $cropH = 844
 $cropRect = New-Object System.Drawing.Rectangle($cropX, $cropY, $cropW, $cropH)
 
 $destDirs = @(
-    "D:\project\note-ext\public\icons",
-    "D:\project\note-ext\src\public\icons"
+    "D:\project\note-ext\public\icons"
 )
 
 $sizes = @(16, 48, 128)

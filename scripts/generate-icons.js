@@ -239,7 +239,6 @@ function generateIconPNG(size) {
 
 const targetDirs = [
   path.resolve('public/icons'),
-  path.resolve('src/public/icons'),
 ];
 
 for (const outDir of targetDirs) {
