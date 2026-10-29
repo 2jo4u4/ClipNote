@@ -656,17 +656,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         setSelectedSectionIds((cats) => cats.filter((id) => id !== sectionId));
         return prev.filter((t) => !(t.sectionId === sectionId && t.cellId === cellId));
       } else {
-        const next = [...prev, { sectionId, cellId }];
-        const targetSec = activePage.sections.find((s) => s.id === sectionId);
-        if (targetSec && targetSec.items.length > 0) {
-          const allSelected = targetSec.items.every((c) =>
-            next.some((t) => t.sectionId === sectionId && t.cellId === c.id)
-          );
-          if (allSelected) {
-            setSelectedSectionIds((cats) => (cats.includes(sectionId) ? cats : [...cats, sectionId]));
-          }
-        }
-        return next;
+        return [...prev, { sectionId, cellId }];
       }
     });
   };

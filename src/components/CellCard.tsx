@@ -78,6 +78,7 @@ export const CellCard: React.FC<CellCardProps> = ({
   const contentRef = useRef<HTMLDivElement>(null);
   const [isOverflowing, setIsOverflowing] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isPressed, setIsPressed] = useState(false);
 
   useEffect(() => {
     const el = contentRef.current;
@@ -130,13 +131,17 @@ export const CellCard: React.FC<CellCardProps> = ({
   return (
     <div
       onClick={handleClick}
+      onMouseDown={() => setIsPressed(true)}
+      onMouseUp={() => setIsPressed(false)}
+      onMouseLeave={() => setIsPressed(false)}
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={onDrop}
       title={isSelectMode ? (isSelected ? '取消選取' : '選取筆記') : t.common.clickToCopy}
       className={cn(
         'group relative flex flex-col p-3 rounded-xl border select-none cursor-pointer',
-        'transition-all duration-200 ease-raycast active:scale-[0.98]',
+        'transition-all duration-200 ease-raycast',
+        isPressed && !isSelectMode && 'scale-[0.98]',
         isDragging && 'opacity-40 scale-[0.98] border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 shadow-inner',
         dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
         dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
@@ -170,6 +175,7 @@ export const CellCard: React.FC<CellCardProps> = ({
           {isSelectMode && (
             <div
               className="flex-shrink-0"
+              onMouseDown={(e) => e.stopPropagation()}
               onClick={(e) => {
                 e.stopPropagation();
                 if (onToggleSelect) onToggleSelect(id);
@@ -209,7 +215,10 @@ export const CellCard: React.FC<CellCardProps> = ({
 
         {/* Right Action Icons (Copy, Edit & More Popover) */}
         {!isSelectMode && (
-          <div className="flex items-center gap-1 flex-shrink-0">
+          <div
+            className="flex items-center gap-1 flex-shrink-0"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
             {/* Quick Edit icon on hover */}
             {onEdit && (
               <button
@@ -350,6 +359,7 @@ export const CellCard: React.FC<CellCardProps> = ({
       {isOverflowing && (
         <button
           type="button"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => {
             e.stopPropagation();
             setIsExpanded(!isExpanded);
@@ -376,6 +386,7 @@ export const CellCard: React.FC<CellCardProps> = ({
           href={sourceUrl}
           target="_blank"
           rel="noopener noreferrer"
+          onMouseDown={(e) => e.stopPropagation()}
           onClick={(e) => e.stopPropagation()}
           className={cn(
             'mt-2 pt-1.5 border-t border-black/5 dark:border-white/5 flex items-center gap-1.5 text-[10px] font-mono',
