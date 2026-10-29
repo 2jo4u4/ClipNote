@@ -10,6 +10,7 @@ import {
   FileEdit,
   CheckSquare,
   Square,
+  GripVertical,
 } from 'lucide-react';
 import { cn, formatRelativeTime, getDomainFromUrl } from '../utils';
 import { Language, getTranslations } from '../i18n';
@@ -30,6 +31,13 @@ export interface CellCardProps {
   onEdit?: (id: string) => void;
   onDelete?: (id: string) => void;
   onMove?: (id: string) => void;
+  isDragging?: boolean;
+  dropPosition?: 'top' | 'bottom' | null;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  onDragOver?: (e: React.DragEvent) => void;
+  onDragLeave?: (e: React.DragEvent) => void;
+  onDrop?: (e: React.DragEvent) => void;
   className?: string;
 }
 
@@ -51,6 +59,13 @@ export const CellCard: React.FC<CellCardProps> = ({
   onEdit,
   onDelete,
   onMove,
+  isDragging = false,
+  dropPosition = null,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDragLeave,
+  onDrop,
   className,
 }) => {
   const t = getTranslations(language);
@@ -103,10 +118,16 @@ export const CellCard: React.FC<CellCardProps> = ({
   return (
     <div
       onClick={handleClick}
+      onDragOver={onDragOver}
+      onDragLeave={onDragLeave}
+      onDrop={onDrop}
       title={isSelectMode ? (isSelected ? '取消選取' : '選取筆記') : t.common.clickToCopy}
       className={cn(
         'group relative flex flex-col p-3 rounded-xl border select-none cursor-pointer',
         'transition-all duration-200 ease-raycast active:scale-[0.98]',
+        isDragging && 'opacity-40 scale-[0.98]',
+        dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
+        dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
         isSelectMode && isSelected
           ? 'border-raycast-coral bg-raycast-coral/5 ring-1 ring-raycast-coral/40 dark:border-raycast-coral dark:bg-raycast-coral/10'
           : copied
@@ -117,7 +138,22 @@ export const CellCard: React.FC<CellCardProps> = ({
     >
       {/* Header: Key & Timestamp on Left, Copy & Actions on Right */}
       <div className="flex items-center justify-between gap-2 mb-1.5">
-        <div className="flex items-center gap-2 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
+          {/* Drag Handle (Hidden in select mode) */}
+          {!isSelectMode && onDragStart && (
+            <div
+              draggable
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              title={language === 'en' ? 'Drag to reorder' : '拖曳以重新排序'}
+              className="opacity-0 group-hover:opacity-60 hover:!opacity-100 cursor-grab active:cursor-grabbing p-0.5 -ml-1 text-raycast-light-subtle dark:text-raycast-dark-subtle transition-opacity flex-shrink-0"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+          )}
+
           {/* Select Mode Checkbox */}
           {isSelectMode && (
             <div

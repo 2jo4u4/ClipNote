@@ -226,6 +226,22 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [showDeletePageConfirm, setShowDeletePageConfirm] = useState(false);
   const [pendingDeleteSection, setPendingDeleteSection] = useState<Section | null>(null);
 
+  // Drag and Drop State
+  const [draggedCell, setDraggedCell] = useState<{
+    cellId: string;
+    sectionId: string;
+  } | null>(null);
+  const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
+  const [cellDropTarget, setCellDropTarget] = useState<{
+    sectionId: string;
+    cellId?: string;
+    position: 'top' | 'bottom' | 'inside';
+  } | null>(null);
+  const [sectionDropTarget, setSectionDropTarget] = useState<{
+    sectionId: string;
+    position: 'top' | 'bottom';
+  } | null>(null);
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
@@ -788,6 +804,236 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(t.sidePanel.exportJsonSuccess);
   };
 
+  // ==========================================
+  // Drag & Drop Handlers (HTML5 Native)
+  // ==========================================
+
+  // Section Reordering Handlers
+  const handleSectionDragStart = (secId: string, e: React.DragEvent) => {
+    setDraggedSectionId(secId);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `section:${secId}`);
+  };
+
+  const handleSectionDragEnd = () => {
+    setDraggedSectionId(null);
+    setSectionDropTarget(null);
+  };
+
+  const handleSectionDragOverHeader = (secId: string, e: React.DragEvent) => {
+    if (!draggedSectionId || draggedSectionId === secId) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = e.currentTarget.getBoundingClientRect();
+    const position = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom';
+    setSectionDropTarget({ sectionId: secId, position });
+  };
+
+  const handleSectionDragLeaveHeader = (secId: string) => {
+    if (sectionDropTarget?.sectionId === secId) {
+      setSectionDropTarget(null);
+    }
+  };
+
+  const handleSectionDropHeader = (secId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    if (!draggedSectionId || draggedSectionId === secId || !sectionDropTarget) return;
+
+    const currentSections = activePage.sections;
+    const fromIdx = currentSections.findIndex((s) => s.id === draggedSectionId);
+    let toIdx = currentSections.findIndex((s) => s.id === secId);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    if (sectionDropTarget.position === 'bottom') {
+      toIdx += 1;
+    }
+    if (fromIdx < toIdx) {
+      toIdx -= 1;
+    }
+
+    const newSections = Array.from(currentSections);
+    const [moved] = newSections.splice(fromIdx, 1);
+    newSections.splice(toIdx, 0, moved);
+
+    const now = Date.now();
+    const reorderedSections = newSections.map((s, idx) => ({
+      ...s,
+      order: idx,
+      updatedAt: now,
+    }));
+
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+        return {
+          ...p,
+          sections: reorderedSections,
+          updatedAt: now,
+        };
+      })
+    );
+
+    setDraggedSectionId(null);
+    setSectionDropTarget(null);
+  };
+
+  // Cell Drag Handlers
+  const handleCellDragStart = (cellId: string, sectionId: string, e: React.DragEvent) => {
+    setDraggedCell({ cellId, sectionId });
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', `cell:${sectionId}:${cellId}`);
+  };
+
+  const handleCellDragEnd = () => {
+    setDraggedCell(null);
+    setCellDropTarget(null);
+  };
+
+  const handleCellDragOver = (targetCellId: string, targetSectionId: string, e: React.DragEvent) => {
+    if (!draggedCell) return;
+    if (draggedCell.cellId === targetCellId) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    const rect = e.currentTarget.getBoundingClientRect();
+    const position = e.clientY < rect.top + rect.height / 2 ? 'top' : 'bottom';
+    setCellDropTarget({ sectionId: targetSectionId, cellId: targetCellId, position });
+  };
+
+  const handleCellDragLeave = (targetCellId: string) => {
+    if (cellDropTarget?.cellId === targetCellId) {
+      setCellDropTarget(null);
+    }
+  };
+
+  const handleCellDrop = (targetCellId: string, targetSectionId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedCell || !cellDropTarget) return;
+
+    const { cellId: sourceCellId, sectionId: sourceSectionId } = draggedCell;
+    const now = Date.now();
+
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+
+        const sourceSec = p.sections.find((s) => s.id === sourceSectionId);
+        const targetSec = p.sections.find((s) => s.id === targetSectionId);
+        if (!sourceSec || !targetSec) return p;
+
+        const cellIndex = sourceSec.items.findIndex((c) => c.id === sourceCellId);
+        if (cellIndex === -1) return p;
+
+        if (sourceSectionId === targetSectionId) {
+          // Intra-section reorder
+          const targetCellIdx = targetSec.items.findIndex((c) => c.id === targetCellId);
+          if (targetCellIdx === -1) return p;
+
+          let insertIdx = cellDropTarget.position === 'top' ? targetCellIdx : targetCellIdx + 1;
+          if (cellIndex < insertIdx) {
+            insertIdx -= 1;
+          }
+
+          const newItems = Array.from(sourceSec.items);
+          const [movedCell] = newItems.splice(cellIndex, 1);
+          newItems.splice(insertIdx, 0, { ...movedCell, updatedAt: now });
+
+          return {
+            ...p,
+            sections: p.sections.map((s) =>
+              s.id === sourceSectionId ? { ...s, items: newItems, updatedAt: now } : s
+            ),
+            updatedAt: now,
+          };
+        } else {
+          // Cross-section move
+          const targetCellIdx = targetSec.items.findIndex((c) => c.id === targetCellId);
+          const insertIdx =
+            targetCellIdx === -1
+              ? targetSec.items.length
+              : cellDropTarget.position === 'top'
+              ? targetCellIdx
+              : targetCellIdx + 1;
+
+          const sourceItems = Array.from(sourceSec.items);
+          const [movedCell] = sourceItems.splice(cellIndex, 1);
+
+          const targetItems = Array.from(targetSec.items);
+          targetItems.splice(insertIdx, 0, { ...movedCell, updatedAt: now });
+
+          return {
+            ...p,
+            sections: p.sections.map((s) => {
+              if (s.id === sourceSectionId) return { ...s, items: sourceItems, updatedAt: now };
+              if (s.id === targetSectionId) return { ...s, items: targetItems, updatedAt: now };
+              return s;
+            }),
+            updatedAt: now,
+          };
+        }
+      })
+    );
+
+    setDraggedCell(null);
+    setCellDropTarget(null);
+  };
+
+  // Dropping into an empty section
+  const handleEmptySectionDragOver = (sectionId: string, e: React.DragEvent) => {
+    if (!draggedCell) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    setCellDropTarget({ sectionId, position: 'inside' });
+  };
+
+  const handleEmptySectionDragLeave = (sectionId: string) => {
+    if (cellDropTarget?.sectionId === sectionId && cellDropTarget.position === 'inside') {
+      setCellDropTarget(null);
+    }
+  };
+
+  const handleEmptySectionDrop = (targetSectionId: string, e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!draggedCell) return;
+
+    const { cellId: sourceCellId, sectionId: sourceSectionId } = draggedCell;
+    const now = Date.now();
+
+    setPages((prev) =>
+      prev.map((p) => {
+        if (p.id !== activePage.id) return p;
+
+        const sourceSec = p.sections.find((s) => s.id === sourceSectionId);
+        const targetSec = p.sections.find((s) => s.id === targetSectionId);
+        if (!sourceSec || !targetSec) return p;
+
+        const cellIndex = sourceSec.items.findIndex((c) => c.id === sourceCellId);
+        if (cellIndex === -1) return p;
+
+        const sourceItems = Array.from(sourceSec.items);
+        const [movedCell] = sourceItems.splice(cellIndex, 1);
+
+        const targetItems = [{ ...movedCell, updatedAt: now }];
+
+        return {
+          ...p,
+          sections: p.sections.map((s) => {
+            if (s.id === sourceSectionId) return { ...s, items: sourceItems, updatedAt: now };
+            if (s.id === targetSectionId) return { ...s, items: targetItems, updatedAt: now };
+            return s;
+          }),
+          updatedAt: now,
+        };
+      })
+    );
+
+    setDraggedCell(null);
+    setCellDropTarget(null);
+  };
+
   const quickCapturePages = useMemo(() => {
     return pages.map((p) => ({
       id: p.id,
@@ -1018,6 +1264,21 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 itemCount={section.items.length}
                 isSelectMode={isBatchMode}
                 isSelected={selectedSectionIds.includes(section.id)}
+                isDragging={draggedSectionId === section.id}
+                dropPosition={
+                  sectionDropTarget?.sectionId === section.id ? sectionDropTarget.position : null
+                }
+                isCellDropTarget={
+                  cellDropTarget?.sectionId === section.id && cellDropTarget.position === 'inside'
+                }
+                onDragStart={(e) => handleSectionDragStart(section.id, e)}
+                onDragEnd={handleSectionDragEnd}
+                onDragOverHeader={(e) => handleSectionDragOverHeader(section.id, e)}
+                onDragLeaveHeader={() => handleSectionDragLeaveHeader(section.id)}
+                onDropHeader={(e) => handleSectionDropHeader(section.id, e)}
+                onDragOverEmpty={(e) => handleEmptySectionDragOver(section.id, e)}
+                onDragLeaveEmpty={() => handleEmptySectionDragLeave(section.id)}
+                onDropEmpty={(e) => handleEmptySectionDrop(section.id, e)}
                 onToggleSelect={() => handleToggleSelectSection(section.id)}
                 onRenameSection={() => handleOpenRenameCategory(section.id)}
                 onAddItem={(secId) => {
@@ -1045,6 +1306,18 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                         isSelected={selectedCellTargets.some(
                           (t) => t.sectionId === section.id && t.cellId === cell.id
                         )}
+                        isDragging={draggedCell?.cellId === cell.id}
+                        dropPosition={
+                          cellDropTarget?.cellId === cell.id &&
+                          (cellDropTarget.position === 'top' || cellDropTarget.position === 'bottom')
+                            ? cellDropTarget.position
+                            : null
+                        }
+                        onDragStart={(e) => handleCellDragStart(cell.id, section.id, e)}
+                        onDragEnd={handleCellDragEnd}
+                        onDragOver={(e) => handleCellDragOver(cell.id, section.id, e)}
+                        onDragLeave={() => handleCellDragLeave(cell.id)}
+                        onDrop={(e) => handleCellDrop(cell.id, section.id, e)}
                         onToggleSelect={() => handleToggleSelectCell(section.id, cell.id)}
                         onEdit={() => handleOpenEditNote(cell, section.id)}
                         onCopy={() => handleCopy(cell.value)}
@@ -1055,11 +1328,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                       />
                     ))}
                   </div>
-                ) : (
-                  <div className="py-6 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                    {t.sidePanel.emptyCategoryPrompt}
-                  </div>
-                )}
+                ) : null}
               </SectionContainer>
             ))
           ) : (

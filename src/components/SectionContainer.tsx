@@ -12,6 +12,7 @@ import {
   FileEdit,
   CheckSquare,
   Square,
+  GripVertical,
 } from 'lucide-react';
 import { cn } from '../utils';
 import { Language, getTranslations } from '../i18n';
@@ -32,6 +33,17 @@ export interface SectionContainerProps {
   onAddItem?: (sectionId: string) => void;
   onDeleteSection?: (sectionId: string) => void;
   onExportPage?: () => void;
+  isDragging?: boolean;
+  dropPosition?: 'top' | 'bottom' | null;
+  isCellDropTarget?: boolean;
+  onDragStart?: (e: React.DragEvent) => void;
+  onDragEnd?: (e: React.DragEvent) => void;
+  onDragOverHeader?: (e: React.DragEvent) => void;
+  onDragLeaveHeader?: (e: React.DragEvent) => void;
+  onDropHeader?: (e: React.DragEvent) => void;
+  onDragOverEmpty?: (e: React.DragEvent) => void;
+  onDragLeaveEmpty?: (e: React.DragEvent) => void;
+  onDropEmpty?: (e: React.DragEvent) => void;
   children: React.ReactNode;
   className?: string;
 }
@@ -52,6 +64,17 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   onAddItem,
   onDeleteSection,
   onExportPage,
+  isDragging = false,
+  dropPosition = null,
+  isCellDropTarget = false,
+  onDragStart,
+  onDragEnd,
+  onDragOverHeader,
+  onDragLeaveHeader,
+  onDropHeader,
+  onDragOverEmpty,
+  onDragLeaveEmpty,
+  onDropEmpty,
   children,
   className,
 }) => {
@@ -81,6 +104,10 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
     <div
       className={cn(
         'group/section flex flex-col rounded-2xl border transition-all duration-300 ease-raycast',
+        isDragging && 'opacity-40 scale-[0.99]',
+        dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
+        dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
+        isCellDropTarget && 'ring-2 ring-raycast-amber/60 bg-raycast-amber/5',
         isSelectMode && isSelected
           ? 'border-raycast-coral/40 bg-raycast-coral/[0.02] ring-1 ring-raycast-coral/30'
           : 'bg-raycast-light-surface/60 border-raycast-light-border shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:bg-raycast-dark-surface/50 dark:border-white/8 dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',
@@ -89,6 +116,9 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
     >
       {/* Section Header */}
       <div
+        onDragOver={onDragOverHeader}
+        onDragLeave={onDragLeaveHeader}
+        onDrop={onDropHeader}
         className={cn(
           'flex items-center justify-between gap-3 px-3.5 py-2.5 select-none transition-colors duration-150',
           isCollapsible && 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] rounded-t-2xl',
@@ -99,7 +129,22 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
         }}
       >
         {/* Left: Checkbox (Select Mode) + Type Icon + Title + Count Badge */}
-        <div className="flex items-center gap-2.5 min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          {/* Section Drag Handle (Hidden in select mode) */}
+          {!isSelectMode && onDragStart && (
+            <div
+              draggable
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onClick={(e) => e.stopPropagation()}
+              onMouseDown={(e) => e.stopPropagation()}
+              title={language === 'en' ? 'Drag category to reorder' : '拖曳分類以重新排序'}
+              className="opacity-0 group-hover/section:opacity-60 hover:!opacity-100 cursor-grab active:cursor-grabbing p-0.5 -ml-1 text-raycast-light-subtle dark:text-raycast-dark-subtle transition-opacity flex-shrink-0"
+            >
+              <GripVertical className="w-3.5 h-3.5" />
+            </div>
+          )}
+
           {isSelectMode && (
             <div
               className="flex-shrink-0"
@@ -325,21 +370,31 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           <div className="p-3 pt-1 flex flex-col gap-2.5">
             {itemCount === 0 ? (
               <div
+                onDragOver={onDragOverEmpty}
+                onDragLeave={onDragLeaveEmpty}
+                onDrop={onDropEmpty}
                 className={cn(
-                  'py-6 px-4 text-center rounded-xl border border-dashed text-xs',
-                  'border-raycast-light-border text-raycast-light-subtle',
-                  'dark:border-white/10 dark:text-raycast-dark-subtle'
+                  'py-6 px-4 text-center rounded-xl border border-dashed text-xs transition-colors',
+                  isCellDropTarget
+                    ? 'border-raycast-amber bg-raycast-amber/10 text-raycast-amber font-semibold ring-1 ring-raycast-amber/40'
+                    : 'border-raycast-light-border text-raycast-light-subtle dark:border-white/10 dark:text-raycast-dark-subtle'
                 )}
               >
-                <span>{t.sidePanel.emptyCategoryPrompt}</span>
-                {onAddItem && (
-                  <button
-                    type="button"
-                    onClick={() => onAddItem(id)}
-                    className="block mx-auto mt-2 text-raycast-amber hover:underline font-medium"
-                  >
-                    + {t.sectionContainer.newNote}
-                  </button>
+                {isCellDropTarget ? (
+                  <span>{language === 'en' ? 'Drop note here' : '放開以移入此分類'}</span>
+                ) : (
+                  <>
+                    <span>{t.sidePanel.emptyCategoryPrompt}</span>
+                    {onAddItem && (
+                      <button
+                        type="button"
+                        onClick={() => onAddItem(id)}
+                        className="block mx-auto mt-2 text-raycast-amber hover:underline font-medium"
+                      >
+                        + {t.sectionContainer.newNote}
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             ) : (

@@ -438,6 +438,55 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(pB?.sections[0].items.length).toBe(1);
       expect(pB?.sections[0].items[0].id).toBe(cell1.id);
     });
+
+    it('reorders cells within the same section using moveCell with targetIndex', async () => {
+      const page = await service.createPage({ title: 'Reorder Page' });
+      const sec = await service.createSection(page.id, { title: 'Sec 1' });
+
+      const c1 = await service.createCell(page.id, sec.id, { key: 'C1', value: 'V1' });
+      const c2 = await service.createCell(page.id, sec.id, { key: 'C2', value: 'V2' });
+      const c3 = await service.createCell(page.id, sec.id, { key: 'C3', value: 'V3' });
+
+      // Move c3 from index 2 to index 0: should become [c3, c1, c2]
+      await service.moveCell({
+        cellId: c3.id,
+        sourcePageId: page.id,
+        sourceSectionId: sec.id,
+        targetPageId: page.id,
+        targetSectionId: sec.id,
+        targetIndex: 0,
+      });
+
+      const pAfter = await service.getPage(page.id);
+      const items = pAfter?.sections[0].items;
+      expect(items?.map((c) => c.id)).toEqual([c3.id, c1.id, c2.id]);
+    });
+
+    it('moves cells across sections on the same page including into an empty section', async () => {
+      const page = await service.createPage({ title: 'Cross Section Page' });
+      const sec1 = await service.createSection(page.id, { title: '104' });
+      const sec2 = await service.createSection(page.id, { title: 'Common' }); // empty
+
+      const c1 = await service.createCell(page.id, sec1.id, { key: '簡介', value: 'Web 工程師' });
+      const c2 = await service.createCell(page.id, sec1.id, { key: '技能', value: 'React' });
+
+      // Move c1 from sec1 to sec2 (empty section)
+      await service.moveCell({
+        cellId: c1.id,
+        sourcePageId: page.id,
+        sourceSectionId: sec1.id,
+        targetPageId: page.id,
+        targetSectionId: sec2.id,
+        targetIndex: 0,
+      });
+
+      const pAfter = await service.getPage(page.id);
+      const s1 = pAfter?.sections.find((s) => s.id === sec1.id);
+      const s2 = pAfter?.sections.find((s) => s.id === sec2.id);
+
+      expect(s1?.items.map((c) => c.id)).toEqual([c2.id]);
+      expect(s2?.items.map((c) => c.id)).toEqual([c1.id]);
+    });
   });
 
   describe('Domain Resolution Engine', () => {
