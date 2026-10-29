@@ -58,6 +58,9 @@ export const en: I18nTranslations = {
     confirmDeletePage: (title) => `Are you sure you want to delete page "${title}" and all its categories and notes? This action cannot be undone.`,
     deleteCategory: 'Delete Category',
     confirmDeleteCategory: (title) => `Are you sure you want to delete category "${title}" and all its notes? This action cannot be undone.`,
+    confirmDeleteCellTitle: 'Confirm Delete Note',
+    confirmDeleteCellWithKey: (key) => `Are you sure you want to delete note "${key}"? This action cannot be undone.`,
+    confirmDeleteCellWithoutKey: 'Are you sure you want to delete this note? This action cannot be undone.',
     deletedPageToast: (title) => `Deleted page "${title}"`,
     renamedPageToast: (title) => `Renamed to "${title}"`,
     updatedPageToast: (title) => `Saved settings for "${title}"`,
@@ -96,6 +99,8 @@ export const en: I18nTranslations = {
     moveNote: 'Move Note...',
     deleteNote: 'Delete Note',
     dragToReorder: 'Drag to reorder',
+    showMore: 'Show more',
+    showLess: 'Show less',
   },
   categoryModal: {
     createTitle: 'New Category',

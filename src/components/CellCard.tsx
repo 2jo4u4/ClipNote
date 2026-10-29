@@ -11,6 +11,8 @@ import {
   CheckSquare,
   Square,
   GripVertical,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { cn, formatRelativeTime, getDomainFromUrl } from '../utils';
 import { Language, getTranslations } from '../i18n';
@@ -73,6 +75,16 @@ export const CellCard: React.FC<CellCardProps> = ({
   const [showMenu, setShowMenu] = useState(false);
   const [openUpward, setOpenUpward] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const [isOverflowing, setIsOverflowing] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  useEffect(() => {
+    const el = contentRef.current;
+    if (el) {
+      setIsOverflowing(el.scrollHeight > 120);
+    }
+  }, [value]);
 
   const isField = Boolean(cellKey?.trim());
 
@@ -125,7 +137,7 @@ export const CellCard: React.FC<CellCardProps> = ({
       className={cn(
         'group relative flex flex-col p-3 rounded-xl border select-none cursor-pointer',
         'transition-all duration-200 ease-raycast active:scale-[0.98]',
-        isDragging && 'opacity-40 scale-[0.98]',
+        isDragging && 'opacity-40 scale-[0.98] border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 shadow-inner',
         dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
         dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
         isSelectMode && isSelected
@@ -316,14 +328,47 @@ export const CellCard: React.FC<CellCardProps> = ({
       </div>
 
       {/* Body: Direct clean value text (Click to copy) */}
-      <div
-        className={cn(
-          'text-xs leading-relaxed font-sans select-text whitespace-pre-wrap break-words transition-colors',
-          'text-raycast-light-text/90 dark:text-raycast-dark-text/90 group-hover:text-raycast-light-text dark:group-hover:text-raycast-dark-text'
+      <div className="relative">
+        <div
+          ref={contentRef}
+          className={cn(
+            'text-xs leading-relaxed font-sans select-text whitespace-pre-wrap break-words transition-all duration-200',
+            'text-raycast-light-text/90 dark:text-raycast-dark-text/90 group-hover:text-raycast-light-text dark:group-hover:text-raycast-dark-text',
+            isOverflowing && !isExpanded && 'max-h-[120px] overflow-hidden'
+          )}
+        >
+          {value}
+        </div>
+
+        {/* Gradient Fade Overlay when collapsed */}
+        {isOverflowing && !isExpanded && (
+          <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-raycast-light-surface via-raycast-light-surface/80 to-transparent dark:from-raycast-dark-surface dark:via-raycast-dark-surface/80 dark:to-transparent pointer-events-none" />
         )}
-      >
-        {value}
       </div>
+
+      {/* Expand / Collapse Button */}
+      {isOverflowing && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsExpanded(!isExpanded);
+          }}
+          className="mt-1.5 flex items-center gap-1 text-[11px] font-medium text-raycast-amber hover:brightness-110 active:opacity-80 transition-all w-fit"
+        >
+          {isExpanded ? (
+            <>
+              <ChevronUp className="w-3 h-3" />
+              <span>{t.cellCard.showLess}</span>
+            </>
+          ) : (
+            <>
+              <ChevronDown className="w-3 h-3" />
+              <span>{t.cellCard.showMore}</span>
+            </>
+          )}
+        </button>
+      )}
 
       {/* Source URL Pill */}
       {sourceUrl && (

@@ -117,7 +117,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
       onDrop={handleContainerDrop}
       className={cn(
         'group/section flex flex-col rounded-2xl border transition-all duration-300 ease-raycast',
-        isDragging && 'opacity-40 scale-[0.99]',
+        isDragging && 'opacity-40 scale-[0.99] border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 shadow-inner',
         dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
         dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
         isCellDropTarget && 'ring-2 ring-raycast-amber/60 bg-raycast-amber/5',

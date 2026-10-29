@@ -225,6 +225,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [showBatchConfirm, setShowBatchConfirm] = useState(false);
   const [showDeletePageConfirm, setShowDeletePageConfirm] = useState(false);
   const [pendingDeleteSection, setPendingDeleteSection] = useState<Section | null>(null);
+  const [pendingDeleteCell, setPendingDeleteCell] = useState<{
+    pageId: string;
+    sectionId: string;
+    cell: Cell;
+  } | null>(null);
 
   // Drag and Drop State
   const [draggedCell, setDraggedCell] = useState<CellTarget | null>(null);
@@ -568,6 +573,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     const page = pages.find((p) => p.id === pageId);
     const sec = page?.sections.find((s) => s.id === sectionId);
     const targetCell = sec?.items.find((c) => c.id === cellId);
+    if (targetCell) {
+      setPendingDeleteCell({ pageId, sectionId, cell: targetCell });
+    }
+  };
+
+  const handleConfirmDeleteCell = () => {
+    if (!pendingDeleteCell) return;
+    const { pageId, sectionId, cell } = pendingDeleteCell;
+    setPendingDeleteCell(null);
 
     setPages((prev) =>
       prev.map((p) => {
@@ -578,7 +592,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             if (s.id !== sectionId) return s;
             return {
               ...s,
-              items: s.items.filter((c) => c.id !== cellId),
+              items: s.items.filter((c) => c.id !== cell.id),
               updatedAt: Date.now(),
             };
           }),
@@ -586,7 +600,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         };
       })
     );
-    showToast(t.sidePanel.deletedNoteToast(targetCell?.key));
+    showToast(t.sidePanel.deletedNoteToast(cell.key));
   };
 
   const handleDeleteSection = (secId: string) => {
@@ -1451,6 +1465,23 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           isDestructive={true}
           onConfirm={handleConfirmDeleteSection}
           onClose={() => setPendingDeleteSection(null)}
+        />
+
+        {/* Delete Single Cell Confirmation Dialog */}
+        <ConfirmModal
+          isOpen={!!pendingDeleteCell}
+          language={language}
+          title={t.sidePanel.confirmDeleteCellTitle}
+          description={
+            pendingDeleteCell?.cell.key
+              ? t.sidePanel.confirmDeleteCellWithKey(pendingDeleteCell.cell.key)
+              : t.sidePanel.confirmDeleteCellWithoutKey
+          }
+          confirmText={t.common.delete}
+          cancelText={t.common.cancel}
+          isDestructive={true}
+          onConfirm={handleConfirmDeleteCell}
+          onClose={() => setPendingDeleteCell(null)}
         />
 
         {/* Quick Capture Modal */}

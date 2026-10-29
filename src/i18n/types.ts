@@ -56,6 +56,9 @@ export interface I18nTranslations {
     confirmDeletePage: (title: string) => string;
     deleteCategory: string;
     confirmDeleteCategory: (title: string) => string;
+    confirmDeleteCellTitle: string;
+    confirmDeleteCellWithKey: (key: string) => string;
+    confirmDeleteCellWithoutKey: string;
     deletedPageToast: (title: string) => string;
     renamedPageToast: (title: string) => string;
     updatedPageToast: (title: string) => string;
@@ -93,6 +96,8 @@ export interface I18nTranslations {
     moveNote: string;
     deleteNote: string;
     dragToReorder: string;
+    showMore: string;
+    showLess: string;
   };
   categoryModal: {
     createTitle: string;

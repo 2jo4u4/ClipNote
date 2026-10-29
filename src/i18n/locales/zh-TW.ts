@@ -57,6 +57,9 @@ export const zhTW: I18nTranslations = {
     confirmDeletePage: (title) => `確定要刪除「${title}」頁面及其所有分類與筆記嗎？此動作無法復原。`,
     deleteCategory: '刪除分類',
     confirmDeleteCategory: (title) => `確定要刪除「${title}」分類及其內的所有筆記嗎？此動作無法復原。`,
+    confirmDeleteCellTitle: '確認刪除筆記？',
+    confirmDeleteCellWithKey: (key) => `確定要刪除「${key}」這則筆記嗎？此動作無法復原。`,
+    confirmDeleteCellWithoutKey: '確定要刪除此筆記嗎？此動作無法復原。',
     deletedPageToast: (title) => `已刪除頁面「${title}」`,
     renamedPageToast: (title) => `已更名為「${title}」`,
     updatedPageToast: (title) => `已儲存「${title}」頁面設定`,
@@ -95,6 +98,8 @@ export const zhTW: I18nTranslations = {
     moveNote: '移動筆記至...',
     deleteNote: '刪除筆記',
     dragToReorder: '拖曳以重新排序',
+    showMore: '展開更多',
+    showLess: '收合',
   },
   categoryModal: {
     createTitle: '新增分類',
