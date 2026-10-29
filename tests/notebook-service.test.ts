@@ -3,6 +3,8 @@ import {
   NotebookService,
   matchDomain,
   extractHostname,
+  reorderArray,
+  moveCellInPage,
 } from '../src/core/notebook-service';
 import { MemoryStorageAdapter, ChromeStorageAdapter } from '../src/core/storage';
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../src/core/types';
@@ -335,7 +337,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       const updatedSec1 = await service.updateSection(page.id, sec1.id, { title: '基本背景' });
       expect(updatedSec1.title).toBe('基本背景');
 
-      const reordered = await service.reorderSections(page.id, [sec2.id, sec1.id]);
+      const reordered = await service.reorderSections(page.id, 1, 0);
       expect(reordered[0].id).toBe(sec2.id);
       expect(reordered[1].id).toBe(sec1.id);
 
@@ -508,12 +510,11 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       const c2 = await service.createCell(page.id, secA.id, { key: 'K2', value: 'V2' });
 
       // Reorder within Category A
-      await service.reorderCells(page.id, {
-        cellId: c2.id,
-        sourceSectionId: secA.id,
-        targetSectionId: secA.id,
-        targetIndex: 0,
-      });
+      await service.reorderCells(
+        page.id,
+        { sectionId: secA.id, cellId: c2.id },
+        { sectionId: secA.id, index: 0 }
+      );
 
       let pageState = await service.getPage(page.id);
       expect(pageState?.sections.find((s) => s.id === secA.id)?.items.map((c) => c.id)).toEqual([
@@ -522,12 +523,11 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       ]);
 
       // Move into empty Category B
-      await service.reorderCells(page.id, {
-        cellId: c1.id,
-        sourceSectionId: secA.id,
-        targetSectionId: secB.id,
-        targetIndex: 0,
-      });
+      await service.reorderCells(
+        page.id,
+        { sectionId: secA.id, cellId: c1.id },
+        { sectionId: secB.id, index: 0 }
+      );
 
       pageState = await service.getPage(page.id);
       expect(pageState?.sections.find((s) => s.id === secA.id)?.items.map((c) => c.id)).toEqual([
@@ -536,6 +536,43 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(pageState?.sections.find((s) => s.id === secB.id)?.items.map((c) => c.id)).toEqual([
         c1.id,
       ]);
+    });
+
+    it('reorderArray moves items correctly without mutating original array', () => {
+      const original = ['A', 'B', 'C', 'D'];
+      const reordered = reorderArray(original, 0, 2);
+      expect(reordered).toEqual(['B', 'C', 'A', 'D']);
+      expect(original).toEqual(['A', 'B', 'C', 'D']);
+      expect(reorderArray(original, 1, 1)).toBe(original);
+    });
+
+    it('moveCellInPage moves cells within and across sections pure and immutable', async () => {
+      const page = await service.createPage({ title: 'Pure Move Page' });
+      const sec1 = await service.createSection(page.id, { title: 'Sec 1' });
+      const sec2 = await service.createSection(page.id, { title: 'Sec 2' });
+      const c1 = await service.createCell(page.id, sec1.id, { value: 'Cell 1' });
+      const c2 = await service.createCell(page.id, sec1.id, { value: 'Cell 2' });
+      const freshPage = (await service.getPage(page.id))!;
+
+      // Intra-section move: move c1 after c2
+      const updatedPage1 = moveCellInPage(
+        freshPage,
+        { sectionId: sec1.id, cellId: c1.id },
+        { sectionId: sec1.id, index: 2 },
+        1000
+      );
+      expect(updatedPage1.sections[0].items.map((c) => c.id)).toEqual([c2.id, c1.id]);
+      expect(updatedPage1.sections[0].items[1].updatedAt).toBe(1000);
+
+      // Cross-section move: move c2 to sec2
+      const updatedPage2 = moveCellInPage(
+        updatedPage1,
+        { sectionId: sec1.id, cellId: c2.id },
+        { sectionId: sec2.id, index: 0 },
+        2000
+      );
+      expect(updatedPage2.sections[0].items.map((c) => c.id)).toEqual([c1.id]);
+      expect(updatedPage2.sections[1].items.map((c) => c.id)).toEqual([c2.id]);
     });
   });
 

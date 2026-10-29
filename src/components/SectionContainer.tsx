@@ -40,9 +40,6 @@ export interface SectionContainerProps {
   onDragOverContainer?: (e: React.DragEvent) => void;
   onDragLeaveContainer?: (e: React.DragEvent) => void;
   onDropContainer?: (e: React.DragEvent) => void;
-  onDragOverHeader?: (e: React.DragEvent) => void;
-  onDragLeaveHeader?: (e: React.DragEvent) => void;
-  onDropHeader?: (e: React.DragEvent) => void;
   onDragOverEmpty?: (e: React.DragEvent) => void;
   onDragLeaveEmpty?: (e: React.DragEvent) => void;
   onDropEmpty?: (e: React.DragEvent) => void;
@@ -73,9 +70,6 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   onDragOverContainer,
   onDragLeaveContainer,
   onDropContainer,
-  onDragOverHeader,
-  onDragLeaveHeader,
-  onDropHeader,
   onDragOverEmpty,
   onDragLeaveEmpty,
   onDropEmpty,
@@ -90,9 +84,9 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   const isFields = type === 'fields';
   const isJots = type === 'jots';
 
-  const handleContainerDragOver = onDragOverContainer || onDragOverHeader;
-  const handleContainerDragLeave = onDragLeaveContainer || onDragLeaveHeader;
-  const handleContainerDrop = onDropContainer || onDropHeader;
+  const handleContainerDragOver = onDragOverContainer;
+  const handleContainerDragLeave = onDragLeaveContainer;
+  const handleContainerDrop = onDropContainer;
 
   // Outside click listener for the action menu (No full-screen blocking backdrop)
   useEffect(() => {

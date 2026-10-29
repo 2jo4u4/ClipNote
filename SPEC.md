@@ -84,7 +84,7 @@ It provides:
 46. As a user with extensive text in a note (such as a detailed self-introduction, cover letter, or multiline code snippet), I want the note card to automatically truncate with a smooth fade gradient and an expandable "展開更多 (Show more)" button when exceeding ~4-5 lines (or ~120px), so that my side panel remains compact and easy to navigate without being vertically hijacked by a single lengthy note.
 47. As a user reading or editing a long note, I want to click "展開更多" to expand the note to full length and click "收合 (Show less)" to collapse it, without accidentally triggering copy or double-click edit actions.
 48. As a user copying a collapsed long note, I want clicking the note card or the copy button to copy 100% of the entire original content to my clipboard, so that truncation is strictly a visual aid and never alters copied data.
-49. As a user deleting an individual note card from the action menu, I want a confirmation modal (ConfirmModal) displaying the note's key or snippet with an explicit warning, so that I do not accidentally delete notes with a stray click.
+49. As a user deleting an individual note card from the action menu, I want a confirmation modal (ConfirmModal) displaying the note's key or truncated content snippet (up to 20 characters) with an explicit warning, so that I do not accidentally delete notes with a stray click.
 50. As a user dragging a note card or category, I want the lifted item in the original list to transform into a Trello-like dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`), so that I have a tangible physical sense of where the item was lifted from.
 51. As a user dragging a note card across categories, I want dragging between cards in another category to smoothly push those cards apart and reveal the insertion slot, so that cross-category filing feels as fluid as intra-category sorting.
 52. As a user in batch mode, I want selecting all cards in a category to never automatically select the category container itself, so that batch-deleting notes preserves the category as an empty container unless I explicitly select the category header.
@@ -188,8 +188,8 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **Dedicated Grip Handles**:
   - `CellCard` and `SectionContainer` header feature a left-aligned `GripVertical` icon (`cursor-grab active:cursor-grabbing`) to trigger dragging, preventing conflicts with single-click copying, text selection, double-click editing, and button clicks.
 - **Visual Feedback & Drop Indicators**:
-  - Dragged items display reduced opacity (`opacity-40`).
-  - Target insertion points display a Raycast Amber accent drop line (`border-t-2 border-raycast-amber` or `border-b-2 border-raycast-amber`) based on pointer vertical midpoint.
+  - Dragged items display reduced opacity (`opacity-40`) and dashed placeholder styling (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 rounded-xl`).
+  - Target insertion points display a dynamic Trello-style push-apart placeholder slot (`border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 rounded-xl`) based on pointer vertical midpoint (see Decision 13).
   - Empty category containers highlight with an amber dashed border on hover when receiving a dragged cell.
 - **Data Layer Domain Operations**:
   - `NotebookService.reorderSections(pageId, sourceIndex, targetIndex)`: updates `page.sections` order and normalizes sequence numbers.
@@ -207,11 +207,11 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **Unified Destruction Guard**: Replaces direct deletion in `CellCard` with a dedicated `pendingDeleteCell: { pageId: string; sectionId: string; cell: Cell } | null` in `SidePanel.tsx`.
 - **Bilingual Copy**:
   - Traditional Chinese (`zh-TW`):
-    - With key: `確定要刪除「${key}」這則筆記嗎？此動作無法復原。`
-    - Without key: `確定要刪除此筆記嗎？此動作無法復原。`
+    - With key or content snippet: `確定要刪除「${key || snippet}」這則筆記嗎？此動作無法復原。` (for keyless notes, content is truncated up to 20 characters with `...`)
+    - Empty note: `確定要刪除此筆記嗎？此動作無法復原。`
   - English (`en`):
-    - With key: `Are you sure you want to delete note "${key}"? This action cannot be undone.`
-    - Without key: `Are you sure you want to delete this note? This action cannot be undone.`
+    - With key or content snippet: `Are you sure you want to delete note "${key || snippet}"? This action cannot be undone.` (for keyless notes, content is truncated up to 20 characters with `...`)
+    - Empty note: `Are you sure you want to delete this note? This action cannot be undone.`
 - **Action Buttons & Keybindings**: Destructive red "刪除" / "Delete" button, neutral "取消" / "Cancel", and `Esc` key support to dismiss.
 
 ### 13. Trello-Style Push-Apart Drag Architecture & Unified Drop Slot (Trello 式推開動態與統一佔位空槽)

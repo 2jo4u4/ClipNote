@@ -67,6 +67,74 @@ export function matchDomain(hostname: string, pattern: string): boolean {
   return false;
 }
 
+/**
+ * Pure helper to reorder an array by moving an element from sourceIndex to targetIndex.
+ */
+export function reorderArray<T>(list: T[], sourceIndex: number, targetIndex: number): T[] {
+  if (sourceIndex === targetIndex) return list;
+  const result = Array.from(list);
+  const [removed] = result.splice(sourceIndex, 1);
+  result.splice(targetIndex, 0, removed);
+  return result;
+}
+
+/**
+ * Pure helper to reorder or move a cell within or across sections in a page.
+ */
+export function moveCellInPage(
+  page: Page,
+  source: CellTarget,
+  target: { sectionId: string; index?: number },
+  timestamp = Date.now()
+): Page {
+  const sourceSec = page.sections.find((s) => s.id === source.sectionId);
+  const targetSec = page.sections.find((s) => s.id === target.sectionId);
+  if (!sourceSec || !targetSec) return page;
+
+  const cellIndex = sourceSec.items.findIndex((c) => c.id === source.cellId);
+  if (cellIndex === -1) return page;
+
+  if (source.sectionId === target.sectionId) {
+    let finalIdx = target.index !== undefined ? target.index : sourceSec.items.length;
+    if (cellIndex < finalIdx) {
+      finalIdx -= 1;
+    }
+    if (finalIdx === cellIndex) return page;
+
+    const newItems = Array.from(sourceSec.items);
+    const [movedCell] = newItems.splice(cellIndex, 1);
+    newItems.splice(finalIdx, 0, { ...movedCell, updatedAt: timestamp });
+
+    return {
+      ...page,
+      sections: page.sections.map((s) =>
+        s.id === source.sectionId ? { ...s, items: newItems, updatedAt: timestamp } : s
+      ),
+      updatedAt: timestamp,
+    };
+  } else {
+    const sourceItems = Array.from(sourceSec.items);
+    const [movedCell] = sourceItems.splice(cellIndex, 1);
+
+    const targetItems = Array.from(targetSec.items);
+    const finalIdx =
+      target.index !== undefined
+        ? Math.min(Math.max(0, target.index), targetItems.length)
+        : targetItems.length;
+    targetItems.splice(finalIdx, 0, { ...movedCell, updatedAt: timestamp });
+
+    return {
+      ...page,
+      sections: page.sections.map((s) => {
+        if (s.id === source.sectionId) return { ...s, items: sourceItems, updatedAt: timestamp };
+        if (s.id === target.sectionId) return { ...s, items: targetItems, updatedAt: timestamp };
+        return s;
+      }),
+      updatedAt: timestamp,
+    };
+  }
+}
+
 export function createDefaultSeedData(): NotebookStorage {
   const now = Date.now();
   const zhTutorialPage: Page = {
@@ -624,8 +692,8 @@ export class NotebookService {
 
   async reorderSections(
     pageId: string,
-    sectionIdsOrSourceIndex: string[] | number,
-    targetIndex?: number
+    sourceIndex: number,
+    targetIndex: number
   ): Promise<Section[]> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
@@ -633,54 +701,24 @@ export class NotebookService {
       throw new Error(`Page not found: ${pageId}`);
     }
 
+    if (
+      sourceIndex < 0 ||
+      sourceIndex >= page.sections.length ||
+      targetIndex < 0 ||
+      targetIndex >= page.sections.length
+    ) {
+      throw new Error(`Invalid section reorder indices: ${sourceIndex} -> ${targetIndex}`);
+    }
+
     const now = Date.now();
-
-    if (typeof sectionIdsOrSourceIndex === 'number') {
-      const sourceIndex = sectionIdsOrSourceIndex;
-      if (
-        sourceIndex < 0 ||
-        sourceIndex >= page.sections.length ||
-        targetIndex === undefined ||
-        targetIndex < 0 ||
-        targetIndex >= page.sections.length
-      ) {
-        throw new Error(`Invalid section reorder indices: ${sourceIndex} -> ${targetIndex}`);
-      }
-      const [moved] = page.sections.splice(sourceIndex, 1);
-      page.sections.splice(targetIndex, 0, moved);
-      page.sections.forEach((sec, idx) => {
-        sec.order = idx;
-        sec.updatedAt = now;
-      });
-      page.updatedAt = now;
-      await this.persist();
-      return this.clone(page.sections);
-    }
-
-    const sectionIds = sectionIdsOrSourceIndex;
-    const sectionMap = new Map(page.sections.map((s) => [s.id, s]));
-    const reordered: Section[] = [];
-
-    sectionIds.forEach((id, index) => {
-      const section = sectionMap.get(id);
-      if (section) {
-        section.order = index;
-        section.updatedAt = now;
-        reordered.push(section);
-        sectionMap.delete(id);
-      }
+    page.sections = reorderArray(page.sections, sourceIndex, targetIndex);
+    page.sections.forEach((sec, idx) => {
+      sec.order = idx;
+      sec.updatedAt = now;
     });
-
-    for (const remaining of sectionMap.values()) {
-      remaining.order = reordered.length;
-      remaining.updatedAt = now;
-      reordered.push(remaining);
-    }
-
-    page.sections = reordered;
     page.updatedAt = now;
     await this.persist();
-    return this.clone(reordered);
+    return this.clone(page.sections);
   }
 
   // ==========================================
@@ -860,8 +898,16 @@ export class NotebookService {
     }
 
     const [cell] = sourceSection.items.splice(cellIndex, 1);
-    const insertIndex =
+    let insertIndex =
       params.targetIndex !== undefined ? params.targetIndex : targetSection.items.length;
+    if (
+      params.sourcePageId === params.targetPageId &&
+      params.sourceSectionId === params.targetSectionId &&
+      cellIndex < insertIndex
+    ) {
+      insertIndex -= 1;
+    }
+    insertIndex = Math.max(0, Math.min(insertIndex, targetSection.items.length));
     targetSection.items.splice(insertIndex, 0, cell);
 
     const now = Date.now();
@@ -877,20 +923,16 @@ export class NotebookService {
 
   async reorderCells(
     pageId: string,
-    params: {
-      cellId: string;
-      sourceSectionId: string;
-      targetSectionId: string;
-      targetIndex?: number;
-    }
+    source: CellTarget,
+    target: { sectionId: string; index?: number }
   ): Promise<Cell> {
     return this.moveCell({
-      cellId: params.cellId,
+      cellId: source.cellId,
       sourcePageId: pageId,
-      sourceSectionId: params.sourceSectionId,
+      sourceSectionId: source.sectionId,
       targetPageId: pageId,
-      targetSectionId: params.targetSectionId,
-      targetIndex: params.targetIndex,
+      targetSectionId: target.sectionId,
+      targetIndex: target.index,
     });
   }
 

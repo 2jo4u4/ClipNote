@@ -16,6 +16,7 @@ import { PageTabs, PageItem } from './PageTabs';
 import { OmniSearchBar } from './OmniSearchBar';
 import { SectionContainer } from './SectionContainer';
 import { CellCard } from './CellCard';
+import { DropSlot } from './DropSlot';
 import { QuickCaptureModal } from './QuickCaptureModal';
 import { NewPageModal, PageModalData } from './NewPageModal';
 import { MoveCellModal } from './MoveCellModal';
@@ -26,7 +27,7 @@ import { ConfirmModal } from './ConfirmModal';
 import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
-import { matchDomain, createDefaultSeedData } from '../core/notebook-service';
+import { matchDomain, createDefaultSeedData, reorderArray, moveCellInPage } from '../core/notebook-service';
 import {
   applyTheme,
   getStoredTheme,
@@ -820,17 +821,26 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   };
 
   const handleSectionDragOverSection = (_secId: string, sIdx: number, e: React.DragEvent) => {
-    if (!draggedSectionId) return;
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    const rect = e.currentTarget.getBoundingClientRect();
-    const isTop = e.clientY < rect.top + rect.height / 2;
-    const targetIndex = isTop ? sIdx : sIdx + 1;
-    setSectionDropTarget({ index: targetIndex });
+    if (draggedSectionId) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      const rect = e.currentTarget.getBoundingClientRect();
+      const isTop = e.clientY < rect.top + rect.height / 2;
+      const targetIndex = isTop ? sIdx : sIdx + 1;
+      setSectionDropTarget({ index: targetIndex });
+    } else if (draggedCell) {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      setCellDropTarget({ sectionId: _secId, index: 0 });
+    }
   };
 
   const handleSectionDrop = (e: React.DragEvent) => {
     e.preventDefault();
+    if (draggedCell && cellDropTarget) {
+      handleCellDrop(cellDropTarget.index, cellDropTarget.sectionId, e);
+      return;
+    }
     if (!draggedSectionId || sectionDropTarget === null) return;
 
     const currentSections = activePage.sections;
@@ -845,12 +855,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     if (toIdx >= currentSections.length) toIdx = currentSections.length - 1;
 
     if (fromIdx !== toIdx) {
-      const newSections = Array.from(currentSections);
-      const [moved] = newSections.splice(fromIdx, 1);
-      newSections.splice(toIdx, 0, moved);
-
       const now = Date.now();
-      const reorderedSections = newSections.map((s, idx) => ({
+      const reordered = reorderArray(currentSections, fromIdx, toIdx);
+      const reorderedSections = reordered.map((s, idx) => ({
         ...s,
         order: idx,
         updatedAt: now,
@@ -922,52 +929,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== activePage.id) return p;
-
-        const sourceSec = p.sections.find((s) => s.id === sourceSectionId);
-        const targetSec = p.sections.find((s) => s.id === targetSectionId);
-        if (!sourceSec || !targetSec) return p;
-
-        const cellIndex = sourceSec.items.findIndex((c) => c.id === sourceCellId);
-        if (cellIndex === -1) return p;
-
-        if (sourceSectionId === targetSectionId) {
-          // Intra-section reorder
-          let finalIdx = targetIndex;
-          if (cellIndex < finalIdx) {
-            finalIdx -= 1;
-          }
-          if (finalIdx === cellIndex) return p;
-
-          const newItems = Array.from(sourceSec.items);
-          const [movedCell] = newItems.splice(cellIndex, 1);
-          newItems.splice(finalIdx, 0, { ...movedCell, updatedAt: now });
-
-          return {
-            ...p,
-            sections: p.sections.map((s) =>
-              s.id === sourceSectionId ? { ...s, items: newItems, updatedAt: now } : s
-            ),
-            updatedAt: now,
-          };
-        } else {
-          // Cross-section move
-          const sourceItems = Array.from(sourceSec.items);
-          const [movedCell] = sourceItems.splice(cellIndex, 1);
-
-          const targetItems = Array.from(targetSec.items);
-          const finalIdx = Math.min(Math.max(0, targetIndex), targetItems.length);
-          targetItems.splice(finalIdx, 0, { ...movedCell, updatedAt: now });
-
-          return {
-            ...p,
-            sections: p.sections.map((s) => {
-              if (s.id === sourceSectionId) return { ...s, items: sourceItems, updatedAt: now };
-              if (s.id === targetSectionId) return { ...s, items: targetItems, updatedAt: now };
-              return s;
-            }),
-            updatedAt: now,
-          };
-        }
+        return moveCellInPage(
+          p,
+          { sectionId: sourceSectionId, cellId: sourceCellId },
+          { sectionId: targetSectionId, index: targetIndex },
+          now
+        );
       })
     );
 
@@ -1216,16 +1183,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               return (
                 <Fragment key={section.id}>
                   {showSectionSlotBefore && (
-                    <div
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                      }}
+                    <DropSlot
+                      type="section"
+                      label={t.sectionContainer.dropCategoryHere}
                       onDrop={handleSectionDrop}
-                      className="h-16 rounded-2xl border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 flex items-center justify-center text-xs text-raycast-amber font-medium transition-all duration-200 ease-out animate-in fade-in zoom-in-95 my-1"
-                    >
-                      <span>{t.sectionContainer.dropCategoryHere}</span>
-                    </div>
+                    />
                   )}
                   <SectionContainer
                     id={section.id}
@@ -1280,17 +1242,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                           return (
                             <Fragment key={cell.id}>
                               {showCellSlotBefore && (
-                                <div
-                                  onDragOver={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.dataTransfer.dropEffect = 'move';
-                                  }}
+                                <DropSlot
+                                  type="cell"
+                                  label={t.sectionContainer.dropNoteHere}
                                   onDrop={(e) => handleCellDrop(cIdx, section.id, e)}
-                                  className="h-14 rounded-xl border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 flex items-center justify-center text-xs text-raycast-amber font-medium transition-all duration-200 ease-out animate-in fade-in zoom-in-95"
-                                >
-                                  <span>{t.sectionContainer.dropNoteHere}</span>
-                                </div>
+                                />
                               )}
                               <CellCard
                                 id={cell.id}
@@ -1321,19 +1277,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                                 }
                               />
                               {showCellSlotAfter && (
-                                <div
-                                  onDragOver={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    e.dataTransfer.dropEffect = 'move';
-                                  }}
+                                <DropSlot
+                                  type="cell"
+                                  label={t.sectionContainer.dropNoteHere}
                                   onDrop={(e) =>
                                     handleCellDrop(section.items.length, section.id, e)
                                   }
-                                  className="h-14 rounded-xl border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 flex items-center justify-center text-xs text-raycast-amber font-medium transition-all duration-200 ease-out animate-in fade-in zoom-in-95"
-                                >
-                                  <span>{t.sectionContainer.dropNoteHere}</span>
-                                </div>
+                                />
                               )}
                             </Fragment>
                           );
@@ -1342,16 +1292,11 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                     ) : null}
                   </SectionContainer>
                   {showSectionSlotAfter && (
-                    <div
-                      onDragOver={(e) => {
-                        e.preventDefault();
-                        e.dataTransfer.dropEffect = 'move';
-                      }}
+                    <DropSlot
+                      type="section"
+                      label={t.sectionContainer.dropCategoryHere}
                       onDrop={handleSectionDrop}
-                      className="h-16 rounded-2xl border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 flex items-center justify-center text-xs text-raycast-amber font-medium transition-all duration-200 ease-out animate-in fade-in zoom-in-95 my-1"
-                    >
-                      <span>{t.sectionContainer.dropCategoryHere}</span>
-                    </div>
+                    />
                   )}
                 </Fragment>
               );
@@ -1489,7 +1434,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           description={
             pendingDeleteCell?.cell.key
               ? t.sidePanel.confirmDeleteCellWithKey(pendingDeleteCell.cell.key)
-              : t.sidePanel.confirmDeleteCellWithoutKey
+              : pendingDeleteCell?.cell.value?.trim()
+                ? t.sidePanel.confirmDeleteCellWithKey(
+                    pendingDeleteCell.cell.value.trim().length > 20
+                      ? `${pendingDeleteCell.cell.value.trim().slice(0, 20)}...`
+                      : pendingDeleteCell.cell.value.trim()
+                  )
+                : t.sidePanel.confirmDeleteCellWithoutKey
           }
           confirmText={t.common.delete}
           cancelText={t.common.cancel}
