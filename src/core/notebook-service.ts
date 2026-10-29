@@ -134,7 +134,7 @@ export function createDefaultSeedData(): NotebookStorage {
           },
           {
             id: 'cell-zh-7',
-            value: '點擊右上角「+」可新增筆記；點擊右上角「多選」可進行批次移動或刪除。',
+            value: '點擊右上角「+」可新增筆記；點擊右上角「批次管理」可進行批次移動或刪除。',
             createdAt: now,
             updatedAt: now,
           },
@@ -874,18 +874,23 @@ export class NotebookService {
       }
     }
 
-    // Fallback: check preferredLocale if provided
-    if (preferredLocale) {
-      if (preferredLocale.toLowerCase().startsWith('en')) {
-        const enPage = Object.values(data.pages).find(
-          (p) => p.id === TUTORIAL_EN_PAGE_ID
-        );
-        if (enPage) return this.clone(enPage);
-      } else if (preferredLocale.toLowerCase().startsWith('zh')) {
+    // Fallback: check effective locale (preferredLocale or navigator.language)
+    const effectiveLocale =
+      preferredLocale ||
+      (typeof navigator !== 'undefined' && navigator.language ? navigator.language : undefined);
+
+    if (effectiveLocale) {
+      if (effectiveLocale.toLowerCase().startsWith('zh')) {
         const zhPage = Object.values(data.pages).find(
           (p) => p.id === SYSTEM_GLOBAL_PAGE_ID
         );
         if (zhPage) return this.clone(zhPage);
+      } else {
+        // Any non-Chinese locale (English, Japanese, French, etc.) falls back to Getting Started (en)
+        const enPage = Object.values(data.pages).find(
+          (p) => p.id === TUTORIAL_EN_PAGE_ID
+        );
+        if (enPage) return this.clone(enPage);
       }
     }
 

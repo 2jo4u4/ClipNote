@@ -74,6 +74,8 @@ It provides:
 36. As a user practicing CRUD operations, I want to double-click cards, edit values, create new notes, and rename categories directly on the tutorial page, so that I can safely build confidence in using the application.
 37. As a user who only needs one language, I want to immediately delete the unused language tutorial page out of the box (e.g., deleting "Getting Started" while keeping "使用教學"), so that my workspace stays clean without waiting to create custom pages first.
 38. As a user who has mastered all features, I want to edit, repurpose, or completely delete both tutorial pages, so that I have complete ownership over my personal notebook.
+39. As a user adjusting theme and language preferences, I want my choices (dark/light theme and zh-TW/en language) to be persisted in local storage and applied synchronously on launch, so that I don't experience visual flash or have to re-select my preferred language every time the side panel opens.
+40. As a user viewing the active page header, I want a clean header without redundant domain tags or badges, so that the page title and action controls remain visually unobstructed.
 
 ---
 
@@ -157,12 +159,17 @@ Whenever a Cell is created, updated, or deleted within a Section:
      - `⌨️ 快捷鍵與即時操作`: Guides for `Alt+N` capture, context menu saving, and one-click copy.
      - `📝 筆記與分類操作 (CRUD)`: Key-value demo fields (`姓名: 王小明`, `Email: xiaoming@example.com`), double-click/pencil edit, delete, batch select, and a clear reassurance tip that this page can be edited or deleted.
      - `🌐 適用網站自動切換`: Explanation of domain-aware auto-switching with example sites.
-  2. `Getting Started` (icon: `💡`, id: `page-tutorial-en`, domains: `[]`):
+  2. `Getting Started` (icon: `💡`, id: `TUTORIAL_EN_PAGE`, domains: `[]`):
      - Parity English translation of the exact same 3 categories, key-value fields (`Name: Alex Wang`, `Email: alex.wang@example.com`), and instructions.
 - **Initial Active Page Resolution**:
-  On cold start or storage initialization, the active page selection checks the user's browser language (`navigator.language` / `currentLanguage`). If it matches Chinese (`zh*`), `使用教學` is focused; otherwise `Getting Started` is focused.
+  On cold start or storage initialization, the active page selection checks the user's browser language (`navigator.language` / `currentLanguage`). If it matches Chinese (`zh*`), `使用教學` is focused; otherwise `Getting Started` is focused for all other locales.
 - **Instant Deletability**:
   Because the initial state contains 2 pages (`pages.length === 2`), the single-page invariant (`pages.length >= 1`) is satisfied even if a user immediately deletes one of the languages, giving users frictionless control over their preferred language setup.
+
+### 9. Theme & Language Persistence with MV3 Pre-Hydration
+- **Persistence Keys**: `notebook_theme` (`'light' | 'dark'`) and `notebook_language` (`'zh-TW' | 'en'`) stored in `window.localStorage`.
+- **MV3 CSP Compliance & Pre-Hydration**: Chrome MV3 forbids inline `<script>` tags in extension HTML entrypoints (`script-src 'self'`). Synchronous theme initialization executes at the top of bundled entrypoint scripts (`main.tsx`) before React renders, toggling the `dark` class and `style.colorScheme` on `document.documentElement` to prevent FOUC (flash of unstyled content).
+- **Header Cleanliness**: The active page header displays the page icon and editable title cleanly, omitting domain badge tags to maintain a clutter-free Raycast aesthetic.
 
 ---
 

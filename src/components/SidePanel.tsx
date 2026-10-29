@@ -27,6 +27,12 @@ import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } f
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
 import { matchDomain, createDefaultSeedData } from '../core/notebook-service';
+import {
+  applyTheme,
+  getStoredTheme,
+  setStoredTheme,
+  LANGUAGE_STORAGE_KEY,
+} from '../core/theme';
 
 export interface MovingCellTarget {
   cell: Cell;
@@ -56,7 +62,7 @@ const getInitialLanguage = (controlled?: Language, initial?: Language): Language
   if (controlled) return controlled;
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
-      const saved = localStorage.getItem('notebook_language') as Language | null;
+      const saved = localStorage.getItem(LANGUAGE_STORAGE_KEY) as Language | null;
       if (saved === 'zh-TW' || saved === 'en') return saved;
     }
   } catch {
@@ -99,7 +105,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     onLanguageChange?.(nextLang);
     try {
       if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('notebook_language', nextLang);
+        localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLang);
       }
     } catch {
       // Ignore storage errors
@@ -137,12 +143,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     if (matches.length > 0) return matches[0].id;
 
     // Language-aware fallback for tutorial onboarding pages
-    if (language === 'en') {
-      const enPage = basePages.find((p) => p.id === TUTORIAL_EN_PAGE_ID);
-      if (enPage) return enPage.id;
-    } else {
+    if (language === 'zh-TW') {
       const zhPage = basePages.find((p) => p.id === SYSTEM_GLOBAL_PAGE_ID);
       if (zhPage) return zhPage.id;
+    } else {
+      const enPage = basePages.find((p) => p.id === TUTORIAL_EN_PAGE_ID);
+      if (enPage) return enPage.id;
     }
 
     return basePages[0]?.id || SYSTEM_GLOBAL_PAGE_ID;
@@ -171,35 +177,12 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (defaultDarkMode !== undefined) return defaultDarkMode;
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        const savedTheme = localStorage.getItem('notebook_theme');
-        if (savedTheme === 'light') return false;
-        if (savedTheme === 'dark') return true;
-      }
-    } catch {
-      // Ignore storage errors
-    }
-    return true;
+    return getStoredTheme() === 'dark';
   });
 
   useEffect(() => {
-    if (typeof document !== 'undefined') {
-      if (isDarkMode) {
-        document.documentElement.classList.add('dark');
-        document.documentElement.style.colorScheme = 'dark';
-      } else {
-        document.documentElement.classList.remove('dark');
-        document.documentElement.style.colorScheme = 'light';
-      }
-    }
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem('notebook_theme', isDarkMode ? 'dark' : 'light');
-      }
-    } catch {
-      // Ignore storage errors
-    }
+    applyTheme(isDarkMode ? 'dark' : 'light');
+    setStoredTheme(isDarkMode ? 'dark' : 'light');
   }, [isDarkMode]);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [quickCaptureInitialSectionId, setQuickCaptureInitialSectionId] = useState<string | undefined>(undefined);

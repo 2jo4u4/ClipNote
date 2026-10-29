@@ -8,7 +8,7 @@ This document defines the ubiquitous language for the Notebook browser extension
 | :--- | :--- | :--- | :--- |
 | **Notebook** | 筆記本 | Notebook | The root application workspace containing all pages, settings, and storage state. |
 | **Page** | 一頁 / 頁 | Page | A discrete thematic document or tab (e.g., "104 中文經歷", "社交貼文草稿") that binds to target web domains. |
-| **Global Page / First Page** | 第一頁 | First Page | The system-created default Page pinned universally across all domains as a default scratchpad (name is editable by user). |
+| **Default Tutorial Pages** | 使用教學 / Getting Started | Getting Started / Tutorial | The system-created initial bilingual tutorial pages providing interactive onboarding instructions (both are fully editable and deletable by user). |
 | **Section** | 分類 | Category | A flexible grouping within a Page to organize content items. |
 | **Cell** | 筆記 | Note | The fundamental, atomic unit of content within a Category. Holds a value and an optional title/key. |
 | **Field** | [欄位] | [Field] | A Cell with a non-empty title/key, optimized for structured form-filling and key-value copying. |
@@ -31,6 +31,7 @@ This document defines the ubiquitous language for the Notebook browser extension
 - For **Section**: Avoid `分區`, `區段`, `Block`, `Group`
 - For **Cell**: Avoid `單元項`, `筆記單元`, `筆記項目`, `Item`, `Property`
 - For **Quick Capture**: Avoid `快速捕獲`, `快速擷取` (UI buttons and prompts use `新增筆記` / `New Note`)
+- For **Batch Manage**: Avoid `多選`, `批次選取`, `批量操作` (Use `批次管理` / `Batch Manage`)
 - For **Dialog/Modal**: Avoid `彈窗`, `Prompt`, `Popup`
 
 ---

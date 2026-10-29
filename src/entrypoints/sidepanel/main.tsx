@@ -9,21 +9,10 @@ import {
 } from '../../core/notebook-service';
 import { ChromeStorageAdapter } from '../../core/storage';
 import { Page, NotebookStorage } from '../../core/types';
+import { applyTheme, getStoredTheme } from '../../core/theme';
 
 // Synchronously apply theme before React renders to avoid FOUC and comply with Chrome MV3 CSP
-try {
-  if (typeof window !== 'undefined' && window.localStorage) {
-    if (localStorage.getItem('notebook_theme') === 'light') {
-      document.documentElement.classList.remove('dark');
-      document.documentElement.style.colorScheme = 'light';
-    } else {
-      document.documentElement.classList.add('dark');
-      document.documentElement.style.colorScheme = 'dark';
-    }
-  }
-} catch {
-  // Ignore storage errors in restricted contexts
-}
+applyTheme(getStoredTheme());
 
 const storageAdapter = new ChromeStorageAdapter();
 const notebookService = new NotebookService(storageAdapter);

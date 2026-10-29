@@ -150,6 +150,8 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(zhSec2.title).toContain('筆記與分類操作');
       expect(zhSec2.items.find((c) => c.key === '姓名')?.value).toBe('王小明');
       expect(zhSec2.items.find((c) => c.key === 'Email')?.value).toBe('xiaoming@example.com');
+      expect(zhSec2.items.some((c) => c.value.includes('「批次管理」'))).toBe(true);
+      expect(zhSec2.items.some((c) => c.value.includes('「多選」'))).toBe(false);
       expect(zhSec2.items.some((c) => c.value.includes('提示'))).toBe(true);
 
       // Section 3: Applicable Websites
@@ -440,7 +442,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       const matched2 = await service.resolveActivePage('https://sub.deep.104.com.tw/profile');
       expect(matched2.id).toBe(p104.id);
 
-      const fallback = await service.resolveActivePage('https://unrelated-domain.com');
+      const fallback = await service.resolveActivePage('https://unrelated-domain.com', 'zh-TW');
       expect(fallback.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
     });
 
@@ -452,6 +454,15 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       const zhResolved = await service.resolveActivePage('https://random.com', 'zh-TW');
       expect(zhResolved.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
       expect(zhResolved.title).toBe('使用教學');
+
+      // Non-Chinese / Non-English locales (e.g. Japanese, French) must fall back to Getting Started (en)
+      const jaResolved = await service.resolveActivePage('https://random.com', 'ja-JP');
+      expect(jaResolved.id).toBe(TUTORIAL_EN_PAGE_ID);
+      expect(jaResolved.title).toBe('Getting Started');
+
+      const frResolved = await service.resolveActivePage('https://random.com', 'fr');
+      expect(frResolved.id).toBe(TUTORIAL_EN_PAGE_ID);
+      expect(frResolved.title).toBe('Getting Started');
     });
 
     it('prioritizes session memory over isPrimary if user selected another page in current session', async () => {
