@@ -41,7 +41,7 @@ Designed for job seekers, developers, content creators, and power users who freq
 
 3. 🚀 Quick Capture Anywhere (Alt + N)
 • Press Alt + N on any webpage to bring up the instant capture overlay. Search existing notes or record fresh ideas without losing your focus.
-• Highlight text on any page and right-click "新增筆記" to clip highlighted text directly into ClipNote with source attribution.
+• Highlight text on any page and right-click "New Note" to clip highlighted text directly into ClipNote with source attribution.
 
 4. 📁 Structured Fields & Free-form Jots
 • Supports structured "Fields" (Key-Value pairs like Phone, Email, Address, Portfolio links) and unstructured "Jots" (free-flowing plain text memos and code snippets).
@@ -120,34 +120,48 @@ ClipNote 是一款極簡、高質感且具備「網域感知」能力的瀏覽�
 
 ---
 
-## 3. 權限合規申報範本 (Permission Justification for Google Reviewers)
+## 3. 隱私權分頁（Privacy）完整填寫指南（依後台由上至下順序）
 
-在提交審核時，後台「隱私權宣告（Privacy）」會要求針對擴充功能申請的權限提供「用途合理性說明」。請直接將下列文字貼入各對應權限的說明欄：
+請依照 Chrome Web Store 後台「**隱私權**」頁面的欄位順序，由上至下逐一複製貼上：
 
-### (1) `tabs` 權限用途申報
+### 1. 單一用途說明* (Single Purpose Statement)
 ```text
-The "tabs" permission is strictly required to detect the active tab's hostname in the foreground (e.g. example.com, sample.org) so ClipNote can automatically display the user's domain-specific notebook page. Tab URLs are matched in local memory only. ClipNote never logs, stores, or transmits browsing history or URLs to any external server.
+ClipNote serves a single, dedicated purpose: providing a lightweight, domain-aware scratchpad and note-taking tool embedded in Chrome's native side panel for quick reference and one-click copy.
 ```
 
-### (2) `storage` 權限用途申報
+### 2. 要求 `storage` 的理由*
 ```text
-The "storage" permission is used to persist user-created notes, pages, categories, and theme settings locally on the user's device using chrome.storage.local. No data leaves the local browser.
+The "storage" permission is used to persist user-created notes, pages, categories, language, and theme settings locally on the user's device using chrome.storage.local. No data leaves the local browser.
 ```
 
-### (3) `sidePanel` 權限用途申報
+### 3. 要求 `sidePanel` 的理由*
 ```text
 The "sidePanel" permission is used to render ClipNote's core notepad user interface inside Chrome's native side panel companion view, allowing users to reference their notes alongside active web pages.
 ```
 
-### (4) `contextMenus` 權限用途申報
+### 4. 要求 `contextMenus` 的理由*
 ```text
-The "contextMenus" permission is used to provide a right-click context menu action ("新增筆記") on highlighted text, enabling users to quickly capture snippets directly from webpages into ClipNote.
+The "contextMenus" permission is used to provide a right-click context menu action ("New Note" / "新增筆記") on highlighted text, enabling users to quickly capture snippets directly from webpages into ClipNote.
 ```
 
-### (5) 單一用途聲明 (Single Purpose Statement)
+### 5. 要求 `tabs` 的理由*
 ```text
-ClipNote serves a single, dedicated purpose: providing a lightweight, domain-aware scratchpad and note-taking tool embedded in Chrome's native side panel for quick reference and one-click copy.
+The "tabs" permission is strictly required to detect the active tab's hostname in the foreground (e.g. example.com, sample.org) so ClipNote can automatically display the user's domain-specific notebook page. Tab URLs are matched in local memory only. ClipNote never logs, stores, or transmits browsing history or URLs to any external server.
 ```
+
+### 6. 要求 `activeTab` 的理由*
+```text
+The "activeTab" permission is used when the user explicitly invokes ClipNote via keyboard shortcuts (Alt+N / Alt+S) or the right-click context menu ("New Note") on the currently active tab. It allows the extension to read the current page's URL/title for source attribution and display the in-page Quick Capture modal on the active tab.
+```
+
+### 7. 要求網站存取權限的理由* (Host Permission Justification)
+```text
+Host access (<all_urls>) for the content script is required solely to render the isolated Shadow DOM Quick Capture modal when triggered by the user (via Alt+N or the right-click "New Note" context menu) on any webpage they are browsing. The content script remains completely dormant until invoked by the user and never reads, modifies, or transmits webpage data.
+```
+
+### 8. 你正在使用「遠端程式碼」嗎？ (Remote Code)
+- ⚠️ **請務必改選：「不，我沒有使用遠端程式碼」**（No, I am not using remote code）。
+  - *說明*：ClipNote 所有程式碼與圖示皆完整打包於擴充功能壓縮檔內，未載入任何外部 `<script>` 或 `eval()`。若勾選「是」將觸發 Google 深度人工審查甚至直接退件。
 
 ---
 
