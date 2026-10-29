@@ -77,6 +77,10 @@ It provides:
 39. As a user adjusting theme and language preferences, I want my choices (dark/light theme and zh-TW/en language) to be persisted in local storage and applied synchronously on launch, so that I don't experience visual flash or have to re-select my preferred language every time the side panel opens.
 40. As a user viewing the active page header, I want a clean header without redundant domain tags or badges, so that the page title and action controls remain visually unobstructed.
 41. As a user deleting a category, I want a confirmation dialog (ConfirmModal) with the category's title and a destruction warning, so that I don't accidentally erase a category and all its contained notes with an accidental click.
+42. As a user organizing notes within a Page, I want to reorder categories by dragging their dedicated grip handle, so that I can prioritize urgent topic sections at the top.
+43. As a user reordering note cards within a category, I want to drag cards using a grip handle and see an amber insertion indicator line, so that I can precisely position cards without misplacing them.
+44. As a user moving notes between categories on the same page, I want to drag a note card from one category and drop it into another category (including empty categories), so that I can file notes instantly without opening modal dialogs.
+45. As a user in batch selection mode, I want drag-and-drop handles to be disabled, so that multi-selection clicks do not accidentally trigger card dragging.
 
 ---
 
@@ -172,6 +176,19 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **MV3 CSP Compliance & Pre-Hydration**: Chrome MV3 forbids inline `<script>` tags in extension HTML entrypoints (`script-src 'self'`). Synchronous theme initialization executes at the top of bundled entrypoint scripts (`main.tsx`) before React renders, toggling the `dark` class and `style.colorScheme` on `document.documentElement` to prevent FOUC (flash of unstyled content).
 - **Header Cleanliness**: The active page header displays the page icon and editable title cleanly, omitting domain badge tags to maintain a clutter-free Raycast aesthetic.
 
+### 10. Native HTML5 Drag & Drop Reordering (Categories & Cells)
+- **Zero-Dependency Native Architecture**: Implemented via native HTML5 Drag and Drop API (`draggable`, `onDragStart`, `onDragOver`, `onDragLeave`, `onDrop`, `onDragEnd`) with 0 KB external bundle footprint.
+- **Dedicated Grip Handles**:
+  - `CellCard` and `SectionContainer` header feature a left-aligned `GripVertical` icon (`cursor-grab active:cursor-grabbing`) to trigger dragging, preventing conflicts with single-click copying, text selection, double-click editing, and button clicks.
+- **Visual Feedback & Drop Indicators**:
+  - Dragged items display reduced opacity (`opacity-40`).
+  - Target insertion points display a Raycast Amber accent drop line (`border-t-2 border-raycast-amber` or `border-b-2 border-raycast-amber`) based on pointer vertical midpoint.
+  - Empty category containers highlight with an amber dashed border on hover when receiving a dragged cell.
+- **Data Layer Domain Operations**:
+  - `NotebookService.reorderSections(pageId, sourceIndex, targetIndex)`: updates `page.sections` order and normalizes sequence numbers.
+  - `NotebookService.reorderCells(pageId, source, target)`: moves a cell within the same category or across categories with precise index insertion.
+- **Batch Mode Guard**: Drag handles and draggable attributes are suppressed when `isSelectMode` is active.
+
 ---
 
 ## Testing Decisions
@@ -193,6 +210,8 @@ The primary testing seam is **`NotebookService`**.
   - Default seed data generation yielding both bilingual tutorial pages ("使用教學" and "Getting Started") with 3 structured categories and key-value demo fields.
   - Initial active page resolution prioritizing the appropriate tutorial page based on locale.
   - Instant deletion of either tutorial page out of the box while preserving the remaining page.
+  - Section reordering (`reorderSections`) preserving page integrity and updating order indices.
+  - Cell reordering (`reorderCells`) within the same category and across categories including empty targets.
 - Prior art: Existing 33-test suite in `tests/notebook-service.test.ts`.
 
 ---
