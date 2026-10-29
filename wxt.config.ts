@@ -10,8 +10,9 @@ export default defineConfig({
     },
   },
   manifest: {
-    name: 'ClipNote',
-    description: 'Lightweight, domain-aware scratchpad and quick form-filling notepad for Chrome.',
+    default_locale: 'en',
+    name: '__MSG_extName__',
+    description: '__MSG_extDescription__',
     version: '1.0.0',
     permissions: [
       'storage',
@@ -26,18 +27,18 @@ export default defineConfig({
           default: 'Alt+S',
           mac: 'Alt+S',
         },
-        description: 'Open ClipNote side panel',
+        description: '__MSG_commandOpenSidepanel__',
       },
       'open-quick-capture': {
         suggested_key: {
           default: 'Alt+N',
           mac: 'Alt+N',
         },
-        description: 'New note / Search notes',
+        description: '__MSG_commandOpenQuickCapture__',
       },
     },
     action: {
-      default_title: 'Open ClipNote',
+      default_title: '__MSG_actionTitle__',
     },
     icons: {
       16: 'icons/icon-16.png',
