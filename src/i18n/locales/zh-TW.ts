@@ -90,6 +90,7 @@ export const zhTW: I18nTranslations = {
     deleteCategory: '刪除分類',
     dragCategoryToReorder: '拖曳分類以重新排序',
     dropNoteHere: '放開以移入此分類',
+    dropCategoryHere: '放開以在此放置分類',
   },
   cellCard: {
     editNote: '編輯筆記',

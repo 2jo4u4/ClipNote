@@ -68,7 +68,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   onDeleteSection,
   onExportPage,
   isDragging = false,
-  dropPosition = null,
+  dropPosition: _dropPosition = null,
   isCellDropTarget = false,
   onDragStart,
   onDragEnd,
@@ -118,9 +118,6 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
       className={cn(
         'group/section flex flex-col rounded-2xl border transition-all duration-300 ease-raycast',
         isDragging && 'opacity-40 scale-[0.99] border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 shadow-inner',
-        dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
-        dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
-        isCellDropTarget && 'ring-2 ring-raycast-amber/60 bg-raycast-amber/5',
         isSelectMode && isSelected
           ? 'border-raycast-coral/40 bg-raycast-coral/[0.02] ring-1 ring-raycast-coral/30'
           : 'bg-raycast-light-surface/60 border-raycast-light-border shadow-[0_2px_8px_rgba(0,0,0,0.03)] dark:bg-raycast-dark-surface/50 dark:border-white/8 dark:shadow-[0_2px_12px_rgba(0,0,0,0.2)]',

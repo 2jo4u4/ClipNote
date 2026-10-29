@@ -88,6 +88,7 @@ export interface I18nTranslations {
     deleteCategory: string;
     dragCategoryToReorder: string;
     dropNoteHere: string;
+    dropCategoryHere: string;
   };
   cellCard: {
     editNote: string;

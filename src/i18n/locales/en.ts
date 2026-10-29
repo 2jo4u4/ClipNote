@@ -91,6 +91,7 @@ export const en: I18nTranslations = {
     deleteCategory: 'Delete Category',
     dragCategoryToReorder: 'Drag category to reorder',
     dropNoteHere: 'Drop note here',
+    dropCategoryHere: 'Drop category here',
   },
   cellCard: {
     editNote: 'Edit Note',

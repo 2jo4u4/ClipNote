@@ -62,7 +62,7 @@ export const CellCard: React.FC<CellCardProps> = ({
   onDelete,
   onMove,
   isDragging = false,
-  dropPosition = null,
+  dropPosition: _dropPosition = null,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -143,8 +143,6 @@ export const CellCard: React.FC<CellCardProps> = ({
         'transition-all duration-200 ease-raycast',
         isPressed && !isSelectMode && 'scale-[0.98]',
         isDragging && 'opacity-40 scale-[0.98] border-2 border-dashed border-raycast-amber/60 bg-raycast-amber/5 dark:bg-raycast-amber/10 shadow-inner',
-        dropPosition === 'top' && 'border-t-2 !border-t-raycast-amber',
-        dropPosition === 'bottom' && 'border-b-2 !border-b-raycast-amber',
         isSelectMode && isSelected
           ? 'border-raycast-coral bg-raycast-coral/5 ring-1 ring-raycast-coral/40 dark:border-raycast-coral dark:bg-raycast-coral/10'
           : copied
