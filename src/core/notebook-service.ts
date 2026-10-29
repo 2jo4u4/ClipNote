@@ -167,7 +167,7 @@ export function createDefaultSeedData(): NotebookStorage {
           },
           {
             id: 'cell-zh-11',
-            value: '雙擊頁面標題可自訂 Emoji 圖示與頁面設定；分頁列支援滑鼠滾輪水平滑動，點擊右側按鈕可管理所有頁面。',
+            value: '雙擊頁面標題可自訂 Emoji 圖示與頁面設定；頁面列支援滑鼠滾輪水平滑動，點擊右側按鈕可管理所有頁面。',
             createdAt: now,
             updatedAt: now,
           },
@@ -274,7 +274,7 @@ export function createDefaultSeedData(): NotebookStorage {
           },
           {
             id: 'cell-en-11',
-            value: 'Double-click page title to customize emoji icon & settings; scroll mouse wheel horizontally on the tab bar, or click manage button to organize pages.',
+            value: 'Double-click page title to customize emoji icon & settings; scroll mouse wheel horizontally on the page bar, or click manage button to organize pages.',
             createdAt: now,
             updatedAt: now,
           },

@@ -161,7 +161,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
 
       // Section 3: Applicable Websites & Page Management
       const zhSec3 = zhPage!.sections[2];
-      expect(zhSec3.title).toContain('適用網站');
+      expect(zhSec3.title).toBe('🌐 適用網站與頁面管理');
       expect(zhSec3.items.length).toBe(2);
       expect(zhSec3.items.some((c) => c.value.includes('水平滑動'))).toBe(true);
 
@@ -184,11 +184,12 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(enSec2.items.find((c) => c.key === 'Email')?.value).toBe('alex.wang@example.com');
       expect(enSec2.items.some((c) => c.value.includes('Ctrl+Enter'))).toBe(true);
       expect(enSec2.items.some((c) => c.value.includes('folder icon'))).toBe(true);
+      expect(enSec2.items.some((c) => c.value.includes('"Batch Manage"'))).toBe(true);
       expect(enSec2.items.some((c) => c.value.includes('promote to a standalone page'))).toBe(true);
       expect(enSec2.items.some((c) => c.value.includes('Tip:'))).toBe(true);
 
       const enSec3 = enPage!.sections[2];
-      expect(enSec3.title).toContain('Applicable Websites');
+      expect(enSec3.title).toBe('🌐 Applicable Websites & Page Management');
       expect(enSec3.items.length).toBe(2);
       expect(enSec3.items.some((c) => c.value.includes('mouse wheel'))).toBe(true);
     });
