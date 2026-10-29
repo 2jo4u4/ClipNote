@@ -78,14 +78,16 @@ It provides:
 40. As a user viewing the active page header, I want a clean header without redundant domain tags or badges, so that the page title and action controls remain visually unobstructed.
 41. As a user deleting a category, I want a confirmation dialog (ConfirmModal) with the category's title and a destruction warning, so that I don't accidentally erase a category and all its contained notes with an accidental click.
 42. As a user organizing notes within a Page, I want to reorder categories by dragging their dedicated grip handle, so that I can prioritize urgent topic sections at the top.
-43. As a user reordering note cards within a category, I want to drag cards using a grip handle and see an amber insertion indicator line, so that I can precisely position cards without misplacing them.
+43. As a user reordering note cards or categories within a page, I want moving over other cards to dynamically push them apart and reveal a dashed amber placeholder slot, so that I can see the exact drop destination with tangible Trello-like spatial preview.
 44. As a user moving notes between categories on the same page, I want to drag a note card from one category and drop it into another category (including empty categories), so that I can file notes instantly without opening modal dialogs.
 45. As a user in batch selection mode, I want drag-and-drop handles to be disabled, so that multi-selection clicks do not accidentally trigger card dragging.
 46. As a user with extensive text in a note (such as a detailed self-introduction, cover letter, or multiline code snippet), I want the note card to automatically truncate with a smooth fade gradient and an expandable "展開更多 (Show more)" button when exceeding ~4-5 lines (or ~120px), so that my side panel remains compact and easy to navigate without being vertically hijacked by a single lengthy note.
 47. As a user reading or editing a long note, I want to click "展開更多" to expand the note to full length and click "收合 (Show less)" to collapse it, without accidentally triggering copy or double-click edit actions.
 48. As a user copying a collapsed long note, I want clicking the note card or the copy button to copy 100% of the entire original content to my clipboard, so that truncation is strictly a visual aid and never alters copied data.
 49. As a user deleting an individual note card from the action menu, I want a confirmation modal (ConfirmModal) displaying the note's key or snippet with an explicit warning, so that I do not accidentally delete notes with a stray click.
-50. As a user dragging a note card or category, I want the lifted item in the original list to transform into a Trello-like dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`), so that I have a tangible physical sense of where the item was lifted from while keeping the precise amber drop line for the landing target.
+50. As a user dragging a note card or category, I want the lifted item in the original list to transform into a Trello-like dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`), so that I have a tangible physical sense of where the item was lifted from.
+51. As a user dragging a note card across categories, I want dragging between cards in another category to smoothly push those cards apart and reveal the insertion slot, so that cross-category filing feels as fluid as intra-category sorting.
+52. As a user in batch mode, I want selecting all cards in a category to never automatically select the category container itself, so that batch-deleting notes preserves the category as an empty container unless I explicitly select the category header.
 
 ---
 
@@ -212,9 +214,19 @@ Whenever a Cell is created, updated, or deleted within a Section:
     - Without key: `Are you sure you want to delete this note? This action cannot be undone.`
 - **Action Buttons & Keybindings**: Destructive red "刪除" / "Delete" button, neutral "取消" / "Cancel", and `Esc` key support to dismiss.
 
-### 13. Trello-Style Lifted Drag Feedback (Trello 風格拖拉提起佔位效果)
-- **Lifted Indentation Slot**: While dragging (`isDragging`), the dragged `CellCard` or `SectionContainer` renders as a dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`) in its original position in the list, providing clear physical depth feedback of where the item was lifted from.
-- **Landing Precision**: Target insertion points maintain the crisp Raycast Amber indicator line (`border-t-2` / `border-b-2`) to avoid layout jumping in the narrow side panel.
+### 13. Trello-Style Push-Apart Drag Architecture & Unified Drop Slot (Trello 式推開動態與統一佔位空槽)
+- **Deprecation of Overlay Borders**: Eliminates hard overlay border lines (`border-t-2` / `border-b-2`) and heavy outer rings (`ring-2`), unifying category and cell dragging into an identical spatial model.
+- **Dynamic Drop Placeholder Slot**: At the calculated insertion point, renders an animated placeholder slot (`border-2 border-dashed border-raycast-amber/50 bg-raycast-amber/5 dark:bg-raycast-amber/10 rounded-xl transition-all duration-200 ease-out`) for both Cell and Category movements.
+- **Physical Push-Apart Dynamics**: Surrounding cards smoothly slide down to accommodate the slot with `transition-all duration-200 ease-out` and gracefully return when the cursor moves away.
+- **Cross-Category Seamless Parity**: Hovering between cards in an external category calculates the relative insertion position, pushes adjacent cards apart, and renders the placeholder slot identically to intra-category sorting.
+
+### 14. Decoupled Batch Selection Model (批次管理權責解耦)
+- **Cell-to-Category Isolation**: Selecting individual cells (even if all cells in a section are selected, or the section only contains 1 cell) strictly manages `selectedCellTargets` and never automatically marks the parent section in `selectedSectionIds`.
+- **Category Preservation**: Executing batch deletion clears selected cells while retaining the section container as an empty category (`items: []`). Category deletion requires explicitly checking the section header checkbox.
+
+### 15. Active Press Isolation on Card (卡片按壓縮放樣式隔離)
+- **Scoped React Press State**: Replaces CSS `:active` on the parent card container with isolated React state (`isPressed`).
+- **Control Element Interception**: Control buttons (edit, copy, `...` menu), drag handles, checkboxes, expand/collapse toggles, and source links apply `onMouseDown={(e) => e.stopPropagation()}` to guarantee the card remains completely static with zero twitching or unwanted scaling during control interactions.
 
 ---
 
