@@ -14,7 +14,7 @@ import {
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
-import { cn, formatRelativeTime, getDomainFromUrl } from '../utils';
+import { cn, formatRelativeTime, getDomainFromUrl, isEventInsideNode } from '../utils';
 import { Language, getTranslations } from '../i18n';
 
 export interface CellCardProps {
@@ -92,7 +92,7 @@ export const CellCard: React.FC<CellCardProps> = ({
     if (!showMenu) return;
 
     const handleOutsideClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !isEventInsideNode(e, menuRef.current)) {
         setShowMenu(false);
       }
     };

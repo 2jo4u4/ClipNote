@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
-import { cn } from '../utils';
+import { cn, isEventInsideNode } from '../utils';
 
 export interface DropdownOption {
   id: string;
@@ -42,7 +42,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
-      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+      if (containerRef.current && !isEventInsideNode(e, containerRef.current)) {
         setIsOpen(false);
       }
     };
@@ -70,6 +70,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
     if (e.key === 'Escape') {
       e.preventDefault();
+      e.stopPropagation();
       setIsOpen(false);
       buttonRef.current?.focus();
       return;
@@ -136,7 +137,7 @@ export const Dropdown: React.FC<DropdownProps> = ({
           role="listbox"
           tabIndex={-1}
           className={cn(
-            'absolute left-0 top-full mt-1.5 z-40 min-w-[160px] p-1 rounded-xl shadow-2xl border backdrop-blur-md outline-none',
+            'absolute left-0 top-full mt-1.5 z-40 min-w-[160px] max-h-48 overflow-y-auto p-1 rounded-xl shadow-2xl border backdrop-blur-md outline-none',
             'transition-all duration-200 ease-raycast animate-in fade-in zoom-in-95',
             'bg-raycast-light-surface/95 border-raycast-light-border text-raycast-light-text',
             'dark:bg-raycast-dark-surface/95 dark:border-white/10 dark:text-raycast-dark-text'

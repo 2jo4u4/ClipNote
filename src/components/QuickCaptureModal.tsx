@@ -153,7 +153,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   // Keyboard navigation & Shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
+      if (!isOpen || e.defaultPrevented) return;
 
       if (e.key === 'Escape') {
         e.preventDefault();

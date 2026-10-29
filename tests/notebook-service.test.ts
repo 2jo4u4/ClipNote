@@ -15,6 +15,7 @@ import {
   setStoredTheme,
   setStoredLanguage,
 } from '../src/core/theme';
+import { isEventInsideNode } from '../src/utils';
 
 describe('Domain Utility Functions', () => {
   describe('extractHostname', () => {
@@ -892,6 +893,55 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(setMock).toHaveBeenCalledWith({ [LANGUAGE_STORAGE_KEY]: 'en' });
 
       vi.unstubAllGlobals();
+    });
+  });
+
+  describe('isEventInsideNode (Shadow DOM & Standard DOM Outside-Click Detection)', () => {
+    it('detects clicks inside a Shadow DOM container via composedPath even when e.target is retargeted to shadow host', () => {
+      const containerNode = { id: 'dropdown-container', contains: () => false } as unknown as HTMLElement;
+      const optionButtonNode = { id: 'dropdown-option' } as unknown as EventTarget;
+      const shadowHostNode = { id: 'notebook-quick-capture-host' } as unknown as EventTarget;
+
+      // Simulate a Shadow DOM event where e.target is retargeted to shadowHostNode (so container.contains(e.target) is false),
+      // while composedPath() includes optionButtonNode and containerNode
+      const shadowInsideEvent = {
+        target: shadowHostNode,
+        composedPath: () => [optionButtonNode, containerNode, shadowHostNode],
+      } as unknown as Event;
+
+      expect(isEventInsideNode(shadowInsideEvent, containerNode)).toBe(true);
+
+      // Simulate clicking outside the dropdown inside or outside the Shadow DOM
+      const shadowOutsideEvent = {
+        target: shadowHostNode,
+        composedPath: () => [shadowHostNode],
+      } as unknown as Event;
+
+      expect(isEventInsideNode(shadowOutsideEvent, containerNode)).toBe(false);
+    });
+
+    it('preserves standard DOM behavior in SidePanel via composedPath and node.contains fallback', () => {
+      const childNode = {} as Node;
+      const containerNode = {
+        contains: (target: Node) => target === childNode,
+      } as unknown as HTMLElement;
+
+      const standardInsideEvent = {
+        target: childNode,
+        composedPath: () => [childNode, containerNode],
+      } as unknown as Event;
+      expect(isEventInsideNode(standardInsideEvent, containerNode)).toBe(true);
+
+      // Fallback when composedPath is absent
+      const fallbackInsideEvent = {
+        target: childNode,
+      } as unknown as Event;
+      expect(isEventInsideNode(fallbackInsideEvent, containerNode)).toBe(true);
+
+      const fallbackOutsideEvent = {
+        target: {} as Node,
+      } as unknown as Event;
+      expect(isEventInsideNode(fallbackOutsideEvent, containerNode)).toBe(false);
     });
   });
 });

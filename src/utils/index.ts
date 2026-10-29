@@ -31,3 +31,26 @@ export function getDomainFromUrl(url: string): string {
     return url;
   }
 }
+
+/**
+ * Checks whether a DOM event originated inside the given container element,
+ * supporting both standard DOM (Side Panel) and Shadow DOM (Content Script)
+ * where `e.target` is retargeted to the shadow host across the shadow boundary.
+ */
+export function isEventInsideNode(e: Event, node: HTMLElement | null): boolean {
+  if (!node) return false;
+  if (typeof e.composedPath === 'function') {
+    const path = e.composedPath();
+    if (path.includes(node)) {
+      return true;
+    }
+  }
+  if (e.target && typeof node.contains === 'function') {
+    try {
+      return node.contains(e.target as Node);
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}

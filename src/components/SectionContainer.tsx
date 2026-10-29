@@ -14,7 +14,7 @@ import {
   Square,
   GripVertical,
 } from 'lucide-react';
-import { cn } from '../utils';
+import { cn, isEventInsideNode } from '../utils';
 import { Language, getTranslations } from '../i18n';
 
 export interface SectionContainerProps {
@@ -107,7 +107,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
     if (!showMenu) return;
 
     const handleOutsideClick = (e: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+      if (menuRef.current && !isEventInsideNode(e, menuRef.current)) {
         setShowMenu(false);
       }
     };
