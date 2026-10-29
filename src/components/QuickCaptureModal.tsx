@@ -8,7 +8,7 @@ import {
   ExternalLink,
   Sparkles,
 } from 'lucide-react';
-import { cn } from '../utils';
+import { cn, filterSearchResults, focusNextOnEnter } from '../utils';
 import { SearchResult, CreateCellInput, SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Dropdown } from './Dropdown';
 import { Language, getTranslations } from '../i18n';
@@ -103,28 +103,10 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const filteredSearchResults = useMemo(() => {
-    const tokens = searchQuery
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-    if (tokens.length === 0) return [];
-
-    return searchResults.filter((item) => {
-      const haystack = [
-        item.title,
-        item.content,
-        item.sectionTitle,
-        item.pageTitle,
-        item.sourcePath,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return tokens.every((token) => haystack.includes(token));
-    });
-  }, [searchResults, searchQuery]);
+  const filteredSearchResults = useMemo(
+    () => filterSearchResults(searchResults, searchQuery),
+    [searchResults, searchQuery]
+  );
 
   // Synchronize active page and initial section on open
   useEffect(() => {
@@ -439,12 +421,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                 type="text"
                 value={cellKey}
                 onChange={(e) => setCellKey(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.nativeEvent.isComposing) {
-                    e.preventDefault();
-                    textareaRef.current?.focus();
-                  }
-                }}
+                onKeyDown={(e) => focusNextOnEnter(e, textareaRef)}
                 placeholder={t.quickCapture.titlePlaceholder}
                 className={cn(
                   'w-full px-3 py-2 rounded-lg text-xs outline-none transition-all duration-150',

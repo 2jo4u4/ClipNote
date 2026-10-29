@@ -14,7 +14,9 @@ import {
   LANGUAGE_STORAGE_KEY,
   THEME_STORAGE_KEY,
   Theme,
-  getDefaultBrowserLanguage,
+  isLanguage,
+  isTheme,
+  resolveStoredPreferences,
 } from '../core/theme';
 
 interface InPageCaptureProps {
@@ -98,14 +100,14 @@ function InPageQuickCaptureWrapper({
 
       if (changes[LANGUAGE_STORAGE_KEY]) {
         const nextLang = changes[LANGUAGE_STORAGE_KEY].newValue;
-        if (nextLang === 'zh-TW' || nextLang === 'en') {
+        if (isLanguage(nextLang)) {
           setLanguage(nextLang);
         }
       }
 
       if (changes[THEME_STORAGE_KEY]) {
         const nextTheme = changes[THEME_STORAGE_KEY].newValue;
-        if (nextTheme === 'light' || nextTheme === 'dark') {
+        if (isTheme(nextTheme)) {
           onThemeChange(nextTheme);
         }
       }
@@ -172,31 +174,6 @@ function InPageQuickCaptureWrapper({
       onSaveCell={handleSaveCell}
     />
   );
-}
-
-async function resolveStoredPreferences(): Promise<{ language: Language; theme: Theme }> {
-  const fallbackLanguage = getDefaultBrowserLanguage();
-  const fallbackTheme: Theme = 'dark';
-
-  try {
-    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-      const res = await new Promise<Record<string, unknown>>((resolve) => {
-        chrome.storage.local.get([LANGUAGE_STORAGE_KEY, THEME_STORAGE_KEY], (items) => {
-          resolve(items || {});
-        });
-      });
-      const storedLang = res[LANGUAGE_STORAGE_KEY];
-      const storedTheme = res[THEME_STORAGE_KEY];
-      return {
-        language: storedLang === 'zh-TW' || storedLang === 'en' ? storedLang : fallbackLanguage,
-        theme: storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : fallbackTheme,
-      };
-    }
-  } catch {
-    // Ignore storage read errors
-  }
-
-  return { language: fallbackLanguage, theme: fallbackTheme };
 }
 
 export default defineContentScript({

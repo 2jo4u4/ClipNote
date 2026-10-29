@@ -1,6 +1,6 @@
 import { NotebookService } from '../core/notebook-service';
 import { ChromeStorageAdapter } from '../core/storage';
-import { LANGUAGE_STORAGE_KEY, getDefaultBrowserLanguage } from '../core/theme';
+import { LANGUAGE_STORAGE_KEY, resolveStoredPreferences } from '../core/theme';
 
 function getContextMenuTitle(lang?: unknown): string {
   return lang === 'en' ? 'New Note' : '新增筆記';
@@ -22,24 +22,13 @@ export default defineBackground(() => {
     await service.init();
     console.log('[Notebook] Ensured notebook storage initialized on install.');
 
-    let lang = getDefaultBrowserLanguage();
-    try {
-      if (chrome.storage?.local) {
-        const stored = await chrome.storage.local.get(LANGUAGE_STORAGE_KEY);
-        const savedLang = stored[LANGUAGE_STORAGE_KEY];
-        if (savedLang === 'zh-TW' || savedLang === 'en') {
-          lang = savedLang;
-        }
-      }
-    } catch {
-      // Fall back to default browser language
-    }
+    const { language } = await resolveStoredPreferences();
 
     // Register Right-Click Context Menu for selected text
     chrome.contextMenus.removeAll(() => {
       chrome.contextMenus.create({
         id: 'notebook-capture-selection',
-        title: getContextMenuTitle(lang),
+        title: getContextMenuTitle(language),
         contexts: ['selection'],
       });
     });

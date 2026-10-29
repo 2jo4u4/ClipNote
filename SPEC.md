@@ -58,7 +58,7 @@ It provides:
 ### Discovery & Search
 25. As a user on a new job website (`sample.org`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `求職中文經歷`.
 26. As a user discovering a Cell from another Page via search, I want an option to bind the current domain to that Page with one click, so that future visits automatically prioritize that Page.
-27. As a user browsing search results, I want each result card to show its source path (`來自 [Page] > [Section]`) and type badge (`[欄位]` or `[隨筆]`), so that I understand the context before copying.
+27. As a user browsing search results, I want each result card to show its source path (`來自 [Page] > [Section]`), so that I understand the context before copying.
 
 ### Data Freedom & Backup
 28. As a privacy-conscious user, I want all my notes, rules, and cells stored entirely in local browser storage (`chrome.storage.local`), so that none of my personal or resume data leaves my device. (Note: Extension declares `tabs` permission solely to read `tab.url` on `chrome.tabs.onActivated` for Side Panel domain awareness; no tab content or browsing activity is tracked or transmitted).
@@ -186,7 +186,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
   Because the initial state contains 2 pages (`pages.length === 2`), the single-page invariant (`pages.length >= 1`) is satisfied even if a user immediately deletes one of the languages, giving users frictionless control over their preferred language setup.
 
 ### 9. Theme & Language Persistence with MV3 Pre-Hydration
-- **Persistence Keys**: `notebook_theme` (`'light' | 'dark'`) and `notebook_language` (`'zh-TW' | 'en'`) stored in `window.localStorage`.
+- **Persistence Keys**: `notebook_theme` (`'light' | 'dark'`) and `notebook_language` (`'zh-TW' | 'en'`) stored in both `window.localStorage` (for synchronous Side Panel pre-hydration) and `chrome.storage.local` (for cross-context synchronization across Content Script and Background Service Worker).
 - **MV3 CSP Compliance & Pre-Hydration**: Chrome MV3 forbids inline `<script>` tags in extension HTML entrypoints (`script-src 'self'`). Synchronous theme initialization executes at the top of bundled entrypoint scripts (`main.tsx`) before React renders, toggling the `dark` class and `style.colorScheme` on `document.documentElement` to prevent FOUC (flash of unstyled content).
 - **Header Cleanliness**: The active page header displays the page icon and editable title cleanly, omitting domain badge tags to maintain a clutter-free Raycast aesthetic.
 
@@ -283,7 +283,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
 
 ### 20. Chrome Native `_locales` & Static Assets Consolidation
 - **Manifest i18n (`public/_locales/`)**: Provides Chrome Web Store native localization files (`public/_locales/en/messages.json` and `public/_locales/zh_TW/messages.json`) with `default_locale: 'en'` and `__MSG_...__` placeholders in `wxt.config.ts` for browser-level extension name, description, action tooltip, and shortcut descriptions.
-- **Decoupled In-App Language State**: Inside the React Side Panel and Quick Capture UI, translations continue to be driven by the synchronous React `language` state (`src/i18n/index.ts` + `localStorage.getItem('notebook_language')`), keeping the in-app header language toggle 100% responsive and independent of browser OS locale.
+- **Decoupled In-App Language State**: Inside the React Side Panel and Quick Capture UI, translations continue to be driven by the React `language` state (`src/i18n/index.ts` persisted to `localStorage` and `chrome.storage.local` under `'notebook_language'`), keeping the in-app header language toggle 100% responsive and synchronized across Side Panel, In-Page Quick Capture, and the right-click context menu.
 - **Single Root `public/` Directory**: All static assets (`icons/` and `_locales/`) reside exclusively in the root `public/` directory.
 
 ---

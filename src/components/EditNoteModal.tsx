@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, FileEdit, Check } from 'lucide-react';
-import { cn } from '../utils';
+import { cn, focusNextOnEnter } from '../utils';
 import { Language, getTranslations } from '../i18n';
 
 export interface EditNoteModalProps {
@@ -111,12 +111,7 @@ export const EditNoteModal: React.FC<EditNoteModalProps> = ({
               type="text"
               value={key}
               onChange={(e) => setKey(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.nativeEvent.isComposing) {
-                  e.preventDefault();
-                  textareaRef.current?.focus();
-                }
-              }}
+              onKeyDown={(e) => focusNextOnEnter(e, textareaRef)}
               placeholder={t.editNoteModal.keyPlaceholder}
               className={cn(
                 'w-full px-3 py-2 rounded-xl text-xs outline-none transition-all duration-150',

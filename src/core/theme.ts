@@ -5,6 +5,31 @@ export const LANGUAGE_STORAGE_KEY = 'notebook_language';
 
 export type Theme = 'light' | 'dark';
 
+export function isTheme(val: unknown): val is Theme {
+  return val === 'light' || val === 'dark';
+}
+
+export function isLanguage(val: unknown): val is Language {
+  return val === 'zh-TW' || val === 'en';
+}
+
+function persistPreference(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(key, value);
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      chrome.storage.local.set({ [key]: value });
+    }
+  } catch {
+    // Ignore chrome.storage errors
+  }
+}
+
 /**
  * Synchronously applies theme styling to documentElement.
  */
@@ -26,7 +51,7 @@ export function getStoredTheme(defaultDark: boolean = true): Theme {
   try {
     if (typeof window !== 'undefined' && window.localStorage) {
       const saved = localStorage.getItem(THEME_STORAGE_KEY);
-      if (saved === 'light' || saved === 'dark') return saved;
+      if (isTheme(saved)) return saved;
     }
   } catch {
     // Ignore storage errors in restricted contexts
@@ -38,40 +63,14 @@ export function getStoredTheme(defaultDark: boolean = true): Theme {
  * Persists the user theme preference into localStorage and chrome.storage.local.
  */
 export function setStoredTheme(theme: Theme): void {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(THEME_STORAGE_KEY, theme);
-    }
-  } catch {
-    // Ignore localStorage errors
-  }
-  try {
-    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-      chrome.storage.local.set({ [THEME_STORAGE_KEY]: theme });
-    }
-  } catch {
-    // Ignore chrome.storage errors
-  }
+  persistPreference(THEME_STORAGE_KEY, theme);
 }
 
 /**
  * Persists the user language preference into localStorage and chrome.storage.local.
  */
 export function setStoredLanguage(language: Language): void {
-  try {
-    if (typeof window !== 'undefined' && window.localStorage) {
-      localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
-    }
-  } catch {
-    // Ignore localStorage errors
-  }
-  try {
-    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
-      chrome.storage.local.set({ [LANGUAGE_STORAGE_KEY]: language });
-    }
-  } catch {
-    // Ignore chrome.storage errors
-  }
+  persistPreference(LANGUAGE_STORAGE_KEY, language);
 }
 
 /**
@@ -86,4 +85,33 @@ export function getDefaultBrowserLanguage(): Language {
     // Ignore navigator errors
   }
   return 'zh-TW';
+}
+
+/**
+ * Asynchronously resolves language and theme preferences from chrome.storage.local
+ * across extension contexts (e.g. Content Script and Background Service Worker).
+ */
+export async function resolveStoredPreferences(): Promise<{ language: Language; theme: Theme }> {
+  const fallbackLanguage = getDefaultBrowserLanguage();
+  const fallbackTheme: Theme = 'dark';
+
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      const res = await new Promise<Record<string, unknown>>((resolve) => {
+        chrome.storage.local.get([LANGUAGE_STORAGE_KEY, THEME_STORAGE_KEY], (items) => {
+          resolve(items || {});
+        });
+      });
+      const storedLang = res[LANGUAGE_STORAGE_KEY];
+      const storedTheme = res[THEME_STORAGE_KEY];
+      return {
+        language: isLanguage(storedLang) ? storedLang : fallbackLanguage,
+        theme: isTheme(storedTheme) ? storedTheme : fallbackTheme,
+      };
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+
+  return { language: fallbackLanguage, theme: fallbackTheme };
 }

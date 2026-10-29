@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X, Check, Globe, CornerDownLeft, ExternalLink } from 'lucide-react';
-import { cn, isEventInsideNode } from '../utils';
+import { cn, isEventInsideNode, filterSearchResults } from '../utils';
 import type { SearchResult } from '../types';
 import { Language, getTranslations } from '../i18n';
 
@@ -36,28 +36,10 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
 
-  const filteredResults = useMemo(() => {
-    const tokens = query
-      .trim()
-      .toLowerCase()
-      .split(/\s+/)
-      .filter(Boolean);
-    if (tokens.length === 0) return [];
-
-    return results.filter((item) => {
-      const haystack = [
-        item.title,
-        item.content,
-        item.sectionTitle,
-        item.pageTitle,
-        item.sourcePath,
-      ]
-        .filter(Boolean)
-        .join(' ')
-        .toLowerCase();
-      return tokens.every((token) => haystack.includes(token));
-    });
-  }, [results, query]);
+  const filteredResults = useMemo(
+    () => filterSearchResults(results, query),
+    [results, query]
+  );
 
   useEffect(() => {
     if (!isOpen) return;

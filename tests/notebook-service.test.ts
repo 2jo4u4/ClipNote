@@ -14,8 +14,9 @@ import {
   LANGUAGE_STORAGE_KEY,
   setStoredTheme,
   setStoredLanguage,
+  resolveStoredPreferences,
 } from '../src/core/theme';
-import { isEventInsideNode } from '../src/utils';
+import { isEventInsideNode, filterSearchResults } from '../src/utils';
 
 describe('Domain Utility Functions', () => {
   describe('extractHostname', () => {
@@ -942,6 +943,60 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
         target: {} as Node,
       } as unknown as Event;
       expect(isEventInsideNode(fallbackOutsideEvent, containerNode)).toBe(false);
+    });
+  });
+
+  describe('resolveStoredPreferences & filterSearchResults', () => {
+    it('resolves stored language and theme from chrome.storage.local', async () => {
+      vi.stubGlobal('chrome', {
+        storage: {
+          local: {
+            get: (_keys: string[], cb: (items: Record<string, unknown>) => void) => {
+              cb({
+                [LANGUAGE_STORAGE_KEY]: 'en',
+                [THEME_STORAGE_KEY]: 'light',
+              });
+            },
+          },
+        },
+      });
+
+      const prefs = await resolveStoredPreferences();
+      expect(prefs).toEqual({ language: 'en', theme: 'light' });
+      vi.unstubAllGlobals();
+    });
+
+    it('filters search results accurately by multi-token query across title, content, and metadata', () => {
+      const items = [
+        {
+          id: '1',
+          type: 'jot' as const,
+          title: '快捷鍵說明',
+          content: '使用快捷鍵 Alt+N 可隨時喚起快速筆記視窗',
+          pageId: 'p1',
+          pageTitle: '使用教學',
+          sectionId: 's1',
+          sectionTitle: '快捷鍵與即時操作',
+          sourcePath: 'From [使用教學] > [快捷鍵與即時操作]',
+        },
+        {
+          id: '2',
+          type: 'field' as const,
+          title: '姓名',
+          content: '王小明',
+          pageId: 'p1',
+          pageTitle: '使用教學',
+          sectionId: 's2',
+          sectionTitle: '筆記與分類操作',
+          sourcePath: 'From [使用教學] > [筆記與分類操作] · 姓名',
+        },
+      ];
+
+      expect(filterSearchResults(items, '王小明')).toHaveLength(1);
+      expect(filterSearchResults(items, '王小明')[0].id).toBe('2');
+      expect(filterSearchResults(items, '姓名 王小明')).toHaveLength(1);
+      expect(filterSearchResults(items, '   ')).toEqual([]);
+      expect(filterSearchResults(items, '不存在的關鍵字')).toEqual([]);
     });
   });
 });

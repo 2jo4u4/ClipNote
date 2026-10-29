@@ -1,5 +1,7 @@
+import type React from 'react';
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import type { SearchResult } from '../types';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -53,4 +55,45 @@ export function isEventInsideNode(e: Event, node: HTMLElement | null): boolean {
     }
   }
   return false;
+}
+
+/**
+ * Filters search results by space-separated query tokens (case-insensitive)
+ * across title, content, sectionTitle, pageTitle, and sourcePath.
+ */
+export function filterSearchResults(results: SearchResult[], query: string): SearchResult[] {
+  const tokens = query
+    .trim()
+    .toLowerCase()
+    .split(/\s+/)
+    .filter(Boolean);
+  if (tokens.length === 0) return [];
+
+  return results.filter((item) => {
+    const haystack = [
+      item.title,
+      item.content,
+      item.sectionTitle,
+      item.pageTitle,
+      item.sourcePath,
+    ]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    return tokens.every((token) => haystack.includes(token));
+  });
+}
+
+/**
+ * Moves focus to the target element when pressing plain Enter (not Ctrl/Meta+Enter or IME composing)
+ * inside a single-line input field.
+ */
+export function focusNextOnEnter(
+  e: React.KeyboardEvent,
+  nextRef: React.RefObject<HTMLElement | null>
+): void {
+  if (e.key === 'Enter' && !e.ctrlKey && !e.metaKey && !e.nativeEvent.isComposing) {
+    e.preventDefault();
+    nextRef.current?.focus();
+  }
 }
