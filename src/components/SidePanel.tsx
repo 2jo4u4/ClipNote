@@ -44,6 +44,7 @@ export interface SidePanelProps {
   onActivePageChange?: (pageId: string) => void;
   language?: Language;
   initialLanguage?: Language;
+  defaultDarkMode?: boolean;
   className?: string;
 }
 
@@ -183,6 +184,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   onActivePageChange,
   language: controlledLanguage,
   initialLanguage = 'zh-TW',
+  defaultDarkMode,
   className,
 }) => {
   const [internalLanguage, setInternalLanguage] = useState<Language>(initialLanguage);
@@ -240,7 +242,38 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     }
   }, [currentDomain]);
 
-  const [isDarkMode, setIsDarkMode] = useState(true);
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    if (defaultDarkMode !== undefined) return defaultDarkMode;
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        const savedTheme = localStorage.getItem('notebook_theme');
+        if (savedTheme === 'light') return false;
+        if (savedTheme === 'dark') return true;
+      }
+    } catch {
+      // Ignore storage errors
+    }
+    return true;
+  });
+
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      if (isDarkMode) {
+        document.documentElement.classList.add('dark');
+        document.documentElement.style.colorScheme = 'dark';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.documentElement.style.colorScheme = 'light';
+      }
+    }
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('notebook_theme', isDarkMode ? 'dark' : 'light');
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  }, [isDarkMode]);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
   const [quickCaptureInitialSectionId, setQuickCaptureInitialSectionId] = useState<string | undefined>(undefined);
   const [pageModalState, setPageModalState] = useState<{
@@ -931,7 +964,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               {isDarkMode ? (
                 <Sun className="w-3.5 h-3.5 text-raycast-amber" />
               ) : (
-                <Moon className="w-3.5 h-3.5 text-raycast-light-muted" />
+                <Moon className="w-3.5 h-3.5 text-raycast-light-text" />
               )}
             </button>
 
