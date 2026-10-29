@@ -534,7 +534,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             if (s.id !== targetSectionId) return s;
             return {
               ...s,
-              items: [...s.items, { ...movedCell!, updatedAt: Date.now() }],
+              items: [...s.items, movedCell!],
               updatedAt: Date.now(),
             };
           }),

@@ -92,6 +92,7 @@ It provides:
 54. As a user with visual or motor impairments, I want each input label in the Page Modal to be explicitly associated with its input field (`htmlFor` and `id`), so that clicking the label text focuses the input and screen readers announce the exact field name.
 55. As a screen reader user selecting an emoji icon for a page, I want the preset emoji buttons to provide clear accessible names and indicate their selected state (`aria-pressed`), so that I know which icon is currently chosen.
 56. As a keyboard user navigating the Page Modal, I want the close button to have a clear accessible name (`aria-label`) and decorative shortcut labels to be ignored by screen readers (`aria-hidden="true"`), so that I don't hear redundant noise while navigating.
+57. As a user reordering note cards or moving them between categories by dragging, I want the note's "最後更新時間" (updatedAt) to remain unchanged, so that my notes preserve their authentic content modification history rather than falsely indicating they were just updated.
 
 ---
 
@@ -197,7 +198,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
   - Empty category containers highlight with an amber dashed border on hover when receiving a dragged cell.
 - **Data Layer Domain Operations**:
   - `NotebookService.reorderSections(pageId, sourceIndex, targetIndex)`: updates `page.sections` order and normalizes sequence numbers.
-  - `NotebookService.reorderCells(pageId, source, target)`: moves a cell within the same category or across categories with precise index insertion.
+  - `NotebookService.reorderCells(pageId, source, target)`: moves a cell within the same category or across categories with precise index insertion, preserving the moved cell's `updatedAt` content modification timestamp intact while updating container and page `updatedAt`.
 - **Batch Mode Guard**: Drag handles and draggable attributes are suppressed when `isSelectMode` is active.
 
 ### 11. Collapsible Long Cell Text (長內容筆記自動折疊)

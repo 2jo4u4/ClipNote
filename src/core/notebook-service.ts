@@ -103,7 +103,7 @@ export function moveCellInPage(
 
     const newItems = Array.from(sourceSec.items);
     const [movedCell] = newItems.splice(cellIndex, 1);
-    newItems.splice(finalIdx, 0, { ...movedCell, updatedAt: timestamp });
+    newItems.splice(finalIdx, 0, movedCell);
 
     return {
       ...page,
@@ -121,7 +121,7 @@ export function moveCellInPage(
       target.index !== undefined
         ? Math.min(Math.max(0, target.index), targetItems.length)
         : targetItems.length;
-    targetItems.splice(finalIdx, 0, { ...movedCell, updatedAt: timestamp });
+    targetItems.splice(finalIdx, 0, movedCell);
 
     return {
       ...page,
@@ -911,7 +911,6 @@ export class NotebookService {
     targetSection.items.splice(insertIndex, 0, cell);
 
     const now = Date.now();
-    cell.updatedAt = now;
     sourceSection.updatedAt = now;
     targetSection.updatedAt = now;
     sourcePage.updatedAt = now;

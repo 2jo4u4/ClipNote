@@ -473,6 +473,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       const pAfter = await service.getPage(page.id);
       const items = pAfter?.sections[0].items;
       expect(items?.map((c) => c.id)).toEqual([c3.id, c1.id, c2.id]);
+      expect(items?.[0].updatedAt).toBe(c3.updatedAt);
     });
 
     it('moves cells across sections on the same page including into an empty section', async () => {
@@ -562,7 +563,9 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
         1000
       );
       expect(updatedPage1.sections[0].items.map((c) => c.id)).toEqual([c2.id, c1.id]);
-      expect(updatedPage1.sections[0].items[1].updatedAt).toBe(1000);
+      expect(updatedPage1.sections[0].items[1].updatedAt).toBe(c1.updatedAt);
+      expect(updatedPage1.sections[0].updatedAt).toBe(1000);
+      expect(updatedPage1.updatedAt).toBe(1000);
 
       // Cross-section move: move c2 to sec2
       const updatedPage2 = moveCellInPage(
@@ -573,6 +576,10 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       );
       expect(updatedPage2.sections[0].items.map((c) => c.id)).toEqual([c1.id]);
       expect(updatedPage2.sections[1].items.map((c) => c.id)).toEqual([c2.id]);
+      expect(updatedPage2.sections[1].items[0].updatedAt).toBe(c2.updatedAt);
+      expect(updatedPage2.sections[0].updatedAt).toBe(2000);
+      expect(updatedPage2.sections[1].updatedAt).toBe(2000);
+      expect(updatedPage2.updatedAt).toBe(2000);
     });
   });
 
