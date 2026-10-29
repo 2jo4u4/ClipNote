@@ -6,7 +6,7 @@ This document defines the ubiquitous language for the Notebook browser extension
 
 | Concept | Traditional Chinese (`zh-TW`) | English (`en`) | Description |
 | :--- | :--- | :--- | :--- |
-| **Notebook** | 筆記本 | Notebook | The root application workspace containing all pages, settings, and storage state. |
+| **ClipNote** | 筆記本 / ClipNote | ClipNote | The root application workspace and extension brand containing all pages, settings, and storage state. |
 | **Page** | 一頁 / 頁 | Page | A discrete thematic document or tab (e.g., "104 中文經歷", "社交貼文草稿") that binds to target web domains. |
 | **Default Tutorial Pages** | 使用教學 / Getting Started | Getting Started / Tutorial | The system-created initial bilingual tutorial pages providing interactive onboarding instructions (both are fully editable and deletable by user). |
 | **Section** | 分類 | Category | A flexible grouping within a Page to organize content items. |

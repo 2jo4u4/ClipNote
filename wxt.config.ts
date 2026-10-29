@@ -11,7 +11,7 @@ export default defineConfig({
   },
   manifest: {
     name: 'ClipNote',
-    description: '輕量、感知網域的個人備忘與快速填表 Chrome 擴充功能 (ClipNote)',
+    description: 'Lightweight, domain-aware scratchpad and quick form-filling notepad for Chrome.',
     version: '1.0.0',
     permissions: [
       'storage',
@@ -26,18 +26,18 @@ export default defineConfig({
           default: 'Alt+S',
           mac: 'Alt+S',
         },
-        description: '開啟 ClipNote 側邊欄',
+        description: 'Open ClipNote side panel',
       },
       'open-quick-capture': {
         suggested_key: {
           default: 'Alt+N',
           mac: 'Alt+N',
         },
-        description: '新增筆記 / 全域搜尋',
+        description: 'New note / Search notes',
       },
     },
     action: {
-      default_title: '開啟 ClipNote',
+      default_title: 'Open ClipNote',
     },
     icons: {
       16: 'icons/icon-16.png',
