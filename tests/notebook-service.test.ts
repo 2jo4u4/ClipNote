@@ -9,6 +9,12 @@ import {
 } from '../src/core/notebook-service';
 import { MemoryStorageAdapter, ChromeStorageAdapter } from '../src/core/storage';
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../src/core/types';
+import {
+  THEME_STORAGE_KEY,
+  LANGUAGE_STORAGE_KEY,
+  setStoredTheme,
+  setStoredLanguage,
+} from '../src/core/theme';
 
 describe('Domain Utility Functions', () => {
   describe('extractHostname', () => {
@@ -851,6 +857,41 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       const pageAfter = await service.getPage(page.id);
       expect(pageAfter?.sections[0].items.map((i) => i.id)).toEqual([c2.id]);
       expect(pageAfter?.sections[1].items.map((i) => i.id)).toEqual([c3.id]);
+    });
+  });
+
+  describe('Theme & Language Cross-Context Storage Persistence', () => {
+    it('persists theme and language to both localStorage and chrome.storage.local when available', () => {
+      const setMock = vi.fn();
+      const setItemMock = vi.fn();
+
+      vi.stubGlobal('window', {
+        localStorage: {
+          setItem: setItemMock,
+          getItem: vi.fn(),
+        },
+      });
+      vi.stubGlobal('localStorage', {
+        setItem: setItemMock,
+        getItem: vi.fn(),
+      });
+      vi.stubGlobal('chrome', {
+        storage: {
+          local: {
+            set: setMock,
+          },
+        },
+      });
+
+      setStoredTheme('light');
+      expect(setItemMock).toHaveBeenCalledWith(THEME_STORAGE_KEY, 'light');
+      expect(setMock).toHaveBeenCalledWith({ [THEME_STORAGE_KEY]: 'light' });
+
+      setStoredLanguage('en');
+      expect(setItemMock).toHaveBeenCalledWith(LANGUAGE_STORAGE_KEY, 'en');
+      expect(setMock).toHaveBeenCalledWith({ [LANGUAGE_STORAGE_KEY]: 'en' });
+
+      vi.unstubAllGlobals();
     });
   });
 });

@@ -4,15 +4,25 @@ import '../styles/globals.css';
 import { QuickCaptureModal, QuickCapturePageOption, QuickCaptureSectionOption } from '../components/QuickCaptureModal';
 import {
   NotebookService,
+  DEFAULT_STORAGE_KEY,
 } from '../core/notebook-service';
 import { ChromeStorageAdapter } from '../core/storage';
 import { SearchResult, CreateCellInput } from '../types';
 import { Page } from '../core/types';
+import type { Language } from '../i18n';
+import {
+  LANGUAGE_STORAGE_KEY,
+  THEME_STORAGE_KEY,
+  Theme,
+  getDefaultBrowserLanguage,
+} from '../core/theme';
 
 interface InPageCaptureProps {
   initialContent?: string;
   sourceUrl: string;
   sourceTitle: string;
+  initialLanguage: Language;
+  onThemeChange: (theme: Theme) => void;
   onClose: () => void;
 }
 
@@ -23,16 +33,19 @@ function InPageQuickCaptureWrapper({
   initialContent = '',
   sourceUrl,
   sourceTitle,
+  initialLanguage,
+  onThemeChange,
   onClose,
 }: InPageCaptureProps) {
   const [isOpen, setIsOpen] = useState(true);
+  const [language, setLanguage] = useState<Language>(initialLanguage);
   const [pages, setPages] = useState<QuickCapturePageOption[]>([]);
   const [sections, setSections] = useState<QuickCaptureSectionOption[]>([]);
   const [activePageId, setActivePageId] = useState<string>('SYSTEM_GLOBAL_PAGE');
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
 
   // Load notebook pages and auto-resolve matching page for current hostname
-  const loadData = useCallback(async () => {
+  const loadData = useCallback(async (preferredLocale?: Language) => {
     try {
       await notebookService.reload();
       const currentPages = await notebookService.getAllPages();
@@ -59,17 +72,54 @@ function InPageQuickCaptureWrapper({
 
       // Auto-resolve active page with prioritization
       const targetUrl = sourceUrl || window.location.href;
-      const preferredLocale = typeof navigator !== 'undefined' ? navigator.language : undefined;
-      const resolved = await notebookService.resolveActivePage(targetUrl, preferredLocale);
+      const resolved = await notebookService.resolveActivePage(
+        targetUrl,
+        preferredLocale || language
+      );
       setActivePageId(resolved.id);
     } catch (err) {
       console.warn('[Notebook] Content script failed to load data:', err);
     }
-  }, [sourceUrl]);
+  }, [sourceUrl, language]);
 
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    loadData(language);
+  }, [loadData, language]);
+
+  // Listen for live language, theme, and notebook storage updates from SidePanel
+  useEffect(() => {
+    if (typeof chrome === 'undefined' || !chrome.storage?.onChanged) return;
+
+    const handleStorageChange = (
+      changes: { [key: string]: chrome.storage.StorageChange },
+      areaName: string
+    ) => {
+      if (areaName !== 'local') return;
+
+      if (changes[LANGUAGE_STORAGE_KEY]) {
+        const nextLang = changes[LANGUAGE_STORAGE_KEY].newValue;
+        if (nextLang === 'zh-TW' || nextLang === 'en') {
+          setLanguage(nextLang);
+        }
+      }
+
+      if (changes[THEME_STORAGE_KEY]) {
+        const nextTheme = changes[THEME_STORAGE_KEY].newValue;
+        if (nextTheme === 'light' || nextTheme === 'dark') {
+          onThemeChange(nextTheme);
+        }
+      }
+
+      if (changes[DEFAULT_STORAGE_KEY]) {
+        loadData();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+    };
+  }, [loadData, onThemeChange]);
 
   const handleSearchQueryChange = async (query: string) => {
     if (!query.trim()) {
@@ -109,6 +159,7 @@ function InPageQuickCaptureWrapper({
   return (
     <QuickCaptureModal
       isOpen={isOpen}
+      language={language}
       onClose={handleClose}
       pages={pages}
       sections={sections}
@@ -121,6 +172,31 @@ function InPageQuickCaptureWrapper({
       onSaveCell={handleSaveCell}
     />
   );
+}
+
+async function resolveStoredPreferences(): Promise<{ language: Language; theme: Theme }> {
+  const fallbackLanguage = getDefaultBrowserLanguage();
+  const fallbackTheme: Theme = 'dark';
+
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      const res = await new Promise<Record<string, unknown>>((resolve) => {
+        chrome.storage.local.get([LANGUAGE_STORAGE_KEY, THEME_STORAGE_KEY], (items) => {
+          resolve(items || {});
+        });
+      });
+      const storedLang = res[LANGUAGE_STORAGE_KEY];
+      const storedTheme = res[THEME_STORAGE_KEY];
+      return {
+        language: storedLang === 'zh-TW' || storedLang === 'en' ? storedLang : fallbackLanguage,
+        theme: storedTheme === 'light' || storedTheme === 'dark' ? storedTheme : fallbackTheme,
+      };
+    }
+  } catch {
+    // Ignore storage read errors
+  }
+
+  return { language: fallbackLanguage, theme: fallbackTheme };
 }
 
 export default defineContentScript({
@@ -141,14 +217,21 @@ export default defineContentScript({
         currentUi = null;
       }
 
+      const { language: initialLanguage, theme: initialTheme } =
+        await resolveStoredPreferences();
+
       currentUi = await createShadowRootUi(ctx, {
         name: 'notebook-quick-capture-host',
-        position: 'overlay',
-        anchor: 'body',
+        position: 'modal',
+        anchor: 'html',
         zIndex: 2147483647,
+        css: ':host { position: fixed !important; inset: 0 !important; width: 100vw !important; height: 100vh !important; z-index: 2147483647 !important; pointer-events: auto !important; display: block !important; }',
         onMount(container) {
           const mountPoint = document.createElement('div');
-          mountPoint.className = 'notebook-extension-root dark';
+          mountPoint.className =
+            initialTheme === 'light'
+              ? 'notebook-extension-root'
+              : 'notebook-extension-root dark';
           container.appendChild(mountPoint);
 
           reactRoot = ReactDOM.createRoot(mountPoint);
@@ -158,6 +241,10 @@ export default defineContentScript({
                 initialContent={content}
                 sourceUrl={url || window.location.href}
                 sourceTitle={title || document.title}
+                initialLanguage={initialLanguage}
+                onThemeChange={(nextTheme) => {
+                  mountPoint.classList.toggle('dark', nextTheme === 'dark');
+                }}
                 onClose={() => {
                   if (reactRoot) {
                     reactRoot.unmount();

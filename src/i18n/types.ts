@@ -76,6 +76,7 @@ export interface I18nTranslations {
     batchConfirmDeleteDesc: (categories: number, notes: number) => string;
     collapseAllCategories: string;
     expandAllCategories: string;
+    currentWebpage: string;
   };
   pageTabs: {
     scrollLeft: string;

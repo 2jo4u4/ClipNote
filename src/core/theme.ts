@@ -1,3 +1,5 @@
+import type { Language } from '../i18n/types';
+
 export const THEME_STORAGE_KEY = 'notebook_theme';
 export const LANGUAGE_STORAGE_KEY = 'notebook_language';
 
@@ -33,7 +35,7 @@ export function getStoredTheme(defaultDark: boolean = true): Theme {
 }
 
 /**
- * Persists the user theme preference into localStorage.
+ * Persists the user theme preference into localStorage and chrome.storage.local.
  */
 export function setStoredTheme(theme: Theme): void {
   try {
@@ -41,6 +43,47 @@ export function setStoredTheme(theme: Theme): void {
       localStorage.setItem(THEME_STORAGE_KEY, theme);
     }
   } catch {
-    // Ignore storage errors
+    // Ignore localStorage errors
   }
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      chrome.storage.local.set({ [THEME_STORAGE_KEY]: theme });
+    }
+  } catch {
+    // Ignore chrome.storage errors
+  }
+}
+
+/**
+ * Persists the user language preference into localStorage and chrome.storage.local.
+ */
+export function setStoredLanguage(language: Language): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      localStorage.setItem(LANGUAGE_STORAGE_KEY, language);
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  try {
+    if (typeof chrome !== 'undefined' && chrome.storage?.local) {
+      chrome.storage.local.set({ [LANGUAGE_STORAGE_KEY]: language });
+    }
+  } catch {
+    // Ignore chrome.storage errors
+  }
+}
+
+/**
+ * Resolves the default language from navigator.language ('zh*' -> 'zh-TW', else 'en').
+ */
+export function getDefaultBrowserLanguage(): Language {
+  try {
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      return navigator.language.toLowerCase().startsWith('zh') ? 'zh-TW' : 'en';
+    }
+  } catch {
+    // Ignore navigator errors
+  }
+  return 'zh-TW';
 }

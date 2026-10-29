@@ -78,6 +78,7 @@ export const zhTW: I18nTranslations = {
       `即將刪除選取的 ${categories > 0 ? `${categories} 個分類（含內部筆記）與 ` : ''}${notes} 則筆記。此動作無法復原。`,
     collapseAllCategories: '全部折疊',
     expandAllCategories: '全部展開',
+    currentWebpage: '當前瀏覽網頁',
   },
   pageTabs: {
     scrollLeft: '向左滾動',

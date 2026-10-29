@@ -21,6 +21,7 @@ function ExtensionSidePanelApp() {
   const [pages, setPages] = useState<Page[]>([]);
   const [currentDomain, setCurrentDomain] = useState<string>('');
   const [currentUrl, setCurrentUrl] = useState<string>('');
+  const [currentTitle, setCurrentTitle] = useState<string>('');
   const [isLoaded, setIsLoaded] = useState(false);
 
   // 1. Initial load from NotebookService
@@ -36,7 +37,7 @@ function ExtensionSidePanelApp() {
     }
   }, []);
 
-  // 2. Resolve Active Tab Domain & URL
+  // 2. Resolve Active Tab Domain, URL & Title
   const updateActiveTabInfo = useCallback(async () => {
     if (typeof chrome === 'undefined' || !chrome.tabs) return;
 
@@ -44,6 +45,7 @@ function ExtensionSidePanelApp() {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (tab?.url) {
         setCurrentUrl(tab.url);
+        setCurrentTitle(tab.title || '');
         const host = extractHostname(tab.url);
         setCurrentDomain(host);
       }
@@ -130,6 +132,7 @@ function ExtensionSidePanelApp() {
       pages={pages}
       currentDomain={currentDomain}
       currentUrl={currentUrl}
+      currentTitle={currentTitle}
       onPagesChange={handlePagesChange}
       onActivePageChange={handleActivePageChange}
       className="h-full w-full"

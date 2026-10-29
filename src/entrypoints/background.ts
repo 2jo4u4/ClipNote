@@ -1,5 +1,10 @@
 import { NotebookService } from '../core/notebook-service';
 import { ChromeStorageAdapter } from '../core/storage';
+import { LANGUAGE_STORAGE_KEY, getDefaultBrowserLanguage } from '../core/theme';
+
+function getContextMenuTitle(lang?: unknown): string {
+  return lang === 'en' ? 'New Note' : '新增筆記';
+}
 
 export default defineBackground(() => {
   // 1. Configure Side Panel to automatically open when clicking the extension icon
@@ -17,13 +22,46 @@ export default defineBackground(() => {
     await service.init();
     console.log('[Notebook] Ensured notebook storage initialized on install.');
 
+    let lang = getDefaultBrowserLanguage();
+    try {
+      if (chrome.storage?.local) {
+        const stored = await chrome.storage.local.get(LANGUAGE_STORAGE_KEY);
+        const savedLang = stored[LANGUAGE_STORAGE_KEY];
+        if (savedLang === 'zh-TW' || savedLang === 'en') {
+          lang = savedLang;
+        }
+      }
+    } catch {
+      // Fall back to default browser language
+    }
+
     // Register Right-Click Context Menu for selected text
-    chrome.contextMenus.create({
-      id: 'notebook-capture-selection',
-      title: '新增筆記',
-      contexts: ['selection'],
+    chrome.contextMenus.removeAll(() => {
+      chrome.contextMenus.create({
+        id: 'notebook-capture-selection',
+        title: getContextMenuTitle(lang),
+        contexts: ['selection'],
+      });
     });
   });
+
+  // 2b. Sync Context Menu Title when Language Changes
+  if (typeof chrome !== 'undefined' && chrome.storage?.onChanged) {
+    chrome.storage.onChanged.addListener((changes, areaName) => {
+      if (areaName !== 'local') return;
+      if (changes[LANGUAGE_STORAGE_KEY]) {
+        const nextLang = changes[LANGUAGE_STORAGE_KEY].newValue;
+        chrome.contextMenus.update(
+          'notebook-capture-selection',
+          { title: getContextMenuTitle(nextLang) },
+          () => {
+            // Suppress runtime.lastError if context menu was not yet registered
+            void chrome.runtime?.lastError;
+          }
+        );
+      }
+    });
+  }
 
   // 3. Handle Context Menu Click
   chrome.contextMenus.onClicked.addListener(async (info, tab) => {

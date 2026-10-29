@@ -40,6 +40,8 @@ import {
   applyTheme,
   getStoredTheme,
   setStoredTheme,
+  setStoredLanguage,
+  getDefaultBrowserLanguage,
   LANGUAGE_STORAGE_KEY,
 } from '../core/theme';
 
@@ -52,6 +54,7 @@ export interface MovingCellTarget {
 export interface SidePanelProps {
   currentDomain?: string;
   currentUrl?: string;
+  currentTitle?: string;
   pages?: Page[];
   initialPages?: Page[];
   initialActivePageId?: string;
@@ -78,19 +81,13 @@ const getInitialLanguage = (controlled?: Language, initial?: Language): Language
     // Ignore storage errors
   }
   if (initial) return initial;
-  try {
-    if (typeof navigator !== 'undefined' && navigator.language) {
-      return navigator.language.toLowerCase().startsWith('zh') ? 'zh-TW' : 'en';
-    }
-  } catch {
-    // Ignore navigator errors
-  }
-  return 'zh-TW';
+  return getDefaultBrowserLanguage();
 };
 
 export const SidePanel: React.FC<SidePanelProps> = ({
   currentDomain = 'example.com',
   currentUrl = 'https://www.example.com',
+  currentTitle,
   pages: controlledPages,
   initialPages = defaultDemoPages,
   initialActivePageId,
@@ -108,17 +105,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const language = controlledLanguage || internalLanguage;
   const t = getTranslations(language);
 
+  useEffect(() => {
+    setStoredLanguage(language);
+  }, [language]);
+
   const handleToggleLanguage = () => {
     const nextLang: Language = language === 'zh-TW' ? 'en' : 'zh-TW';
     setInternalLanguage(nextLang);
     onLanguageChange?.(nextLang);
-    try {
-      if (typeof window !== 'undefined' && window.localStorage) {
-        localStorage.setItem(LANGUAGE_STORAGE_KEY, nextLang);
-      }
-    } catch {
-      // Ignore storage errors
-    }
+    setStoredLanguage(nextLang);
   };
 
   const [pagesState, setPagesState] = useState<Page[]>(controlledPages || initialPages);
@@ -1524,7 +1519,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           activePageId={activePageId}
           initialSectionId={quickCaptureInitialSectionId}
           sourceUrl={currentUrl}
-          sourceTitle="當前瀏覽網頁"
+          sourceTitle={currentTitle || t.sidePanel.currentWebpage}
           searchResults={allSearchResults}
           onSaveCell={handleQuickSaveCell}
           onCopySearchResult={(item) => {

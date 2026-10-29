@@ -79,6 +79,7 @@ export const en: I18nTranslations = {
       `This will permanently delete ${categories > 0 ? `${categories} categories (including their notes) and ` : ''}${notes} notes. This action cannot be undone.`,
     collapseAllCategories: 'Collapse All',
     expandAllCategories: 'Expand All',
+    currentWebpage: 'Current Webpage',
   },
   pageTabs: {
     scrollLeft: 'Scroll Left',
