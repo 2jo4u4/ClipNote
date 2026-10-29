@@ -37,51 +37,142 @@ function makeChunk(type, data) {
   return Buffer.concat([lenBuf, body, crcBuf]);
 }
 
+/**
+ * Generate high-definition ClipNote icon with anti-aliasing (supersampling)
+ * Style: Raycast Charcoal Dark container (#18181b) + Radiant Amber 'C' (#F59E0B)
+ */
 function generateIconPNG(size) {
   const width = size;
   const height = size;
 
-  // Raw image data with 1 filter byte (0) per row
+  // Supersampling factor for clean antialiasing
+  const SS = 4;
+  const ssWidth = width * SS;
+  const ssHeight = height * SS;
+
+  const bgR = 24, bgG = 24, bgB = 27;        // #18181b
+  const borderR = 45, borderG = 45, borderB = 52; // #2d2d34
+  const amberR = 245, amberG = 158, amberB = 11;  // #F59E0B
+  const amberLightR = 251, amberLightG = 191, amberLightB = 36; // #FBBF24
+
+  const radius = ssWidth * 0.22;
+  const borderWidth = ssWidth * 0.035;
+  const center = ssWidth / 2;
+
+  // Super-sampled buffer
+  const ssBuffer = new Float32Array(ssWidth * ssHeight * 4);
+
+  for (let sy = 0; sy < ssHeight; sy++) {
+    for (let sx = 0; sx < ssWidth; sx++) {
+      const idx = (sy * ssWidth + sx) * 4;
+
+      // Rounded container distance
+      const dx = Math.max(0, Math.abs(sx + 0.5 - center) - (center - radius));
+      const dy = Math.max(0, Math.abs(sy + 0.5 - center) - (center - radius));
+      const dist = Math.sqrt(dx * dx + dy * dy);
+
+      if (dist <= radius) {
+        // Inside squircle
+        let r = bgR;
+        let g = bgG;
+        let b = bgB;
+        let a = 1.0;
+
+        // Container border
+        if (dist >= radius - borderWidth) {
+          const t = (dist - (radius - borderWidth)) / borderWidth;
+          r = bgR * (1 - t) + borderR * t;
+          g = bgG * (1 - t) + borderG * t;
+          b = bgB * (1 - t) + borderB * t;
+        }
+
+        // Draw modern ClipNote letter 'C'
+        // Centered arc with radius rOuter & rInner
+        const cx = center * 1.02;
+        const cy = center;
+        const cdx = sx + 0.5 - cx;
+        const cdy = sy + 0.5 - cy;
+        const cDist = Math.sqrt(cdx * cdx + cdy * cdy);
+
+        const rOuter = ssWidth * 0.29;
+        const rInner = ssWidth * 0.17;
+        const angle = Math.atan2(cdy, cdx); // -PI to +PI
+
+        // Gap on right: opening from -42 deg to +42 deg (approx -0.73 to +0.73 rad)
+        const inAngleCut = angle > -0.72 && angle < 0.72;
+
+        if (cDist >= rInner && cDist <= rOuter && !inAngleCut) {
+          // Gradient between amberLight (top) and amber (bottom)
+          const grad = Math.min(1, Math.max(0, (sy / ssHeight)));
+          r = amberLightR * (1 - grad) + amberR * grad;
+          g = amberLightG * (1 - grad) + amberG * grad;
+          b = amberLightB * (1 - grad) + amberB * grad;
+        } else {
+          // Rounded caps on the 'C' terminals
+          const capRadius = (rOuter - rInner) / 2;
+          const capCenterDist = (rOuter + rInner) / 2;
+          const capAngle = 0.72;
+
+          const topCapX = cx + capCenterDist * Math.cos(-capAngle);
+          const topCapY = cy + capCenterDist * Math.sin(-capAngle);
+          const botCapX = cx + capCenterDist * Math.cos(capAngle);
+          const botCapY = cy + capCenterDist * Math.sin(capAngle);
+
+          const dTopCap = Math.sqrt((sx + 0.5 - topCapX) ** 2 + (sy + 0.5 - topCapY) ** 2);
+          const dBotCap = Math.sqrt((sx + 0.5 - botCapX) ** 2 + (sy + 0.5 - botCapY) ** 2);
+
+          if (dTopCap <= capRadius || dBotCap <= capRadius) {
+            const grad = Math.min(1, Math.max(0, (sy / ssHeight)));
+            r = amberLightR * (1 - grad) + amberR * grad;
+            g = amberLightG * (1 - grad) + amberG * grad;
+            b = amberLightB * (1 - grad) + amberB * grad;
+          }
+        }
+
+        ssBuffer[idx] = r;
+        ssBuffer[idx + 1] = g;
+        ssBuffer[idx + 2] = b;
+        ssBuffer[idx + 3] = a;
+      } else {
+        // Outside
+        ssBuffer[idx + 3] = 0;
+      }
+    }
+  }
+
+  // Downsample to target size
   const raw = Buffer.alloc(height * (1 + width * 4));
-
-  // Colors: Amber background (#f59e0b = 245, 158, 11), Text dark (#1c1917 = 28, 25, 23)
-  const bgR = 245, bgG = 158, bgB = 11;
-  const fgR = 28, fgG = 25, fgB = 23;
-
-  const radius = size * 0.22;
-  const center = size / 2;
-
   let offset = 0;
+
   for (let y = 0; y < height; y++) {
     raw[offset++] = 0; // Filter byte: None
 
     for (let x = 0; x < width; x++) {
-      // Check rounded rect distance
-      const dx = Math.max(0, Math.abs(x + 0.5 - center) - (center - radius));
-      const dy = Math.max(0, Math.abs(y + 0.5 - center) - (center - radius));
-      const dist = Math.sqrt(dx * dx + dy * dy);
+      let sumR = 0, sumG = 0, sumB = 0, sumA = 0;
 
-      if (dist <= radius) {
-        // Simple letter 'N' drawing logic
-        const nx = (x / size);
-        const ny = (y / size);
-        const inNLeft = nx >= 0.28 && nx <= 0.40 && ny >= 0.26 && ny <= 0.74;
-        const inNRight = nx >= 0.60 && nx <= 0.72 && ny >= 0.26 && ny <= 0.74;
-        const inNDiag = Math.abs((nx - 0.28) / (0.60 - 0.28) - (ny - 0.26) / (0.74 - 0.26)) < 0.16 && nx >= 0.32 && nx <= 0.68 && ny >= 0.26 && ny <= 0.74;
+      for (let dy = 0; dy < SS; dy++) {
+        for (let dx = 0; dx < SS; dx++) {
+          const ssX = x * SS + dx;
+          const ssY = y * SS + dy;
+          const ssIdx = (ssY * ssWidth + ssX) * 4;
 
-        if (inNLeft || inNRight || inNDiag) {
-          raw[offset++] = fgR;
-          raw[offset++] = fgG;
-          raw[offset++] = fgB;
-          raw[offset++] = 255;
-        } else {
-          raw[offset++] = bgR;
-          raw[offset++] = bgG;
-          raw[offset++] = bgB;
-          raw[offset++] = 255;
+          const a = ssBuffer[ssIdx + 3];
+          sumR += ssBuffer[ssIdx] * a;
+          sumG += ssBuffer[ssIdx + 1] * a;
+          sumB += ssBuffer[ssIdx + 2] * a;
+          sumA += a;
         }
+      }
+
+      const totalSamples = SS * SS;
+      const alpha = sumA / totalSamples;
+
+      if (alpha > 0.001) {
+        raw[offset++] = Math.round(sumR / sumA);
+        raw[offset++] = Math.round(sumG / sumA);
+        raw[offset++] = Math.round(sumB / sumA);
+        raw[offset++] = Math.round(alpha * 255);
       } else {
-        // Transparent outside rounded corner
         raw[offset++] = 0;
         raw[offset++] = 0;
         raw[offset++] = 0;
@@ -108,11 +199,16 @@ function generateIconPNG(size) {
   return Buffer.concat([signature, ihdrChunk, idatChunk, iendChunk]);
 }
 
-const outDir = path.resolve('src/public/icons');
-fs.mkdirSync(outDir, { recursive: true });
+const targetDirs = [
+  path.resolve('public/icons'),
+  path.resolve('src/public/icons'),
+];
 
-for (const size of [16, 48, 128]) {
-  const png = generateIconPNG(size);
-  fs.writeFileSync(path.join(outDir, `icon-${size}.png`), png);
-  console.log(`Generated icon-${size}.png (${png.length} bytes)`);
+for (const outDir of targetDirs) {
+  fs.mkdirSync(outDir, { recursive: true });
+  for (const size of [16, 48, 128]) {
+    const png = generateIconPNG(size);
+    fs.writeFileSync(path.join(outDir, `icon-${size}.png`), png);
+    console.log(`Generated ${path.relative('.', outDir)}/icon-${size}.png (${png.length} bytes)`);
+  }
 }
