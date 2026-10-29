@@ -89,6 +89,15 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   const isFields = type === 'fields';
   const isJots = type === 'jots';
 
+  const handleToggle = () => {
+    if (!isCollapsible) return;
+    if (onToggleExpand) {
+      onToggleExpand();
+    } else {
+      setInternalExpanded(!isExpanded);
+    }
+  };
+
   const handleContainerDragOver = onDragOverContainer;
   const handleContainerDragLeave = onDragLeaveContainer;
   const handleContainerDrop = onDropContainer;
@@ -128,15 +137,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
           isCollapsible && 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] rounded-t-2xl',
           !isExpanded && 'rounded-b-2xl'
         )}
-        onClick={() => {
-          if (isCollapsible) {
-            if (onToggleExpand) {
-              onToggleExpand();
-            } else {
-              setInternalExpanded(!isExpanded);
-            }
-          }
-        }}
+        onClick={handleToggle}
       >
         {/* Left: Checkbox (Select Mode) + Type Icon + Title + Count Badge */}
         <div className="flex items-center gap-2 min-w-0">
@@ -354,11 +355,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                if (onToggleExpand) {
-                  onToggleExpand();
-                } else {
-                  setInternalExpanded(!isExpanded);
-                }
+                handleToggle();
               }}
               className="p-1 rounded-md text-raycast-light-subtle hover:text-raycast-light-text dark:text-raycast-dark-subtle dark:hover:text-raycast-dark-text transition-colors"
             >

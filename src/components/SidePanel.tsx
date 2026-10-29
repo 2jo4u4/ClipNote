@@ -259,28 +259,24 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   // Collapsed sections tracking
   const [collapsedSectionIds, setCollapsedSectionIds] = useState<Set<string>>(new Set());
 
-  const allCategoriesCollapsed = useMemo(() => {
+  const allSectionsCollapsed = useMemo(() => {
     if (!activePage?.sections || activePage.sections.length === 0) return false;
     return activePage.sections.every((s) => collapsedSectionIds.has(s.id));
   }, [activePage?.sections, collapsedSectionIds]);
 
-  const handleToggleAllCategories = () => {
+  const handleToggleAllSections = () => {
     if (!activePage?.sections || activePage.sections.length === 0) return;
-    if (allCategoriesCollapsed) {
-      // Expand all in active page
-      setCollapsedSectionIds((prev) => {
-        const next = new Set(prev);
-        activePage.sections.forEach((s) => next.delete(s.id));
-        return next;
+    setCollapsedSectionIds((prev) => {
+      const next = new Set(prev);
+      activePage.sections.forEach((s) => {
+        if (allSectionsCollapsed) {
+          next.delete(s.id);
+        } else {
+          next.add(s.id);
+        }
       });
-    } else {
-      // Collapse all in active page
-      setCollapsedSectionIds((prev) => {
-        const next = new Set(prev);
-        activePage.sections.forEach((s) => next.add(s.id));
-        return next;
-      });
-    }
+      return next;
+    });
   };
 
   const handleToggleSectionCollapse = (sectionId: string) => {
@@ -1191,15 +1187,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               {activePage.sections && activePage.sections.length > 0 && (
                 <button
                   type="button"
-                  onClick={handleToggleAllCategories}
-                  title={allCategoriesCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
-                  aria-label={allCategoriesCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
+                  onClick={handleToggleAllSections}
+                  title={allSectionsCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
+                  aria-label={allSectionsCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
                   className={cn(
                     'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
                     'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
                   )}
                 >
-                  {allCategoriesCollapsed ? (
+                  {allSectionsCollapsed ? (
                     <ChevronsUpDown className="w-3.5 h-3.5" />
                   ) : (
                     <ChevronsDownUp className="w-3.5 h-3.5" />

@@ -93,6 +93,8 @@ It provides:
 55. As a screen reader user selecting an emoji icon for a page, I want the preset emoji buttons to provide clear accessible names and indicate their selected state (`aria-pressed`), so that I know which icon is currently chosen.
 56. As a keyboard user navigating the Page Modal, I want the close button to have a clear accessible name (`aria-label`) and decorative shortcut labels to be ignored by screen readers (`aria-hidden="true"`), so that I don't hear redundant noise while navigating.
 57. As a user reordering note cards or moving them between categories by dragging, I want the note's "最後更新時間" (updatedAt) to remain unchanged, so that my notes preserve their authentic content modification history rather than falsely indicating they were just updated.
+58. As a user viewing a page with multiple categories, I want a single-click collapse/expand all toggle in the page header, so that I can quickly minimize or reveal all category sections at once.
+59. As a keyboard and screen reader user interacting with custom dropdowns, I want accessible combobox/listbox semantics (`role="combobox"`, `role="listbox"`), visible focus rings, arrow key navigation, and explicit label associations (`htmlFor` and `id`), so that selecting target pages and categories in move/capture modals is fully accessible.
 
 ---
 
@@ -263,6 +265,16 @@ Whenever a Cell is created, updated, or deleted within a Section:
   - Traditional Chinese (`zh-TW`): `全部折疊` / `全部展開`.
   - English (`en`): `Collapse All` / `Expand All`.
   - Fully accessible with dynamic `title` and `aria-label`.
+
+### 18. Accessible Combobox Dropdown & Modal Form Association (全域下拉選單無障礙與表單關聯)
+- **Combobox & Listbox Semantics**:
+  - `Dropdown` renders with `role="combobox"`, `aria-expanded`, `aria-haspopup="listbox"`, `aria-controls`, and `aria-activedescendant`.
+  - Options list rendered with `role="listbox"` and options with `role="option"`, `aria-selected`, and `id`.
+- **Keyboard Navigation & Visible Focus Ring**:
+  - Focusable with `tabIndex={0}` and highlighted with Raycast amber focus ring (`focus-visible:ring-2 focus-visible:ring-raycast-amber`).
+  - Supports `ArrowDown` / `ArrowUp` to cycle options, `Enter` / `Space` to open and confirm selection, and `Escape` to close and return focus.
+- **Explicit Label Association in Modals**:
+  - Form modals (`QuickCaptureModal`, `MoveCellModal`) bind label `<label htmlFor="...">` with dropdown trigger button `<Dropdown id="...">`.
 
 ---
 

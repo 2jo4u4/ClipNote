@@ -77,12 +77,14 @@ export const Dropdown: React.FC<DropdownProps> = ({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
+      if (options.length === 0) return;
       setHighlightedIndex((prev) => (prev + 1) % options.length);
       return;
     }
 
     if (e.key === 'ArrowUp') {
       e.preventDefault();
+      if (options.length === 0) return;
       setHighlightedIndex((prev) => (prev - 1 + options.length) % options.length);
       return;
     }

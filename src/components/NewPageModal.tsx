@@ -23,6 +23,21 @@ export interface NewPageModalProps {
 
 const PRESET_EMOJIS = ['💼', '📝', '💬', '🌐', '🚀', '💡', '🎯', '📌', '💻', '🔖', '📄', '✨'];
 
+const PRESET_EMOJI_LABELS: Record<string, { 'zh-TW': string; en: string }> = {
+  '💼': { 'zh-TW': '公事包', en: 'Briefcase' },
+  '📝': { 'zh-TW': '筆記', en: 'Note' },
+  '💬': { 'zh-TW': '對話', en: 'Chat' },
+  '🌐': { 'zh-TW': '網站', en: 'Website' },
+  '🚀': { 'zh-TW': '火箭', en: 'Rocket' },
+  '💡': { 'zh-TW': '靈感', en: 'Lightbulb' },
+  '🎯': { 'zh-TW': '目標', en: 'Target' },
+  '📌': { 'zh-TW': '圖釘', en: 'Pin' },
+  '💻': { 'zh-TW': '電腦', en: 'Laptop' },
+  '🔖': { 'zh-TW': '書籤', en: 'Bookmark' },
+  '📄': { 'zh-TW': '文件', en: 'Document' },
+  '✨': { 'zh-TW': '亮點', en: 'Sparkles' },
+};
+
 export const NewPageModal: React.FC<NewPageModalProps> = ({
   isOpen,
   mode = 'create',
@@ -233,23 +248,26 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 aria-label={t.newPageModal.iconLabel}
                 className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar flex-1"
               >
-                {PRESET_EMOJIS.map((emoji) => (
-                  <button
-                    key={emoji}
-                    type="button"
-                    onClick={() => setIcon(emoji)}
-                    aria-label={emoji}
-                    aria-pressed={icon === emoji}
-                    className={cn(
-                      'w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-sm transition-all duration-150',
-                      icon === emoji
-                        ? 'bg-raycast-amber/20 border border-raycast-amber text-raycast-amber scale-105'
-                        : 'bg-raycast-light-surface dark:bg-raycast-dark-surface border border-transparent hover:border-raycast-light-border dark:hover:border-raycast-dark-border opacity-80 hover:opacity-100'
-                    )}
-                  >
-                    {emoji}
-                  </button>
-                ))}
+                {PRESET_EMOJIS.map((emoji) => {
+                  const emojiLabel = PRESET_EMOJI_LABELS[emoji]?.[language] || emoji;
+                  return (
+                    <button
+                      key={emoji}
+                      type="button"
+                      onClick={() => setIcon(emoji)}
+                      aria-label={emojiLabel}
+                      aria-pressed={icon === emoji}
+                      className={cn(
+                        'w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-sm transition-all duration-150',
+                        icon === emoji
+                          ? 'bg-raycast-amber/20 border border-raycast-amber text-raycast-amber scale-105'
+                          : 'bg-raycast-light-surface dark:bg-raycast-dark-surface border border-transparent hover:border-raycast-light-border dark:hover:border-raycast-dark-border opacity-80 hover:opacity-100'
+                      )}
+                    >
+                      {emoji}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
