@@ -34,7 +34,6 @@ export interface CellCardProps {
   onDelete?: (id: string) => void;
   onMove?: (id: string) => void;
   isDragging?: boolean;
-  dropPosition?: 'top' | 'bottom' | null;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: (e: React.DragEvent) => void;
   onDragOver?: (e: React.DragEvent) => void;
@@ -62,7 +61,6 @@ export const CellCard: React.FC<CellCardProps> = ({
   onDelete,
   onMove,
   isDragging = false,
-  dropPosition: _dropPosition = null,
   onDragStart,
   onDragEnd,
   onDragOver,

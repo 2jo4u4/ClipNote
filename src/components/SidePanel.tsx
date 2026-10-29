@@ -1196,16 +1196,22 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
           {activePage.sections && activePage.sections.length > 0 ? (
             activePage.sections.map((section, sIdx) => {
+              const fromSecIdx = activePage.sections.findIndex((s) => s.id === draggedSectionId);
+              const isSelfSectionSlot =
+                fromSecIdx !== -1 &&
+                (sectionDropTarget?.index === fromSecIdx ||
+                  sectionDropTarget?.index === fromSecIdx + 1);
+
               const showSectionSlotBefore =
                 draggedSectionId &&
                 sectionDropTarget?.index === sIdx &&
-                draggedSectionId !== section.id;
+                !isSelfSectionSlot;
               const isLastSection = sIdx === activePage.sections.length - 1;
               const showSectionSlotAfter =
                 draggedSectionId &&
                 sectionDropTarget?.index === activePage.sections.length &&
                 isLastSection &&
-                draggedSectionId !== section.id;
+                !isSelfSectionSlot;
 
               return (
                 <Fragment key={section.id}>

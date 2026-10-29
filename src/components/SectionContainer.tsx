@@ -34,7 +34,6 @@ export interface SectionContainerProps {
   onDeleteSection?: (sectionId: string) => void;
   onExportPage?: () => void;
   isDragging?: boolean;
-  dropPosition?: 'top' | 'bottom' | null;
   isCellDropTarget?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: (e: React.DragEvent) => void;
@@ -68,7 +67,6 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   onDeleteSection,
   onExportPage,
   isDragging = false,
-  dropPosition: _dropPosition = null,
   isCellDropTarget = false,
   onDragStart,
   onDragEnd,
