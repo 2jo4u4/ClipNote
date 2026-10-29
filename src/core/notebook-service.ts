@@ -72,7 +72,7 @@ export function createDefaultSeedData(): NotebookStorage {
     id: SYSTEM_GLOBAL_PAGE_ID,
     title: '第一頁',
     icon: '🌐',
-    domains: ['*'],
+    domains: [],
     isPrimary: false,
     isSystem: true,
     createdAt: now,

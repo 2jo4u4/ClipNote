@@ -53,7 +53,7 @@ const defaultDemoPages: Page[] = [
     id: SYSTEM_GLOBAL_PAGE_ID,
     title: '第一頁',
     icon: '🌐',
-    domains: ['*'],
+    domains: [],
     isSystem: true,
     createdAt: Date.now() - 86400000 * 3,
     updatedAt: Date.now() - 3600000,
@@ -1012,12 +1012,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                   </button>
                 )}
               </div>
-
-              {activePage.domains && activePage.domains.length > 0 && (
-                <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-raycast-amber/30 bg-raycast-amber/10 text-raycast-amber truncate max-w-[110px] flex-shrink-0">
-                  {activePage.domains.join(', ')}
-                </span>
-              )}
             </div>
 
             <div className="flex items-center gap-1 flex-shrink-0">
