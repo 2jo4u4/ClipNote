@@ -81,6 +81,11 @@ It provides:
 43. As a user reordering note cards within a category, I want to drag cards using a grip handle and see an amber insertion indicator line, so that I can precisely position cards without misplacing them.
 44. As a user moving notes between categories on the same page, I want to drag a note card from one category and drop it into another category (including empty categories), so that I can file notes instantly without opening modal dialogs.
 45. As a user in batch selection mode, I want drag-and-drop handles to be disabled, so that multi-selection clicks do not accidentally trigger card dragging.
+46. As a user with extensive text in a note (such as a detailed self-introduction, cover letter, or multiline code snippet), I want the note card to automatically truncate with a smooth fade gradient and an expandable "展開更多 (Show more)" button when exceeding ~4-5 lines (or ~120px), so that my side panel remains compact and easy to navigate without being vertically hijacked by a single lengthy note.
+47. As a user reading or editing a long note, I want to click "展開更多" to expand the note to full length and click "收合 (Show less)" to collapse it, without accidentally triggering copy or double-click edit actions.
+48. As a user copying a collapsed long note, I want clicking the note card or the copy button to copy 100% of the entire original content to my clipboard, so that truncation is strictly a visual aid and never alters copied data.
+49. As a user deleting an individual note card from the action menu, I want a confirmation modal (ConfirmModal) displaying the note's key or snippet with an explicit warning, so that I do not accidentally delete notes with a stray click.
+50. As a user dragging a note card or category, I want the lifted item in the original list to transform into a Trello-like dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`), so that I have a tangible physical sense of where the item was lifted from while keeping the precise amber drop line for the landing target.
 
 ---
 
@@ -188,6 +193,28 @@ Whenever a Cell is created, updated, or deleted within a Section:
   - `NotebookService.reorderSections(pageId, sourceIndex, targetIndex)`: updates `page.sections` order and normalizes sequence numbers.
   - `NotebookService.reorderCells(pageId, source, target)`: moves a cell within the same category or across categories with precise index insertion.
 - **Batch Mode Guard**: Drag handles and draggable attributes are suppressed when `isSelectMode` is active.
+
+### 11. Collapsible Long Cell Text (長內容筆記自動折疊)
+- **Auto-Detection Threshold**: When note text exceeds 4~5 lines or ~120px scroll height, card body renders with `max-h-[120px] overflow-hidden relative` and a bottom smooth fade gradient (`bg-gradient-to-t from-raycast-light-surface dark:from-raycast-dark-surface/90 to-transparent`). Notes below the threshold remain uncluttered without extra buttons.
+- **Toggle Controls**: "展開更多 (Show more)" and "收合 (Show less)" pills with `ChevronDown` and `ChevronUp` icons.
+- **Event Isolation**: Toggle click executes `e.stopPropagation()` to completely avoid triggering card single-click copy, drag handles, or double-click editing.
+- **100% Full-Content Copy**: Copying the card (by clicking card body or the copy icon) always copies the entire original content to clipboard, regardless of whether it is collapsed or expanded.
+- **State Boundary**: Managed via component-local React state (`useState(false)`), adhering to YAGNI and keeping `NotebookStorage` clean.
+
+### 12. Single Cell Delete Confirmation Dialog (單筆筆記刪除確認視窗)
+- **Unified Destruction Guard**: Replaces direct deletion in `CellCard` with a dedicated `pendingDeleteCell: { pageId: string; sectionId: string; cell: Cell } | null` in `SidePanel.tsx`.
+- **Bilingual Copy**:
+  - Traditional Chinese (`zh-TW`):
+    - With key: `確定要刪除「${key}」這則筆記嗎？此動作無法復原。`
+    - Without key: `確定要刪除此筆記嗎？此動作無法復原。`
+  - English (`en`):
+    - With key: `Are you sure you want to delete note "${key}"? This action cannot be undone.`
+    - Without key: `Are you sure you want to delete this note? This action cannot be undone.`
+- **Action Buttons & Keybindings**: Destructive red "刪除" / "Delete" button, neutral "取消" / "Cancel", and `Esc` key support to dismiss.
+
+### 13. Trello-Style Lifted Drag Feedback (Trello 風格拖拉提起佔位效果)
+- **Lifted Indentation Slot**: While dragging (`isDragging`), the dragged `CellCard` or `SectionContainer` renders as a dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`) in its original position in the list, providing clear physical depth feedback of where the item was lifted from.
+- **Landing Precision**: Target insertion points maintain the crisp Raycast Amber indicator line (`border-t-2` / `border-b-2`) to avoid layout jumping in the narrow side panel.
 
 ---
 
