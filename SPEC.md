@@ -88,6 +88,10 @@ It provides:
 50. As a user dragging a note card or category, I want the lifted item in the original list to transform into a Trello-like dashed indentation placeholder (`border-2 border-dashed border-raycast-amber/40 bg-raycast-amber/5 opacity-40 rounded-xl`), so that I have a tangible physical sense of where the item was lifted from.
 51. As a user dragging a note card across categories, I want dragging between cards in another category to smoothly push those cards apart and reveal the insertion slot, so that cross-category filing feels as fluid as intra-category sorting.
 52. As a user in batch mode, I want selecting all cards in a category to never automatically select the category container itself, so that batch-deleting notes preserves the category as an empty container unless I explicitly select the category header.
+53. As a screen reader user or keyboard-only navigator opening the Page Modal (NewPageModal), I want the modal to be recognized as an accessible dialog (`role="dialog"`, `aria-modal="true"`) with trapped keyboard focus, so that pressing Tab/Shift+Tab cycles only within the modal and does not leak into background content.
+54. As a user with visual or motor impairments, I want each input label in the Page Modal to be explicitly associated with its input field (`htmlFor` and `id`), so that clicking the label text focuses the input and screen readers announce the exact field name.
+55. As a screen reader user selecting an emoji icon for a page, I want the preset emoji buttons to provide clear accessible names and indicate their selected state (`aria-pressed`), so that I know which icon is currently chosen.
+56. As a keyboard user navigating the Page Modal, I want the close button to have a clear accessible name (`aria-label`) and decorative shortcut labels to be ignored by screen readers (`aria-hidden="true"`), so that I don't hear redundant noise while navigating.
 
 ---
 
@@ -227,6 +231,25 @@ Whenever a Cell is created, updated, or deleted within a Section:
 ### 15. Active Press Isolation on Card (卡片按壓縮放樣式隔離)
 - **Scoped React Press State**: Replaces CSS `:active` on the parent card container with isolated React state (`isPressed`).
 - **Control Element Interception**: Control buttons (edit, copy, `...` menu), drag handles, checkboxes, expand/collapse toggles, and source links apply `onMouseDown={(e) => e.stopPropagation()}` to guarantee the card remains completely static with zero twitching or unwanted scaling during control interactions.
+
+### 16. Accessible Modal Dialog Architecture & Form Controls (`NewPageModal` a11y)
+- **Dialog Role & Semantic Labelling**:
+  - The modal card container applies `role="dialog"`, `aria-modal="true"`, `aria-labelledby="new-page-modal-title"`, and `aria-describedby="new-page-modal-desc"`.
+  - Header title receives `id="new-page-modal-title"` and description receives `id="new-page-modal-desc"`.
+- **Focus Trap & Focus Restoration**:
+  - On mount / `isOpen=true`, initial focus is set to the page title input (`inputRef.current?.focus()`).
+  - Active keyboard focus is trapped within the modal: `Tab` on the last interactive element wraps around to the first, and `Shift+Tab` on the first element wraps around to the last.
+  - On close (`onClose` / `Escape`), focus is restored to the triggering button outside the modal.
+- **Form Controls & Explicit Association**:
+  - Title input uses `id="new-page-title-input"`, `required`, and `aria-required="true"`; bound via `<label htmlFor="new-page-title-input">`.
+  - Custom icon input uses `id="new-page-icon-input"` and `aria-label`; bound via `<label htmlFor="new-page-icon-input">`.
+  - Domain binding input uses `id="new-page-domains-input"` and `aria-describedby="new-page-domains-hint"`; bound via `<label htmlFor="new-page-domains-input">`. Domain hint paragraph carries `id="new-page-domains-hint"`.
+- **Preset Emoji Group & Pressed State**:
+  - The preset chip row container defines `role="group"` and `aria-label`.
+  - Each preset button carries `aria-label` with the emoji description and `aria-pressed={icon === emoji}` to announce the current selection state to assistive technologies.
+  - Header close button defines an explicit `aria-label`.
+- **Keyboard Shortcut Decoration Isolation**:
+  - The footer keyboard shortcut guidance (`<kbd>Esc</kbd> · <kbd>Enter</kbd>`) is wrapped with `aria-hidden="true"` to prevent screen reader noise, relying on standard form submission and escape handlers.
 
 ---
 
