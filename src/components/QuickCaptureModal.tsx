@@ -364,10 +364,14 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
             {/* Target Selectors: Page & Section */}
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
+                <label
+                  htmlFor="quick-capture-target-page"
+                  className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1"
+                >
                   {t.quickCapture.targetPage}
                 </label>
                 <Dropdown
+                  id="quick-capture-target-page"
                   value={selectedPageId}
                   onChange={(val) => setSelectedPageId(val)}
                   options={pages.map((p) => ({
@@ -378,10 +382,14 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1">
+                <label
+                  htmlFor="quick-capture-target-category"
+                  className="block text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle mb-1"
+                >
                   {t.quickCapture.targetCategory}
                 </label>
                 <Dropdown
+                  id="quick-capture-target-category"
                   value={selectedSectionId}
                   onChange={(val) => setSelectedSectionId(val)}
                   options={

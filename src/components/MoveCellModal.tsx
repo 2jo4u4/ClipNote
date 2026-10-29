@@ -103,10 +103,14 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
 
           {/* Target Page Selector */}
           <div className="space-y-1.5">
-            <label className="text-raycast-light-muted dark:text-raycast-dark-muted font-medium">
+            <label
+              htmlFor="move-modal-target-page"
+              className="text-raycast-light-muted dark:text-raycast-dark-muted font-medium cursor-pointer"
+            >
               {t.moveModal.targetPage}
             </label>
             <Dropdown
+              id="move-modal-target-page"
               options={pages.map((p) => ({
                 id: p.id,
                 label: p.title,
@@ -119,11 +123,15 @@ export const MoveCellModal: React.FC<MoveCellModalProps> = ({
 
           {/* Target Section Selector */}
           <div className="space-y-1.5">
-            <label className="text-raycast-light-muted dark:text-raycast-dark-muted font-medium">
+            <label
+              htmlFor="move-modal-target-category"
+              className="text-raycast-light-muted dark:text-raycast-dark-muted font-medium cursor-pointer"
+            >
               {t.moveModal.targetCategory}
             </label>
             {availableSections.length > 0 ? (
               <Dropdown
+                id="move-modal-target-category"
                 options={availableSections.map((s) => ({
                   id: s.id,
                   label: s.title,
