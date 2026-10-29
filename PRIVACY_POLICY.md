@@ -29,7 +29,7 @@ We are committed to protecting your privacy. ClipNote operates on a strict **zer
 ### 3. Permissions Used and Justification
 ClipNote requests only the minimum set of permissions necessary to deliver its core functionality:
 - **`storage`**: Required to save and persist your notes, pages, and categories locally on your device.
-- **`sidePanel`**: Required to display the Raycast-inspired notebook interface within the Chrome Side Panel.
+- **`sidePanel`**: Required to display the notebook interface within the Chrome Side Panel.
 - **`tabs` & `activeTab`**: Required solely to read the current tab's hostname/domain in the foreground. This allows ClipNote to automatically switch to the matching page (e.g., displaying your job application notes when visiting `104.com.tw`). URLs and page contents are processed strictly in local memory and are never logged, stored, or transmitted.
 - **`contextMenus`**: Required to provide the right-click "新增筆記 (Add note)" shortcut when highlighting text on any webpage.
 

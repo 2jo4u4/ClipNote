@@ -24,7 +24,7 @@
 ```markdown
 ClipNote is a lightweight, domain-aware scratchpad and quick form-filling notepad built directly into Chrome's native Side Panel.
 
-Designed for job seekers, developers, content creators, and power users who frequently reference repetitive snippets or fill out web forms. As you navigate between browser tabs, ClipNote intelligently detects the active website and instantly switches to your domain-specific notebook page. With one-click full copy, flexible note structures, and an elegant Raycast-inspired aesthetic, your daily web workflows stay fast and frictionless.
+Designed for job seekers, developers, content creators, and power users who frequently reference repetitive snippets or fill out web forms. As you navigate between browser tabs, ClipNote intelligently detects the active website and instantly switches to your domain-specific notebook page. With one-click full copy, flexible note structures, and an elegant warm minimalist aesthetic, your daily web workflows stay fast and frictionless.
 
 ────────────────────────
 ✨ KEY FEATURES
@@ -39,19 +39,15 @@ Designed for job seekers, developers, content creators, and power users who freq
 • Single-click any note card to instantly copy 100% of its content to your clipboard, complete with subtle haptic-like visual feedback.
 • Dramatically accelerates job applications, repeated form submissions, customer support replies, and social media posting.
 
-3. 🎨 Raycast-Inspired Warm Minimalism
-• Crafted with refined charcoal dark backgrounds (#18181b) and radiant warm amber (#F59E0B) accents.
-• Features smooth accordion expand/collapse transitions, physical drag-and-drop reordering, and full keyboard-only navigation.
-
-4. 🚀 Quick Capture Anywhere (Alt + N)
+3. 🚀 Quick Capture Anywhere (Alt + N)
 • Press Alt + N on any webpage to bring up the instant capture overlay. Search existing notes or record fresh ideas without losing your focus.
 • Highlight text on any page and right-click "新增筆記" to clip highlighted text directly into ClipNote with source attribution.
 
-5. 📁 Structured Fields & Free-form Jots
+4. 📁 Structured Fields & Free-form Jots
 • Supports structured "Fields" (Key-Value pairs like Phone, Email, Address, Portfolio links) and unstructured "Jots" (free-flowing plain text memos and code snippets).
 • Organize content into custom Categories, with one-click "Collapse All / Expand All" and batch selection management.
 
-6. 🔒 100% Local Storage & Extreme Privacy
+5. 🔒 100% Local Storage & Extreme Privacy
 • All your notes, categories, pages, and settings are stored strictly on your local device (chrome.storage.local).
 • Zero external servers, zero background telemetry, zero trackers, and 100% functional offline.
 
@@ -93,19 +89,15 @@ ClipNote 是一款極簡、高質感且具備「網域感知」能力的瀏覽�
 • 點擊任何筆記卡片，完整文字立即複製至剪貼簿，並伴隨細緻觸感回饋。
 • 求職投履歷、填寫線上表單、社群發文一氣呵成，效率倍增。
 
-3. 🎨 Raycast 暖極簡設計（Warm Minimalism）
-• 採用精緻的 Raycast 炭黑暗色系與琥珀金（Amber #F59E0B）視覺點綴。
-• 支援流暢的 Accordion 摺疊動畫、Trello 式物理推開拖曳排序、以及完整的無障礙鍵盤導航。
-
-4. 🚀 快捷全域記錄（Quick Capture）
+3. 🚀 快捷全域記錄（Quick Capture）
 • 按下 Alt + N 即可在任何網頁浮層喚起搜尋與新增面板，輸入筆記不中斷工作流。
 • 網頁選取文字時，點擊滑鼠右鍵選單「新增筆記」，自動帶入選取內文與來源網址。
 
-5. 📁 結構化欄位與隨筆管理
+4. 📁 結構化欄位與隨筆管理
 • 同時支援具備標題的「欄位（Field，適用結構化 Key-Value）」與無標題的「隨筆（Jot，適用純文字備忘）」。
 • 提供分類一鍵全部折疊／展開，以及靈活的多選批次管理功能。
 
-6. 🔒 100% 本機儲存，極致隱私
+5. 🔒 100% 本機儲存，極致隱私
 • 所有筆記完全儲存在您的電腦本機（chrome.storage.local）。
 • 零伺服器傳輸、零數據分析追蹤、完全離線可用。
 
@@ -173,9 +165,9 @@ Chrome 商店要求至少 1 張、建議上傳 4~5 張高解析截圖。
    - *畫面*：網頁中央顯示 Alt + N 喚起的乾淨 Quick Capture 對話框，展示即時搜尋結果與「新增筆記」欄位。
    - *文字標籤*：`隨處按下 Alt+N，快速搜尋與即時記錄` / `Quick Capture Anywhere via Alt+N`
 
-3. **截圖 3：Raycast 極簡黑夜風格與單鍵複製**
+3. **截圖 3：極簡黑夜風格與單鍵複製**
    - *畫面*：側邊欄處於黑夜模式（Charcoal Dark + Amber），滑鼠懸停於卡片上呈現細緻點亮，顯示「已複製！」Toast 提示。
-   - *文字標籤*：`極簡 Raycast 風格，單鍵點擊立即複製` / `Warm Minimalist Design, One-Click Copy`
+   - *文字標籤*：`極簡黑夜風格，單鍵點擊立即複製` / `Warm Minimalist Design, One-Click Copy`
 
 4. **截圖 4：批次管理與一鍵折疊**
    - *畫面*：展示分類標題列的多選核取方塊，以及頂部 Chevrons 一鍵折疊所有分類的收合效果。
