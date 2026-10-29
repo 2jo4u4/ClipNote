@@ -65,6 +65,16 @@ It provides:
 29. As a power user, I want to export my entire Notebook or individual Pages as standard JSON files, so that I can back up, migrate, or programmatically edit my notes.
 30. As a user setting up a new device, I want to import a previously exported JSON file, so that all my Pages, Sections, Cells, and Domain Bindings are restored accurately.
 
+### Onboarding & Interactive Tutorials
+31. As a first-time user installing the extension, I want to see interactive onboarding pages ("使用教學" and "Getting Started") instead of unhelpful generic filler data, so that I can immediately learn how to use the notebook by interacting with real notes.
+32. As a Traditional Chinese user opening the extension for the first time, I want the side panel to automatically focus on the "使用教學" page, so that I can read instructions in my native language without manual navigation.
+33. As an English-speaking user opening the extension for the first time, I want the side panel to automatically focus on the "Getting Started" page, so that I can read instructions in English without friction.
+34. As a user learning keyboard workflows, I want to see clear shortcut guidance for `Alt+N` (quick capture) and right-click context menu saving within the shortcuts category, so that I can adopt fast capturing habits right away.
+35. As a user exploring note types, I want to see example key-value fields (Name and Email) demonstrated alongside free-form jots in the tutorial, so that I can intuitively grasp how structured labels differ from plain notes.
+36. As a user practicing CRUD operations, I want to double-click cards, edit values, create new notes, and rename categories directly on the tutorial page, so that I can safely build confidence in using the application.
+37. As a user who only needs one language, I want to immediately delete the unused language tutorial page out of the box (e.g., deleting "Getting Started" while keeping "使用教學"), so that my workspace stays clean without waiting to create custom pages first.
+38. As a user who has mastered all features, I want to edit, repurpose, or completely delete both tutorial pages, so that I have complete ownership over my personal notebook.
+
 ---
 
 ## Implementation Decisions
@@ -140,6 +150,20 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **Cell Management**: Cells can be edited through `EditNoteModal` (`Ctrl+Enter` save), deleted individually, or batch-selected and deleted.
 - **Batch Mode**: Active page header allows toggling batch selection mode (`isSelectMode`), displaying checkboxes across categories and cells, with a floating action toolbar showing selection statistics, select-all/deselect-all toggles, and confirmed bulk deletion.
 
+### 8. Interactive Onboarding & Dual Default Pages
+- **Bilingual Default Seed Pages**:
+  Instead of initializing storage with a single generic "第一頁", the extension initializes with two equal, fully-editable tutorial pages (`createDefaultSeedData`):
+  1. `使用教學` (icon: `💡`, id: `SYSTEM_GLOBAL_PAGE_ID`, domains: `[]`):
+     - `⌨️ 快捷鍵與即時操作`: Guides for `Alt+N` capture, context menu saving, and one-click copy.
+     - `📝 筆記與分類操作 (CRUD)`: Key-value demo fields (`姓名: 王小明`, `Email: xiaoming@example.com`), double-click/pencil edit, delete, batch select, and a clear reassurance tip that this page can be edited or deleted.
+     - `🌐 適用網站自動切換`: Explanation of domain-aware auto-switching with example sites.
+  2. `Getting Started` (icon: `💡`, id: `page-tutorial-en`, domains: `[]`):
+     - Parity English translation of the exact same 3 categories, key-value fields (`Name: Alex Wang`, `Email: alex.wang@example.com`), and instructions.
+- **Initial Active Page Resolution**:
+  On cold start or storage initialization, the active page selection checks the user's browser language (`navigator.language` / `currentLanguage`). If it matches Chinese (`zh*`), `使用教學` is focused; otherwise `Getting Started` is focused.
+- **Instant Deletability**:
+  Because the initial state contains 2 pages (`pages.length === 2`), the single-page invariant (`pages.length >= 1`) is satisfied even if a user immediately deletes one of the languages, giving users frictionless control over their preferred language setup.
+
 ---
 
 ## Testing Decisions
@@ -158,6 +182,9 @@ The primary testing seam is **`NotebookService`**.
   - Section `updatedAt` updating automatically when cells are modified or removed.
   - Multi-domain resolution prioritizing explicit bindings and falling back to Global Page.
   - Omni-search retrieving matching Cells by either Key or Value.
+  - Default seed data generation yielding both bilingual tutorial pages ("使用教學" and "Getting Started") with 3 structured categories and key-value demo fields.
+  - Initial active page resolution prioritizing the appropriate tutorial page based on locale.
+  - Instant deletion of either tutorial page out of the box while preserving the remaining page.
 - Prior art: Existing 33-test suite in `tests/notebook-service.test.ts`.
 
 ---
