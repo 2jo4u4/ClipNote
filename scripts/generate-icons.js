@@ -37,96 +37,134 @@ function makeChunk(type, data) {
   return Buffer.concat([lenBuf, body, crcBuf]);
 }
 
+// Distance from point (px, py) to line segment (ax, ay)-(bx, by)
+function distToSegment(px, py, ax, ay, bx, by) {
+  const dx = bx - ax;
+  const dy = by - ay;
+  const lenSq = dx * dx + dy * dy;
+  if (lenSq === 0) return Math.sqrt((px - ax) ** 2 + (py - ay) ** 2);
+  const t = Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / lenSq));
+  const projX = ax + t * dx;
+  const projY = ay + t * dy;
+  return Math.sqrt((px - projX) ** 2 + (py - projY) ** 2);
+}
+
 /**
- * Generate high-definition ClipNote icon with anti-aliasing (supersampling)
- * Style: Raycast Charcoal Dark container (#18181b) + Radiant Amber 'C' (#F59E0B)
+ * Generate high-definition ClipNote icon with Single-Stroke "CN" Monogram (一筆畫寫完)
+ * - 'C' shifted up further (center Y = 0.37)
+ * - 'N' shifted down (Y: 0.39 - 0.79)
+ * - Seamless fusion: ZERO black border, ZERO shadow, smooth continuous single-stroke flow
+ * - Radiant Amber gradient throughout
  */
 function generateIconPNG(size) {
   const width = size;
   const height = size;
 
-  // Supersampling factor for clean antialiasing
   const SS = 4;
-  const ssWidth = width * SS;
-  const ssHeight = height * SS;
+  const ssW = width * SS;
+  const ssH = height * SS;
 
-  const bgR = 24, bgG = 24, bgB = 27;        // #18181b
-  const borderR = 45, borderG = 45, borderB = 52; // #2d2d34
-  const amberR = 245, amberG = 158, amberB = 11;  // #F59E0B
-  const amberLightR = 251, amberLightG = 191, amberLightB = 36; // #FBBF24
+  const bgR = 24, bgG = 24, bgB = 27;           // #18181b (Charcoal dark)
+  const borderR = 48, borderG = 48, borderB = 56;    // #303038
+  const amberR = 245, amberG = 158, amberB = 11;     // #F59E0B (Amber)
+  const amberLightR = 251, amberLightG = 191, amberLightB = 36; // #FBBF24 (Bright amber)
 
-  const radius = ssWidth * 0.22;
-  const borderWidth = ssWidth * 0.035;
-  const center = ssWidth / 2;
+  const containerRadius = ssW * 0.22;
+  const containerBorder = ssW * 0.035;
+  const center = ssW / 2;
 
-  // Super-sampled buffer
-  const ssBuffer = new Float32Array(ssWidth * ssHeight * 4);
+  // Geometry: 'C' shifted up further to Y=0.37
+  const cCenterX = ssW * 0.36;
+  const cCenterY = ssH * 0.37;
+  const cROuter = ssW * 0.215;
+  const cRInner = ssW * 0.125;
+  const cThickness = cROuter - cRInner;
+  const cCapRadius = cThickness / 2;
+  const cCapDist = (cROuter + cRInner) / 2;
+  const cGapAngle = 0.58; // Opening angle
 
-  for (let sy = 0; sy < ssHeight; sy++) {
-    for (let sx = 0; sx < ssWidth; sx++) {
-      const idx = (sy * ssWidth + sx) * 4;
+  const topCapX = cCenterX + cCapDist * Math.cos(-cGapAngle);
+  const topCapY = cCenterY + cCapDist * Math.sin(-cGapAngle);
+  const botCapX = cCenterX + cCapDist * Math.cos(cGapAngle);
+  const botCapY = cCenterY + cCapDist * Math.sin(cGapAngle);
 
-      // Rounded container distance
-      const dx = Math.max(0, Math.abs(sx + 0.5 - center) - (center - radius));
-      const dy = Math.max(0, Math.abs(sy + 0.5 - center) - (center - radius));
-      const dist = Math.sqrt(dx * dx + dy * dy);
+  // Letter 'N' shifted down (starts where bottom arm of C meets it)
+  const nTopY = ssH * 0.37;
+  const nBottomY = ssH * 0.79;
+  const nStemWidth = ssW * 0.088;
+  const nLeftX1 = ssW * 0.465;
+  const nLeftX2 = nLeftX1 + nStemWidth;
+  const nRightX2 = ssW * 0.79;
+  const nRightX1 = nRightX2 - nStemWidth;
 
-      if (dist <= radius) {
-        // Inside squircle
+  const nDiagStartX = (nLeftX1 + nLeftX2) / 2;
+  const nDiagStartY = nTopY;
+  const nDiagEndX = (nRightX1 + nRightX2) / 2;
+  const nDiagEndY = nBottomY;
+  const nDiagHalfThick = nStemWidth * 0.52;
+
+  const ssBuffer = new Float32Array(ssW * ssH * 4);
+
+  for (let sy = 0; sy < ssH; sy++) {
+    for (let sx = 0; sx < ssW; sx++) {
+      const idx = (sy * ssW + sx) * 4;
+
+      // Squircle container
+      const cdx = Math.max(0, Math.abs(sx + 0.5 - center) - (center - containerRadius));
+      const cdy = Math.max(0, Math.abs(sy + 0.5 - center) - (center - containerRadius));
+      const distContainer = Math.sqrt(cdx * cdx + cdy * cdy);
+
+      if (distContainer <= containerRadius) {
         let r = bgR;
         let g = bgG;
         let b = bgB;
         let a = 1.0;
 
-        // Container border
-        if (dist >= radius - borderWidth) {
-          const t = (dist - (radius - borderWidth)) / borderWidth;
+        // Container subtle outer border
+        if (distContainer >= containerRadius - containerBorder) {
+          const t = (distContainer - (containerRadius - containerBorder)) / containerBorder;
           r = bgR * (1 - t) + borderR * t;
           g = bgG * (1 - t) + borderG * t;
           b = bgB * (1 - t) + borderB * t;
         }
 
-        // Draw modern ClipNote letter 'C'
-        // Centered arc with radius rOuter & rInner
-        const cx = center * 1.02;
-        const cy = center;
-        const cdx = sx + 0.5 - cx;
-        const cdy = sy + 0.5 - cy;
-        const cDist = Math.sqrt(cdx * cdx + cdy * cdy);
+        const px = sx + 0.5;
+        const py = sy + 0.5;
 
-        const rOuter = ssWidth * 0.29;
-        const rInner = ssWidth * 0.17;
-        const angle = Math.atan2(cdy, cdx); // -PI to +PI
+        // Test if (px, py) is inside 'C'
+        const distFromCCenter = Math.sqrt((px - cCenterX) ** 2 + (py - cCenterY) ** 2);
+        const angleC = Math.atan2(py - cCenterY, px - cCenterX);
+        const inOpening = angleC > -cGapAngle && angleC < cGapAngle;
 
-        // Gap on right: opening from -42 deg to +42 deg (approx -0.73 to +0.73 rad)
-        const inAngleCut = angle > -0.72 && angle < 0.72;
+        let inC = false;
+        if (distFromCCenter >= cRInner && distFromCCenter <= cROuter && !inOpening) {
+          inC = true;
+        } else {
+          const dTop = Math.sqrt((px - topCapX) ** 2 + (py - topCapY) ** 2);
+          const dBot = Math.sqrt((px - botCapX) ** 2 + (py - botCapY) ** 2);
+          if (dTop <= cCapRadius || dBot <= cCapRadius) {
+            inC = true;
+          }
+        }
 
-        if (cDist >= rInner && cDist <= rOuter && !inAngleCut) {
-          // Gradient between amberLight (top) and amber (bottom)
-          const grad = Math.min(1, Math.max(0, (sy / ssHeight)));
+        // Test if (px, py) is inside 'N'
+        let inN = false;
+        const inNLeft = px >= nLeftX1 && px <= nLeftX2 && py >= nTopY && py <= nBottomY;
+        const inNRight = px >= nRightX1 && px <= nRightX2 && py >= nTopY && py <= nBottomY;
+        const dDiag = distToSegment(px, py, nDiagStartX, nDiagStartY, nDiagEndX, nDiagEndY);
+        const inNDiag = dDiag <= nDiagHalfThick && py >= nTopY && py <= nBottomY;
+
+        if (inNLeft || inNRight || inNDiag) {
+          inN = true;
+        }
+
+        // Single-stroke seamless fusion (一筆畫寫完)
+        // No black line, no shadow, completely unified continuous ribbon
+        if (inC || inN) {
+          const grad = Math.min(1, Math.max(0, ((sy / ssH) - 0.16) / 0.65));
           r = amberLightR * (1 - grad) + amberR * grad;
           g = amberLightG * (1 - grad) + amberG * grad;
           b = amberLightB * (1 - grad) + amberB * grad;
-        } else {
-          // Rounded caps on the 'C' terminals
-          const capRadius = (rOuter - rInner) / 2;
-          const capCenterDist = (rOuter + rInner) / 2;
-          const capAngle = 0.72;
-
-          const topCapX = cx + capCenterDist * Math.cos(-capAngle);
-          const topCapY = cy + capCenterDist * Math.sin(-capAngle);
-          const botCapX = cx + capCenterDist * Math.cos(capAngle);
-          const botCapY = cy + capCenterDist * Math.sin(capAngle);
-
-          const dTopCap = Math.sqrt((sx + 0.5 - topCapX) ** 2 + (sy + 0.5 - topCapY) ** 2);
-          const dBotCap = Math.sqrt((sx + 0.5 - botCapX) ** 2 + (sy + 0.5 - botCapY) ** 2);
-
-          if (dTopCap <= capRadius || dBotCap <= capRadius) {
-            const grad = Math.min(1, Math.max(0, (sy / ssHeight)));
-            r = amberLightR * (1 - grad) + amberR * grad;
-            g = amberLightG * (1 - grad) + amberG * grad;
-            b = amberLightB * (1 - grad) + amberB * grad;
-          }
         }
 
         ssBuffer[idx] = r;
@@ -134,18 +172,18 @@ function generateIconPNG(size) {
         ssBuffer[idx + 2] = b;
         ssBuffer[idx + 3] = a;
       } else {
-        // Outside
+        // Transparent outside container
         ssBuffer[idx + 3] = 0;
       }
     }
   }
 
-  // Downsample to target size
+  // Downsample to final size
   const raw = Buffer.alloc(height * (1 + width * 4));
   let offset = 0;
 
   for (let y = 0; y < height; y++) {
-    raw[offset++] = 0; // Filter byte: None
+    raw[offset++] = 0;
 
     for (let x = 0; x < width; x++) {
       let sumR = 0, sumG = 0, sumB = 0, sumA = 0;
@@ -154,7 +192,7 @@ function generateIconPNG(size) {
         for (let dx = 0; dx < SS; dx++) {
           const ssX = x * SS + dx;
           const ssY = y * SS + dy;
-          const ssIdx = (ssY * ssWidth + ssX) * 4;
+          const ssIdx = (ssY * ssW + ssX) * 4;
 
           const a = ssBuffer[ssIdx + 3];
           sumR += ssBuffer[ssIdx] * a;
@@ -186,11 +224,11 @@ function generateIconPNG(size) {
   const ihdrData = Buffer.alloc(13);
   ihdrData.writeUInt32BE(width, 0);
   ihdrData.writeUInt32BE(height, 4);
-  ihdrData[8] = 8; // bit depth
-  ihdrData[9] = 6; // color type: RGBA
-  ihdrData[10] = 0; // compression
-  ihdrData[11] = 0; // filter
-  ihdrData[12] = 0; // interlace
+  ihdrData[8] = 8;
+  ihdrData[9] = 6;
+  ihdrData[10] = 0;
+  ihdrData[11] = 0;
+  ihdrData[12] = 0;
 
   const ihdrChunk = makeChunk('IHDR', ihdrData);
   const idatChunk = makeChunk('IDAT', zlib.deflateSync(raw));
@@ -206,7 +244,7 @@ const targetDirs = [
 
 for (const outDir of targetDirs) {
   fs.mkdirSync(outDir, { recursive: true });
-  for (const size of [16, 48, 128]) {
+  for (const size of [16, 48, 128, 256]) {
     const png = generateIconPNG(size);
     fs.writeFileSync(path.join(outDir, `icon-${size}.png`), png);
     console.log(`Generated ${path.relative('.', outDir)}/icon-${size}.png (${png.length} bytes)`);
