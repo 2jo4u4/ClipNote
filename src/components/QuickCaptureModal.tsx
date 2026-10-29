@@ -11,7 +11,6 @@ import {
 import { cn } from '../utils';
 import { SearchResult, CreateCellInput, SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Dropdown } from './Dropdown';
-import { CellTypeBadge } from './CellTypeBadge';
 import { Language, getTranslations } from '../i18n';
 
 export interface QuickCaptureSectionOption {
@@ -104,6 +103,29 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const filteredSearchResults = useMemo(() => {
+    const tokens = searchQuery
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (tokens.length === 0) return [];
+
+    return searchResults.filter((item) => {
+      const haystack = [
+        item.title,
+        item.content,
+        item.sectionTitle,
+        item.pageTitle,
+        item.sourcePath,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return tokens.every((token) => haystack.includes(token));
+    });
+  }, [searchResults, searchQuery]);
+
   // Synchronize active page and initial section on open
   useEffect(() => {
     if (isOpen) {
@@ -162,16 +184,18 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
       }
 
       // In search mode, handle Up/Down/Enter
-      if (isSearching && searchResults.length > 0) {
+      if (isSearching && filteredSearchResults.length > 0) {
         if (e.key === 'ArrowDown') {
           e.preventDefault();
-          setSelectedSearchIndex((prev) => (prev + 1) % searchResults.length);
+          setSelectedSearchIndex((prev) => (prev + 1) % filteredSearchResults.length);
         } else if (e.key === 'ArrowUp') {
           e.preventDefault();
-          setSelectedSearchIndex((prev) => (prev - 1 + searchResults.length) % searchResults.length);
+          setSelectedSearchIndex(
+            (prev) => (prev - 1 + filteredSearchResults.length) % filteredSearchResults.length
+          );
         } else if (e.key === 'Enter') {
           e.preventDefault();
-          const target = searchResults[selectedSearchIndex];
+          const target = filteredSearchResults[selectedSearchIndex];
           if (target) {
             handleCopySearchResult(target);
           }
@@ -185,7 +209,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isSearching, searchResults, selectedSearchIndex, value, cellKey]);
+  }, [isOpen, isSearching, filteredSearchResults, selectedSearchIndex, value, cellKey]);
 
   if (!isOpen) return null;
 
@@ -289,8 +313,8 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         {/* Dynamic Body: Search Results OR Capture Form */}
         {isSearching ? (
           <div className="max-h-[320px] overflow-y-auto p-2 space-y-1 no-scrollbar">
-            {searchResults.length > 0 ? (
-              searchResults.map((item, idx) => {
+            {filteredSearchResults.length > 0 ? (
+              filteredSearchResults.map((item, idx) => {
                 const isSelected = idx === selectedSearchIndex;
                 const isCopied = copiedId === item.id;
                 const isField = item.type === 'field';
@@ -320,7 +344,6 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
                       </div>
                       <div className="min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">
-                          <CellTypeBadge type={item.type} language={language} />
                           <span className="font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
                             {item.title}
                           </span>

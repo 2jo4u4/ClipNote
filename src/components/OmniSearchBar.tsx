@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Search, X, Check, Globe, CornerDownLeft, ExternalLink } from 'lucide-react';
-import { cn } from '../utils';
+import { cn, isEventInsideNode } from '../utils';
 import type { SearchResult } from '../types';
-import { CellTypeBadge } from './CellTypeBadge';
 import { Language, getTranslations } from '../i18n';
 
 export interface OmniSearchBarProps {
@@ -33,8 +32,43 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
+
+  const filteredResults = useMemo(() => {
+    const tokens = query
+      .trim()
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    if (tokens.length === 0) return [];
+
+    return results.filter((item) => {
+      const haystack = [
+        item.title,
+        item.content,
+        item.sectionTitle,
+        item.pageTitle,
+        item.sourcePath,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return tokens.every((token) => haystack.includes(token));
+    });
+  }, [results, query]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (containerRef.current && !isEventInsideNode(e, containerRef.current)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isOpen]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
@@ -63,27 +97,33 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
 
     setTimeout(() => {
       setCopiedId(null);
-    }, 1200);
+      setIsOpen(false);
+    }, 400);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (!isOpen || results.length === 0) return;
+    if (!isOpen) return;
+
+    if (e.key === 'Escape') {
+      e.preventDefault();
+      setIsOpen(false);
+      return;
+    }
+
+    if (filteredResults.length === 0) return;
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev + 1) % results.length);
+      setSelectedIndex((prev) => (prev + 1) % filteredResults.length);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev - 1 + results.length) % results.length);
+      setSelectedIndex((prev) => (prev - 1 + filteredResults.length) % filteredResults.length);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const current = results[selectedIndex];
+      const current = filteredResults[selectedIndex];
       if (current) {
         handleCopyItem(current);
       }
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      setIsOpen(false);
     }
   };
 
@@ -101,7 +141,7 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
   }, [selectedIndex]);
 
   return (
-    <div className={cn('relative w-full', className)}>
+    <div ref={containerRef} className={cn('relative w-full', className)}>
       {/* Search Input Bar */}
       <div
         className={cn(
@@ -138,12 +178,6 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
             <X className="w-3.5 h-3.5" />
           </button>
         )}
-
-        <div className="flex items-center gap-1">
-          <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono rounded border bg-black/5 dark:bg-white/5 border-raycast-light-border dark:border-white/10 text-raycast-light-muted dark:text-raycast-dark-muted">
-            /
-          </kbd>
-        </div>
       </div>
 
       {/* Instant Dropdown Results */}
@@ -155,13 +189,13 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
             'dark:bg-raycast-dark-surface/95 dark:border-white/10 dark:divide-white/5 animate-in fade-in zoom-in-95 duration-150'
           )}
         >
-          {results.length === 0 ? (
+          {filteredResults.length === 0 ? (
             <div className="py-8 text-center text-xs text-raycast-light-subtle dark:text-raycast-dark-subtle">
               {t.sidePanel.searchNoResults}
             </div>
           ) : (
             <div ref={listRef} className="p-1.5 flex flex-col gap-1">
-              {results.map((item, idx) => {
+              {filteredResults.map((item, idx) => {
                 const isSelected = idx === selectedIndex;
                 const isCopied = copiedId === item.id;
                 const isField = item.type === 'field';
@@ -182,7 +216,6 @@ export const OmniSearchBar: React.FC<OmniSearchBarProps> = ({
                     {/* Origin Path & Action badges */}
                     <div className="flex items-center justify-between text-[10px]">
                       <div className="flex items-center gap-1.5 text-raycast-light-muted dark:text-raycast-dark-muted font-sans truncate">
-                        <CellTypeBadge type={item.type} language={language} />
                         <span className="truncate font-mono text-[10px]">
                           {item.sourcePath}
                         </span>
