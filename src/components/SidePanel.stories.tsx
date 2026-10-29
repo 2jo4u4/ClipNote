@@ -20,7 +20,7 @@ type Story = StoryObj<typeof SidePanel>;
  */
 export const InBrowserSidePanel: Story = {
   render: () => {
-    const url = 'https://www.104.com.tw/job/7xyz8';
+    const url = 'https://www.example.com/job/7xyz8';
 
     return (
       <div className="flex flex-col w-[960px] h-[720px] rounded-2xl overflow-hidden border border-zinc-700/60 shadow-2xl bg-zinc-900 select-none">
@@ -33,7 +33,7 @@ export const InBrowserSidePanel: Story = {
             <span className="w-3 h-3 rounded-full bg-green-500/80 inline-block" />
             <div className="ml-3 px-3 py-1 rounded-t-lg bg-zinc-800 text-zinc-300 text-xs flex items-center gap-1.5 border-t border-x border-zinc-700">
               <span className="w-2 h-2 rounded-full bg-raycast-amber" />
-              <span>104 人力銀行 - 資深前端架構師</span>
+              <span>求職網站範例 - 資深前端架構師</span>
             </div>
           </div>
 
@@ -60,7 +60,7 @@ export const InBrowserSidePanel: Story = {
           <div className="flex-1 flex items-center gap-2 px-3 py-1 bg-zinc-950 rounded-full border border-zinc-700/60 text-zinc-300 font-mono text-[11px]">
             <Lock className="w-3 h-3 text-emerald-400" />
             <span className="text-zinc-400">https://</span>
-            <span className="text-zinc-100 font-semibold">www.104.com.tw</span>
+            <span className="text-zinc-100 font-semibold">www.example.com</span>
             <span className="text-zinc-500">/job/7xyz8</span>
           </div>
 
@@ -75,7 +75,7 @@ export const InBrowserSidePanel: Story = {
           <div className="flex-1 bg-zinc-900/40 p-6 overflow-y-auto flex flex-col gap-4 border-r border-zinc-800 text-zinc-400">
             <div className="p-4 rounded-xl bg-zinc-800/40 border border-zinc-700/40">
               <span className="text-[10px] uppercase font-mono tracking-wider text-raycast-amber bg-raycast-amber/10 px-2 py-0.5 rounded-full border border-raycast-amber/20">
-                104 人力銀行應徵頁面
+                求職應徵頁面範例
               </span>
               <h1 className="text-lg font-bold text-zinc-100 mt-2">
                 資深前端架構工程師 (Senior Frontend Architect)
@@ -103,9 +103,9 @@ export const InBrowserSidePanel: Story = {
             </div>
 
             <div className="mt-auto p-3 rounded-lg bg-zinc-950/60 border border-zinc-800 text-[11px] text-zinc-500 flex items-center justify-between">
-              <span>側邊欄依據網域自動聚焦於 💼 104 中文經歷</span>
+              <span>側邊欄依據網域自動聚焦於 💼 求職中文經歷</span>
               <kbd className="px-1.5 py-0.5 rounded bg-zinc-800 text-zinc-400 font-mono text-[10px]">
-                Domain: 104.com.tw
+                Domain: example.com
               </kbd>
             </div>
           </div>
@@ -113,35 +113,35 @@ export const InBrowserSidePanel: Story = {
           {/* Right SidePanel: Exactly 380px wide */}
           <div className="w-[380px] h-full flex-shrink-0 shadow-[-8px_0_24px_rgba(0,0,0,0.3)]">
             <SidePanel
-              currentDomain="104.com.tw"
+              currentDomain="example.com"
               currentUrl={url}
               initialPages={[
                 ...Object.values(createDefaultSeedData().pages),
                 {
-                  id: 'page-104',
-                  title: '104 中文經歷',
+                  id: 'page-resume',
+                  title: '求職中文經歷',
                   icon: '💼',
-                  domains: ['104.com.tw'],
+                  domains: ['example.com'],
                   isPrimary: true,
                   createdAt: Date.now(),
                   updatedAt: Date.now(),
                   sections: [
                     {
-                      id: 'sec-104-exp',
+                      id: 'sec-resume-exp',
                       title: '工作經驗欄位',
                       order: 0,
                       createdAt: Date.now(),
                       updatedAt: Date.now(),
                       items: [
                         {
-                          id: 'item-104-1',
+                          id: 'item-resume-1',
                           key: '應徵職缺',
                           value: '資深前端架構工程師',
                           createdAt: Date.now(),
                           updatedAt: Date.now(),
                         },
                         {
-                          id: 'item-104-2',
+                          id: 'item-resume-2',
                           key: '主要技術棧',
                           value: 'React, TypeScript, TailwindCSS',
                           createdAt: Date.now(),
@@ -168,8 +168,8 @@ export const Standalone: Story = {
     return (
       <div className="w-[380px] h-[680px] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800">
         <SidePanel
-          currentDomain="104.com.tw"
-          currentUrl="https://www.104.com.tw/job/7xyz8"
+          currentDomain="example.com"
+          currentUrl="https://www.example.com/job/7xyz8"
         />
       </div>
     );
@@ -184,8 +184,8 @@ export const UnboundDomainGlobalPage: Story = {
     return (
       <div className="w-[380px] h-[680px] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800">
         <SidePanel
-          currentDomain="github.com"
-          currentUrl="https://github.com/trending"
+          currentDomain="sample.org"
+          currentUrl="https://sample.org/trending"
           initialActivePageId="SYSTEM_GLOBAL_PAGE"
         />
       </div>
@@ -201,8 +201,8 @@ export const EnglishLocale: Story = {
     return (
       <div className="w-[380px] h-[680px] rounded-2xl overflow-hidden shadow-2xl border border-zinc-800">
         <SidePanel
-          currentDomain="104.com.tw"
-          currentUrl="https://www.104.com.tw/job/7xyz8"
+          currentDomain="example.com"
+          currentUrl="https://www.example.com/job/7xyz8"
           initialLanguage="en"
         />
       </div>

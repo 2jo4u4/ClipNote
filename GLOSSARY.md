@@ -7,7 +7,7 @@ This document defines the ubiquitous language for the Notebook browser extension
 | Concept | Traditional Chinese (`zh-TW`) | English (`en`) | Description |
 | :--- | :--- | :--- | :--- |
 | **ClipNote** | 筆記本 / ClipNote | ClipNote | The root application workspace and extension brand containing all pages, settings, and storage state. |
-| **Page** | 一頁 / 頁 | Page | A discrete thematic document or tab (e.g., "104 中文經歷", "社交貼文草稿") that binds to target web domains. |
+| **Page** | 一頁 / 頁 | Page | A discrete thematic document or tab (e.g., "求職中文經歷", "社交貼文草稿") that binds to target web domains. |
 | **Default Tutorial Pages** | 使用教學 / Getting Started | Getting Started / Tutorial | The system-created initial bilingual tutorial pages providing interactive onboarding instructions (both are fully editable and deletable by user). |
 | **Section** | 分類 | Category | A flexible grouping within a Page to organize content items. |
 | **Cell** | 筆記 | Note | The fundamental, atomic unit of content within a Category. Holds a value and an optional title/key. |
@@ -55,6 +55,7 @@ This document defines the ubiquitous language for the Notebook browser extension
 - Empty Page: `還沒開始筆記，點擊右上角「+」新增` / `No notes yet. Click "+" to start.`
 - Note Title Placeholder: `筆記名稱 (選填)` / `Note Title (Optional)`
 - Note Content Placeholder: `筆記內容 (必填)` / `Note Content (Required)`
+- Applicable Websites Placeholder: `例如：example.com, sample.org (以逗號分隔)` / `e.g. example.com, sample.org (comma separated)` (Strictly use RFC 2606 reserved example domains; avoid real commercial domains)
 
 ### Toast Notifications (狀態通知)
 - Copy: `已複製內容` / `Content copied`

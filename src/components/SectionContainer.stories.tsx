@@ -62,7 +62,7 @@ export const JotsSectionInteractive: Story = {
       {
         id: 'c-2',
         cellKey: '常駐網址',
-        value: 'https://github.com/trending',
+        value: 'https://sample.org/trending',
         createdAt: Date.now() - 1000 * 60 * 120,
       },
     ]);

@@ -7,13 +7,13 @@ const sampleSearchHits: SearchResult[] = [
   {
     id: 's-1',
     type: 'field',
-    pageId: 'p-104',
-    pageTitle: '104 中文經歷',
+    pageId: 'p-resume',
+    pageTitle: '求職中文經歷',
     sectionId: 'sec-title',
     sectionTitle: '基本資料',
     title: '目前職稱',
     content: '資深前端架構師 (Staff Frontend Engineer)',
-    sourcePath: '來自 [104 中文經歷] > [基本資料] ‧ 目前職稱',
+    sourcePath: '來自 [求職中文經歷] > [基本資料] ‧ 目前職稱',
   },
   {
     id: 's-2',
@@ -56,9 +56,9 @@ export const Default: Story = {
         <QuickCaptureModal
           isOpen={isOpen}
           onClose={() => setIsOpen(false)}
-          defaultContent="https://github.com/developer/raycast-design"
-          sourceUrl="https://github.com"
-          sourceTitle="GitHub - Raycast Design Exploration"
+          defaultContent="https://example.com/notes/sample-doc"
+          sourceUrl="https://example.com"
+          sourceTitle="Example Portal - Sample Notes"
           onSaveCell={(data) => {
             alert(`儲存單元項: ${JSON.stringify(data)}`);
             setIsOpen(false);

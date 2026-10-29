@@ -5,9 +5,9 @@ import { NewPageModal, NewPageData } from './NewPageModal';
 
 const samplePages: PageItem[] = [
   { id: 'SYSTEM_GLOBAL_PAGE', title: '全域筆記頁', icon: '🌐', isSystem: true },
-  { id: 'p1', title: '104 中文經歷', icon: '💼', domains: ['104.com.tw'] },
-  { id: 'p2', title: '社交平台貼文', icon: '💬', domains: ['x.com', 'threads.net', 'facebook.com'] },
-  { id: 'p3', title: 'CakeResume 英文檔案', icon: '📝', domains: ['cakeresume.com'] },
+  { id: 'p1', title: '求職中文經歷', icon: '💼', domains: ['example.com'] },
+  { id: 'p2', title: '社交平台貼文', icon: '💬', domains: ['sample.org', 'social.example.net'] },
+  { id: 'p3', title: '英文履歷檔案', icon: '📝', domains: ['resume.example.org'] },
 ];
 
 const meta: Meta<typeof PageTabs> = {

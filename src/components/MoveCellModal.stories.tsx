@@ -32,10 +32,10 @@ const samplePages: Page[] = [
     ],
   },
   {
-    id: 'p-104',
-    title: '104 中文經歷',
+    id: 'p-resume',
+    title: '求職中文經歷',
     icon: '💼',
-    domains: ['104.com.tw'],
+    domains: ['example.com'],
     createdAt: Date.now(),
     updatedAt: Date.now(),
     sections: [

@@ -31,7 +31,7 @@ Designed for job seekers, developers, content creators, and power users who freq
 ────────────────────────
 
 1. 🌐 Domain-Aware Page Switching
-• Browsing job boards (LinkedIn, 104, Indeed), developer portals (GitHub, AWS, Stack Overflow), or social platforms?
+• Browsing job boards, developer portals, cloud dashboards, or social media?
 • ClipNote automatically identifies the active domain and presents the exact notes, credentials, templates, and profile snippets associated with that site.
 • Say goodbye to hunting through external apps or cluttered text documents.
 
@@ -82,7 +82,7 @@ ClipNote 是一款極簡、高質感且具備「網域感知」能力的瀏覽�
 ────────────────────────
 
 1. 🌐 網域感知（Domain Awareness）
-• 當您瀏覽 104 人力銀行、GitHub、LinkedIn 等網站時，側邊欄會即時自動切換至該網域綁定的專屬頁面。
+• 當您瀏覽求職平台、開發者社群、各類線上服務等網站時，側邊欄會即時自動切換至該網域綁定的專屬頁面。
 • 告別在雜亂記事本中反覆翻找特定網站常用帳號、常用履歷段落或個人資料的困擾。
 
 2. ⚡ 一鍵複製（One-Click Fast Copy）
@@ -126,7 +126,7 @@ ClipNote 是一款極簡、高質感且具備「網域感知」能力的瀏覽�
 
 ### (1) `tabs` 權限用途申報
 ```text
-The "tabs" permission is strictly required to detect the active tab's hostname in the foreground (e.g. 104.com.tw, github.com) so ClipNote can automatically display the user's domain-specific notebook page. Tab URLs are matched in local memory only. ClipNote never logs, stores, or transmits browsing history or URLs to any external server.
+The "tabs" permission is strictly required to detect the active tab's hostname in the foreground (e.g. example.com, sample.org) so ClipNote can automatically display the user's domain-specific notebook page. Tab URLs are matched in local memory only. ClipNote never logs, stores, or transmits browsing history or URLs to any external server.
 ```
 
 ### (2) `storage` 權限用途申報
@@ -158,7 +158,7 @@ Chrome 商店要求至少 1 張、建議上傳 4~5 張高解析截圖。
 - **建議拍攝 4 張核心情境**：
 
 1. **截圖 1：網域感知與側邊欄連動（主視覺）**
-   - *畫面*：瀏覽器左側開啟求職網站（如 104 人力銀行），右側 ClipNote 側邊欄自動顯示「求職履歷」專屬頁與各結構化欄位（自我介紹、專案經驗）。
+   - *畫面*：瀏覽器左側開啟求職網站，右側 ClipNote 側邊欄自動顯示「求職履歷」專屬頁與各結構化欄位（自我介紹、專案經驗）。
    - *文字標籤*：`隨瀏覽網站自動切換專屬筆記本` / `Domain-Aware Notes, Auto-Switching`
 
 2. **截圖 2：快捷記錄浮層 (Quick Capture)**

@@ -53,16 +53,24 @@ export function extractHostname(urlOrDomain: string): string {
 }
 
 /**
- * Matches a target hostname against a domain pattern (supports exact & *.domain.com wildcard).
+ * Matches a target hostname against a domain pattern.
+ * - '*' matches all domains.
+ * - Root or wildcard patterns (e.g. 'example.com' or '*.example.com') match exact hostname as well as any subdomains ('www.example.com', 'api.example.com').
+ * - Specific subdomains (e.g. 'docs.example.com') match that subdomain and its sub-branches ('v1.docs.example.com'), but not the root or peer subdomains.
  */
 export function matchDomain(hostname: string, pattern: string): boolean {
-  if (pattern === '*') return true;
-  if (hostname === pattern) return true;
+  const normHost = hostname.trim().toLowerCase();
+  let normPattern = pattern.trim().toLowerCase();
 
-  if (pattern.startsWith('*.')) {
-    const root = pattern.slice(2);
-    return hostname === root || hostname.endsWith('.' + root);
+  if (!normHost || !normPattern) return false;
+  if (normPattern === '*') return true;
+
+  if (normPattern.startsWith('*.')) {
+    normPattern = normPattern.slice(2);
   }
+
+  if (normHost === normPattern) return true;
+  if (normHost.endsWith('.' + normPattern)) return true;
 
   return false;
 }
@@ -229,7 +237,7 @@ export function createDefaultSeedData(): NotebookStorage {
         items: [
           {
             id: 'cell-zh-10',
-            value: '在新增或編輯頁面時設定「適用網站」（例如 104.com.tw、github.com），當瀏覽該網頁時，側邊欄會自動切換為對應的專屬筆記頁。',
+            value: '在新增或編輯頁面時設定「適用網站」（例如 example.com、sample.org），當瀏覽該網頁時，側邊欄會自動切換為對應的專屬筆記頁。',
             createdAt: now,
             updatedAt: now,
           },
@@ -336,7 +344,7 @@ export function createDefaultSeedData(): NotebookStorage {
         items: [
           {
             id: 'cell-en-10',
-            value: 'Assign applicable websites (e.g., github.com, 104.com.tw) to a page, and Notebook will switch to it automatically as you browse.',
+            value: 'Assign applicable websites (e.g., example.com, sample.org) to a page, and Notebook will switch to it automatically as you browse.',
             createdAt: now,
             updatedAt: now,
           },
@@ -954,23 +962,42 @@ export class NotebookService {
       const candidates = Object.values(data.pages).filter(
         (page) => page.domains && page.domains.some((d) => d !== '*')
       );
-      const matches = candidates.filter((page) =>
-        page.domains.some((pattern) => matchDomain(hostname, pattern))
-      );
+      const matchesWithScore = candidates
+        .map((page) => {
+          let bestScore = -1;
+          for (const pattern of page.domains) {
+            if (matchDomain(hostname, pattern)) {
+              let clean = pattern.trim().toLowerCase();
+              if (clean.startsWith('*.')) clean = clean.slice(2);
+              if (clean.length > bestScore) {
+                bestScore = clean.length;
+              }
+            }
+          }
+          return { page, score: bestScore };
+        })
+        .filter((item) => item.score > 0);
 
-      if (matches.length > 0) {
+      if (matchesWithScore.length > 0) {
+        // Prioritize by pattern specificity (longer matched domain pattern wins)
+        matchesWithScore.sort((a, b) => b.score - a.score);
+        const topScore = matchesWithScore[0].score;
+        const topMatches = matchesWithScore
+          .filter((m) => m.score === topScore)
+          .map((m) => m.page);
+
         // 1. Check if user previously selected a page for this domain in active session
         const sessionPageId = this.sessionActivePages.get(hostname);
         if (sessionPageId) {
-          const sessionMatch = matches.find((p) => p.id === sessionPageId);
+          const sessionMatch = topMatches.find((p) => p.id === sessionPageId);
           if (sessionMatch) {
             return this.clone(sessionMatch);
           }
         }
 
-        // 2. Prioritize isPrimary
-        const primary = matches.find((p) => p.isPrimary);
-        return this.clone(primary || matches[0]);
+        // 2. Prioritize isPrimary among top score matches
+        const primary = topMatches.find((p) => p.isPrimary);
+        return this.clone(primary || topMatches[0]);
       }
     }
 

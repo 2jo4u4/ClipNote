@@ -154,7 +154,7 @@ export const en: I18nTranslations = {
     iconLabel: 'Select Icon (Emoji)',
     iconHint: 'Click presets below or type custom emoji',
     domainLabel: 'Applicable Websites (Optional)',
-    domainPlaceholder: 'e.g. 104.com.tw, github.com (comma separated)',
+    domainPlaceholder: 'e.g. example.com, sample.org (comma separated)',
     domainHint: 'Auto-switches to this page when visiting matching sites. Separate with commas.',
     submitBtn: 'Create Page',
     saveChangesBtn: 'Save Changes',

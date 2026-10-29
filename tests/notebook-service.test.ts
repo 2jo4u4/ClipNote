@@ -12,14 +12,14 @@ import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../src/core/types';
 describe('Domain Utility Functions', () => {
   describe('extractHostname', () => {
     it('extracts hostnames from standard URLs', () => {
-      expect(extractHostname('https://www.104.com.tw/job/123')).toBe('www.104.com.tw');
-      expect(extractHostname('http://threads.net/@user/post')).toBe('threads.net');
+      expect(extractHostname('https://www.example.com/job/123')).toBe('www.example.com');
+      expect(extractHostname('http://sample.org/@user/post')).toBe('sample.org');
       expect(extractHostname('https://sub.domain.co.uk:8080/path?q=1')).toBe('sub.domain.co.uk');
     });
 
     it('handles naked domains and domain strings with leading whitespace', () => {
-      expect(extractHostname('   104.com.tw   ')).toBe('104.com.tw');
-      expect(extractHostname('x.com/explore')).toBe('x.com');
+      expect(extractHostname('   example.com   ')).toBe('example.com');
+      expect(extractHostname('sample.org/explore')).toBe('sample.org');
     });
 
     it('returns empty string on empty input', () => {
@@ -34,9 +34,19 @@ describe('Domain Utility Functions', () => {
       expect(matchDomain('localhost', '*')).toBe(true);
     });
 
-    it('matches exact hostnames', () => {
-      expect(matchDomain('104.com.tw', '104.com.tw')).toBe(true);
-      expect(matchDomain('www.104.com.tw', '104.com.tw')).toBe(false);
+    it('matches exact hostnames and automatically covers subdomains (including www.) without needing *.', () => {
+      expect(matchDomain('example.com', 'example.com')).toBe(true);
+      expect(matchDomain('www.example.com', 'example.com')).toBe(true);
+      expect(matchDomain('career.example.com', 'example.com')).toBe(true);
+      expect(matchDomain('deep.sub.example.com', 'example.com')).toBe(true);
+      expect(matchDomain('notexample.com', 'example.com')).toBe(false);
+    });
+
+    it('enforces subdomain specificity when a specific subdomain is configured', () => {
+      expect(matchDomain('docs.example.com', 'docs.example.com')).toBe(true);
+      expect(matchDomain('v1.docs.example.com', 'docs.example.com')).toBe(true);
+      expect(matchDomain('www.example.com', 'docs.example.com')).toBe(false);
+      expect(matchDomain('example.com', 'docs.example.com')).toBe(false);
     });
 
     it('matches wildcard root and subdomains (*.example.com)', () => {
@@ -264,8 +274,8 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
     });
 
     it('allows binding specific domains to SYSTEM_GLOBAL_PAGE', async () => {
-      const bound = await service.bindDomainToPage('github.com', SYSTEM_GLOBAL_PAGE_ID);
-      expect(bound.domains).toContain('github.com');
+      const bound = await service.bindDomainToPage('sample.org', SYSTEM_GLOBAL_PAGE_ID);
+      expect(bound.domains).toContain('sample.org');
     });
 
     it('allows title updates to SYSTEM_GLOBAL_PAGE', async () => {
@@ -279,16 +289,16 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
   describe('Page CRUD & Domain Binding', () => {
     it('creates and retrieves a new user page with custom icon', async () => {
       const page = await service.createPage({
-        title: '104 中文經歷',
+        title: '求職中文經歷',
         icon: '💼',
-        domains: ['*.104.com.tw', '104.com.tw'],
+        domains: ['*.example.com', 'example.com'],
         isPrimary: true,
       });
 
       expect(page.id).toBeDefined();
-      expect(page.title).toBe('104 中文經歷');
+      expect(page.title).toBe('求職中文經歷');
       expect(page.icon).toBe('💼');
-      expect(page.domains).toEqual(['*.104.com.tw', '104.com.tw']);
+      expect(page.domains).toEqual(['*.example.com', 'example.com']);
       expect(page.isPrimary).toBe(true);
       expect(page.isSystem).toBe(false);
 
@@ -298,17 +308,17 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
     });
 
     it('updates page metadata including custom icon and handles deletion', async () => {
-      const page = await service.createPage({ title: '社交平台貼文', icon: '📝', domains: ['x.com'] });
+      const page = await service.createPage({ title: '社交平台貼文', icon: '📝', domains: ['sample.org'] });
 
       const updated = await service.updatePage(page.id, {
         title: '社群貼文工作區',
         icon: '💬',
-        domains: ['x.com', 'threads.net', 'facebook.com'],
+        domains: ['sample.org', 'social.example.net', 'forum.example.org'],
       });
 
       expect(updated.title).toBe('社群貼文工作區');
       expect(updated.icon).toBe('💬');
-      expect(updated.domains).toContain('threads.net');
+      expect(updated.domains).toContain('social.example.net');
 
       await service.deletePage(page.id);
       const afterDelete = await service.getPage(page.id);
@@ -584,21 +594,43 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
   });
 
   describe('Domain Resolution Engine', () => {
-    it('matches exact and wildcard domains and defaults to SYSTEM_GLOBAL_PAGE', async () => {
-      const p104 = await service.createPage({
-        title: '104 中文經歷',
-        domains: ['*.104.com.tw', '104.com.tw'],
+    it('matches root and subdomain patterns (including www.) and defaults to SYSTEM_GLOBAL_PAGE', async () => {
+      const pResume = await service.createPage({
+        title: '求職中文經歷',
+        domains: ['example.com'],
         isPrimary: true,
       });
 
-      const matched1 = await service.resolveActivePage('https://www.104.com.tw/job/123');
-      expect(matched1.id).toBe(p104.id);
+      const matched1 = await service.resolveActivePage('https://www.example.com/job/123');
+      expect(matched1.id).toBe(pResume.id);
 
-      const matched2 = await service.resolveActivePage('https://sub.deep.104.com.tw/profile');
-      expect(matched2.id).toBe(p104.id);
+      const matched2 = await service.resolveActivePage('https://sub.deep.example.com/profile');
+      expect(matched2.id).toBe(pResume.id);
 
       const fallback = await service.resolveActivePage('https://unrelated-domain.com', 'zh-TW');
       expect(fallback.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
+    });
+
+    it('prioritizes more specific subdomain patterns over generic root domain patterns', async () => {
+      const rootPage = await service.createPage({
+        title: 'Main Portal Page',
+        domains: ['example.com'],
+        isPrimary: true,
+      });
+
+      const docsPage = await service.createPage({
+        title: 'Docs Specific Page',
+        domains: ['docs.example.com'],
+        isPrimary: false,
+      });
+
+      // Visiting root or www matches rootPage
+      expect((await service.resolveActivePage('https://www.example.com')).id).toBe(rootPage.id);
+      expect((await service.resolveActivePage('https://example.com')).id).toBe(rootPage.id);
+
+      // Visiting docs.example.com or v1.docs.example.com prioritizes the more specific docsPage
+      expect((await service.resolveActivePage('https://docs.example.com/guide')).id).toBe(docsPage.id);
+      expect((await service.resolveActivePage('https://v1.docs.example.com/api')).id).toBe(docsPage.id);
     });
 
     it('supports locale-aware fallback when no domain matches', async () => {
@@ -622,23 +654,23 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
 
     it('prioritizes session memory over isPrimary if user selected another page in current session', async () => {
       const primaryPage = await service.createPage({
-        title: 'Primary 104',
-        domains: ['104.com.tw'],
+        title: 'Primary Resume',
+        domains: ['example.com'],
         isPrimary: true,
       });
 
       const secondaryPage = await service.createPage({
-        title: 'Secondary 104',
-        domains: ['104.com.tw'],
+        title: 'Secondary Resume',
+        domains: ['example.com'],
         isPrimary: false,
       });
 
       // Default before session selection: primary
-      expect((await service.resolveActivePage('104.com.tw')).id).toBe(primaryPage.id);
+      expect((await service.resolveActivePage('example.com')).id).toBe(primaryPage.id);
 
       // User selects secondary page in active session
-      service.recordSessionActivePage('104.com.tw', secondaryPage.id);
-      expect((await service.resolveActivePage('104.com.tw')).id).toBe(secondaryPage.id);
+      service.recordSessionActivePage('example.com', secondaryPage.id);
+      expect((await service.resolveActivePage('example.com')).id).toBe(secondaryPage.id);
     });
   });
 

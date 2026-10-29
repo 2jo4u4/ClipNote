@@ -83,8 +83,8 @@ const getInitialLanguage = (controlled?: Language, initial?: Language): Language
 };
 
 export const SidePanel: React.FC<SidePanelProps> = ({
-  currentDomain = '104.com.tw',
-  currentUrl = 'https://www.104.com.tw/job/7xyz8',
+  currentDomain = 'example.com',
+  currentUrl = 'https://www.example.com',
   pages: controlledPages,
   initialPages = defaultDemoPages,
   initialActivePageId,
@@ -134,16 +134,37 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     });
   };
 
+  const findBestMatchingPage = (candidates: PageItem[], domain: string): PageItem | undefined => {
+    if (!domain) return undefined;
+    const filtered = candidates.filter((p) => p.domains && p.domains.some((d) => d !== '*'));
+    const scored = filtered
+      .map((page) => {
+        let bestScore = -1;
+        for (const pattern of page.domains || []) {
+          if (matchDomain(domain, pattern)) {
+            let clean = pattern.trim().toLowerCase();
+            if (clean.startsWith('*.')) clean = clean.slice(2);
+            if (clean.length > bestScore) {
+              bestScore = clean.length;
+            }
+          }
+        }
+        return { page, score: bestScore };
+      })
+      .filter((item) => item.score > 0);
+
+    if (scored.length === 0) return undefined;
+    scored.sort((a, b) => b.score - a.score);
+    const topScore = scored[0].score;
+    const topMatches = scored.filter((m) => m.score === topScore).map((m) => m.page);
+    return topMatches.find((p) => p.isPrimary) || topMatches[0];
+  };
+
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
     const basePages = controlledPages || initialPages;
-    const candidates = basePages.filter((p) => p.domains && p.domains.some((d) => d !== '*'));
-    const matches = candidates.filter((p) =>
-      p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
-    );
-    const primary = matches.find((p) => p.isPrimary);
-    if (primary) return primary.id;
-    if (matches.length > 0) return matches[0].id;
+    const matched = findBestMatchingPage(basePages, currentDomain);
+    if (matched) return matched.id;
 
     // Language-aware fallback for tutorial onboarding pages
     if (language === 'zh-TW') {
@@ -167,14 +188,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   // Automatically focus matching page when user switches tab domain in browser
   useEffect(() => {
     if (!currentDomain) return;
-    const candidates = pages.filter((p) => p.domains && p.domains.some((d) => d !== '*'));
-    const matches = candidates.filter((p) =>
-      p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
-    );
-    const primary = matches.find((p) => p.isPrimary);
-    const target = primary || matches[0];
-    if (target) {
-      setActivePageId(target.id);
+    const matched = findBestMatchingPage(pages, currentDomain);
+    if (matched) {
+      setActivePageId(matched.id);
     }
   }, [currentDomain]);
 

@@ -153,7 +153,7 @@ export const zhTW: I18nTranslations = {
     iconLabel: '選擇圖示 (Emoji)',
     iconHint: '可點擊下方常用圖示或自行輸入',
     domainLabel: '適用網站 (選填)',
-    domainPlaceholder: '例如：104.com.tw, github.com (以逗號分隔)',
+    domainPlaceholder: '例如：example.com, sample.org (以逗號分隔)',
     domainHint: '開啟符合的網頁時自動切換至此頁。多個網站請用逗號隔開。',
     submitBtn: '新增一頁',
     saveChangesBtn: '儲存變更',
