@@ -144,20 +144,26 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(zhSec1.title).toContain('快捷鍵與即時操作');
       expect(zhSec1.items.length).toBe(3);
       expect(zhSec1.items[0].value).toContain('Alt+N');
+      expect(zhSec1.items.some((c) => c.value.includes('「新增筆記」'))).toBe(true);
+      expect(zhSec1.items.some((c) => c.value.includes('存為全域隨筆'))).toBe(false);
 
       // Section 2: CRUD & Key-Value Demo
       const zhSec2 = zhPage!.sections[1];
       expect(zhSec2.title).toContain('筆記與分類操作');
       expect(zhSec2.items.find((c) => c.key === '姓名')?.value).toBe('王小明');
       expect(zhSec2.items.find((c) => c.key === 'Email')?.value).toBe('xiaoming@example.com');
+      expect(zhSec2.items.some((c) => c.value.includes('Ctrl+Enter'))).toBe(true);
+      expect(zhSec2.items.some((c) => c.value.includes('資料夾圖示'))).toBe(true);
       expect(zhSec2.items.some((c) => c.value.includes('「批次管理」'))).toBe(true);
+      expect(zhSec2.items.some((c) => c.value.includes('升格為獨立一頁'))).toBe(true);
       expect(zhSec2.items.some((c) => c.value.includes('「多選」'))).toBe(false);
       expect(zhSec2.items.some((c) => c.value.includes('提示'))).toBe(true);
 
-      // Section 3: Applicable Websites
+      // Section 3: Applicable Websites & Page Management
       const zhSec3 = zhPage!.sections[2];
-      expect(zhSec3.title).toContain('適用網站自動切換');
-      expect(zhSec3.items.length).toBeGreaterThanOrEqual(1);
+      expect(zhSec3.title).toContain('適用網站');
+      expect(zhSec3.items.length).toBe(2);
+      expect(zhSec3.items.some((c) => c.value.includes('水平滑動'))).toBe(true);
 
       // English Tutorial Page
       const enPage = await service.getPage(TUTORIAL_EN_PAGE_ID);
@@ -170,16 +176,21 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(enSec1.title).toContain('Shortcuts & Instant Actions');
       expect(enSec1.items.length).toBe(3);
       expect(enSec1.items[0].value).toContain('Alt+N');
+      expect(enSec1.items.some((c) => c.value.includes('"New Note"'))).toBe(true);
 
       const enSec2 = enPage!.sections[1];
       expect(enSec2.title).toContain('Note & Category Management');
       expect(enSec2.items.find((c) => c.key === 'Name')?.value).toBe('Alex Wang');
       expect(enSec2.items.find((c) => c.key === 'Email')?.value).toBe('alex.wang@example.com');
+      expect(enSec2.items.some((c) => c.value.includes('Ctrl+Enter'))).toBe(true);
+      expect(enSec2.items.some((c) => c.value.includes('folder icon'))).toBe(true);
+      expect(enSec2.items.some((c) => c.value.includes('promote to a standalone page'))).toBe(true);
       expect(enSec2.items.some((c) => c.value.includes('Tip:'))).toBe(true);
 
       const enSec3 = enPage!.sections[2];
-      expect(enSec3.title).toContain('Applicable Websites Auto-Switch');
-      expect(enSec3.items.length).toBeGreaterThanOrEqual(1);
+      expect(enSec3.title).toContain('Applicable Websites');
+      expect(enSec3.items.length).toBe(2);
+      expect(enSec3.items.some((c) => c.value.includes('mouse wheel'))).toBe(true);
     });
 
     it('allows deleting either tutorial page immediately on fresh install', async () => {

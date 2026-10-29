@@ -87,13 +87,13 @@ export function createDefaultSeedData(): NotebookStorage {
         items: [
           {
             id: 'cell-zh-1',
-            value: '使用快捷鍵 Alt+N 可隨時喚起快速筆記與即時搜尋視窗。',
+            value: '使用快捷鍵 Alt+N 可隨時喚起快速筆記視窗；頂部搜尋列支援跨頁即時搜尋與一鍵複製。',
             createdAt: now,
             updatedAt: now,
           },
           {
             id: 'cell-zh-2',
-            value: '反白網頁任何文字後，點擊右鍵「存為全域隨筆」可直接保存，並自動記錄來源網址與網頁標題。',
+            value: '反白網頁文字後，點擊右鍵「新增筆記」即可快速代入內容並儲存，同時自動記錄來源網址與標題。',
             createdAt: now,
             updatedAt: now,
           },
@@ -128,19 +128,19 @@ export function createDefaultSeedData(): NotebookStorage {
           },
           {
             id: 'cell-zh-6',
-            value: '雙擊卡片或點擊右側鉛筆圖示進入編輯；點擊垃圾桶圖示可刪除該筆記。',
+            value: '雙擊卡片或點擊鉛筆進入編輯（支援 Ctrl+Enter 儲存）；點擊資料夾圖示可跨頁移動筆記；點擊垃圾桶可刪除。',
             createdAt: now,
             updatedAt: now,
           },
           {
             id: 'cell-zh-7',
-            value: '點擊右上角「+」可新增筆記；點擊右上角「批次管理」可進行批次移動或刪除。',
+            value: '點擊分類右側「+」可新增該分類筆記；點擊頁面右上角「批次管理」可進行批次刪除。',
             createdAt: now,
             updatedAt: now,
           },
           {
             id: 'cell-zh-8',
-            value: '雙擊分類標題可重新命名；點擊分類右側選單可展開/收合或刪除分類。',
+            value: '點擊右側箭頭可展開/收合分類；點擊選單「...」可將分類「升格為獨立一頁」、匯出或刪除；雙擊分類標題可重新命名。',
             createdAt: now,
             updatedAt: now,
           },
@@ -154,7 +154,7 @@ export function createDefaultSeedData(): NotebookStorage {
       },
       {
         id: 'sec-zh-domains',
-        title: '🌐 適用網站自動切換',
+        title: '🌐 適用網站與頁面管理',
         order: 2,
         createdAt: now,
         updatedAt: now,
@@ -162,6 +162,12 @@ export function createDefaultSeedData(): NotebookStorage {
           {
             id: 'cell-zh-10',
             value: '在新增或編輯頁面時設定「適用網站」（例如 104.com.tw、github.com），當瀏覽該網頁時，側邊欄會自動切換為對應的專屬筆記頁。',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-zh-11',
+            value: '雙擊頁面標題可自訂 Emoji 圖示與頁面設定；分頁列支援滑鼠滾輪水平滑動，點擊右側按鈕可管理所有頁面。',
             createdAt: now,
             updatedAt: now,
           },
@@ -188,13 +194,13 @@ export function createDefaultSeedData(): NotebookStorage {
         items: [
           {
             id: 'cell-en-1',
-            value: 'Press Alt+N anywhere to summon the Quick Capture and omni-search modal.',
+            value: 'Press Alt+N anywhere to summon Quick Capture; use the top search bar for instant cross-page search and copy.',
             createdAt: now,
             updatedAt: now,
           },
           {
             id: 'cell-en-2',
-            value: 'Select any text on a webpage, right-click and choose "Save to Global Note" to capture text along with source URL and page title.',
+            value: 'Select any text on a webpage and right-click "New Note" to capture text with source URL and page title.',
             createdAt: now,
             updatedAt: now,
           },
@@ -229,19 +235,19 @@ export function createDefaultSeedData(): NotebookStorage {
           },
           {
             id: 'cell-en-6',
-            value: 'Double-click a note or click the pencil icon to edit; click the trash icon to delete.',
+            value: 'Double-click a card or click the pencil to edit (Ctrl+Enter to save); click the folder icon to move across pages; click trash to delete.',
             createdAt: now,
             updatedAt: now,
           },
           {
             id: 'cell-en-7',
-            value: 'Click "+" at the top right to add notes; use batch select to move or delete multiple notes.',
+            value: 'Click "+" in a category header to add notes; use "Batch Manage" at top right to select and delete multiple items.',
             createdAt: now,
             updatedAt: now,
           },
           {
             id: 'cell-en-8',
-            value: 'Double-click a category title to rename; click the category menu to collapse or delete.',
+            value: 'Click the arrow to expand/collapse categories; click the "..." menu to promote to a standalone page, export, or delete; double-click title to rename.',
             createdAt: now,
             updatedAt: now,
           },
@@ -255,7 +261,7 @@ export function createDefaultSeedData(): NotebookStorage {
       },
       {
         id: 'sec-en-domains',
-        title: '🌐 Applicable Websites Auto-Switch',
+        title: '🌐 Applicable Websites & Page Management',
         order: 2,
         createdAt: now,
         updatedAt: now,
@@ -263,6 +269,12 @@ export function createDefaultSeedData(): NotebookStorage {
           {
             id: 'cell-en-10',
             value: 'Assign applicable websites (e.g., github.com, 104.com.tw) to a page, and Notebook will switch to it automatically as you browse.',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-11',
+            value: 'Double-click page title to customize emoji icon & settings; scroll mouse wheel horizontally on the tab bar, or click manage button to organize pages.',
             createdAt: now,
             updatedAt: now,
           },

@@ -157,9 +157,9 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **Bilingual Default Seed Pages**:
   Instead of initializing storage with a single generic "第一頁", the extension initializes with two equal, fully-editable tutorial pages (`createDefaultSeedData`):
   1. `使用教學` (icon: `💡`, id: `SYSTEM_GLOBAL_PAGE_ID`, domains: `[]`):
-     - `⌨️ 快捷鍵與即時操作`: Guides for `Alt+N` capture, context menu saving, and one-click copy.
-     - `📝 筆記與分類操作 (CRUD)`: Key-value demo fields (`姓名: 王小明`, `Email: xiaoming@example.com`), double-click/pencil edit, delete, batch select, and a clear reassurance tip that this page can be edited or deleted.
-     - `🌐 適用網站自動切換`: Explanation of domain-aware auto-switching with example sites.
+     - `⌨️ 快捷鍵與即時操作`: Guides for `Alt+N` capture, omni-search, right-click context menu capture, and one-click copy.
+     - `📝 筆記與分類操作 (CRUD)`: Key-value demo fields (`姓名: 王小明`, `Email: xiaoming@example.com`), card editing (`Ctrl+Enter` save), folder note moving, batch manage, category collapse/rename/promote, and reassurance tip.
+     - `🌐 適用網站與頁面管理`: Explanation of domain-aware auto-switching, horizontal wheel scrolling on tab bar, and page management.
   2. `Getting Started` (icon: `💡`, id: `TUTORIAL_EN_PAGE_ID`, domains: `[]`):
      - Parity English translation of the exact same 3 categories, key-value fields (`Name: Alex Wang`, `Email: alex.wang@example.com`), and instructions.
 - **Initial Active Page Resolution**:
