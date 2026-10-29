@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useRef } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Globe,
   Plus,
@@ -7,7 +7,6 @@ import {
   FileText,
   Download,
   Check,
-  X,
   Edit2,
   Trash2,
   CheckSquare,
@@ -18,7 +17,7 @@ import { OmniSearchBar } from './OmniSearchBar';
 import { SectionContainer } from './SectionContainer';
 import { CellCard } from './CellCard';
 import { QuickCaptureModal } from './QuickCaptureModal';
-import { NewPageModal, NewPageData } from './NewPageModal';
+import { NewPageModal, PageModalData } from './NewPageModal';
 import { MoveCellModal } from './MoveCellModal';
 import { CategoryModal } from './CategoryModal';
 import { EditNoteModal } from './EditNoteModal';
@@ -212,7 +211,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
     const basePages = controlledPages || initialPages;
-    const candidates = basePages.filter((p) => !p.isSystem);
+    const candidates = basePages.filter((p) => p.domains && p.domains.some((d) => d !== '*'));
     const matches = candidates.filter((p) =>
       p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
@@ -230,7 +229,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   // Automatically focus matching page when user switches tab domain in browser
   useEffect(() => {
     if (!currentDomain) return;
-    const candidates = pages.filter((p) => !p.isSystem);
+    const candidates = pages.filter((p) => p.domains && p.domains.some((d) => d !== '*'));
     const matches = candidates.filter((p) =>
       p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
@@ -243,7 +242,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
   const [isDarkMode, setIsDarkMode] = useState(true);
   const [isQuickCaptureOpen, setIsQuickCaptureOpen] = useState(false);
-  const [isNewPageModalOpen, setIsNewPageModalOpen] = useState(false);
+  const [quickCaptureInitialSectionId, setQuickCaptureInitialSectionId] = useState<string | undefined>(undefined);
+  const [pageModalState, setPageModalState] = useState<{
+    isOpen: boolean;
+    mode: 'create' | 'edit';
+    page?: Page;
+  }>({
+    isOpen: false,
+    mode: 'create',
+  });
   const [isManagePagesModalOpen, setIsManagePagesModalOpen] = useState(false);
   const [movingCellTarget, setMovingCellTarget] = useState<MovingCellTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
@@ -267,11 +274,6 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   }>({
     isOpen: false,
   });
-
-  // Page title inline editing
-  const [isEditingPageTitle, setIsEditingPageTitle] = useState(false);
-  const [pageTitleInput, setPageTitleInput] = useState('');
-  const pageTitleInputRef = useRef<HTMLInputElement>(null);
 
   // Batch Select Mode
   const [isBatchMode, setIsBatchMode] = useState(false);
@@ -328,67 +330,64 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     }));
   }, [pages]);
 
-  const handleCreatePage = (data: NewPageData) => {
-    const newId = `page-${Date.now()}`;
-    const newPage: Page = {
-      id: newId,
-      title: data.title,
-      icon: data.icon,
-      domains: data.domains,
-      createdAt: Date.now(),
-      updatedAt: Date.now(),
-      sections: [
-        {
-          id: `sec-${Date.now()}-default`,
-          title: t.sidePanel.defaultCategoryName,
-          order: 0,
-          createdAt: Date.now(),
-          updatedAt: Date.now(),
-          items: [],
-        },
-      ],
-    };
-    setPages((prev) => [...prev, newPage]);
-    setActivePageId(newId);
-    showToast(t.sidePanel.createdPageToast(data.title));
+  const handleOpenCreatePage = () => {
+    setPageModalState({ isOpen: true, mode: 'create' });
   };
 
-  const handleStartEditPageTitle = () => {
-    setPageTitleInput(activePage.title);
-    setIsEditingPageTitle(true);
-    setTimeout(() => {
-      pageTitleInputRef.current?.focus();
-      pageTitleInputRef.current?.select();
-    }, 50);
+  const handleOpenEditPage = (page: Page) => {
+    setPageModalState({ isOpen: true, mode: 'edit', page });
   };
 
-  const handleSavePageTitle = () => {
-    const trimmed = pageTitleInput.trim();
-    if (!trimmed || trimmed === activePage.title) {
-      setIsEditingPageTitle(false);
-      return;
+  const handleSavePageModal = (data: PageModalData) => {
+    if (pageModalState.mode === 'create') {
+      const newId = `page-${Date.now()}`;
+      const newPage: Page = {
+        id: newId,
+        title: data.title,
+        icon: data.icon,
+        domains: data.domains,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        sections: [
+          {
+            id: `sec-${Date.now()}-default`,
+            title: t.sidePanel.defaultCategoryName,
+            order: 0,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            items: [],
+          },
+        ],
+      };
+      setPages((prev) => [...prev, newPage]);
+      setActivePageId(newId);
+      showToast(t.sidePanel.createdPageToast(data.title));
+    } else if (pageModalState.page) {
+      const targetId = pageModalState.page.id;
+      setPages((prev) =>
+        prev.map((p) => {
+          if (p.id !== targetId) return p;
+          return {
+            ...p,
+            title: data.title,
+            icon: data.icon,
+            domains: data.domains,
+            updatedAt: Date.now(),
+          };
+        })
+      );
+      showToast(t.sidePanel.updatedPageToast(data.title));
     }
-    setPages((prev) =>
-      prev.map((p) => {
-        if (p.id !== activePage.id) return p;
-        return {
-          ...p,
-          title: trimmed,
-          updatedAt: Date.now(),
-        };
-      })
-    );
-    setIsEditingPageTitle(false);
-    showToast(t.sidePanel.renamedPageToast(trimmed));
+    setPageModalState({ isOpen: false, mode: 'create' });
   };
 
   const handleOpenDeletePageModal = () => {
-    if (activePage.isSystem) return;
+    if (pages.length <= 1) return;
     setShowDeletePageConfirm(true);
   };
 
   const handleConfirmDeleteActivePage = () => {
-    if (activePage.isSystem) return;
+    if (pages.length <= 1) return;
     const deletedTitle = activePage.title;
     const remaining = pages.filter((p) => p.id !== activePage.id);
     setPages(remaining);
@@ -761,10 +760,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   };
 
   const handleBatchDeletePages = (pageIds: string[]) => {
-    const remaining = pages.filter((p) => p.isSystem || !pageIds.includes(p.id));
+    let remaining = pages.filter((p) => !pageIds.includes(p.id));
+    if (remaining.length === 0) {
+      remaining = [pages[0]];
+    }
     setPages(remaining);
-    if (pageIds.includes(activePageId)) {
-      setActivePageId(remaining[0]?.id || SYSTEM_GLOBAL_PAGE_ID);
+    if (!remaining.some((p) => p.id === activePageId)) {
+      setActivePageId(remaining[0].id);
     }
     showToast(t.sidePanel.batchDeletedToast(pageIds.length, 0));
   };
@@ -891,7 +893,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
           <div className="flex items-center gap-1 flex-shrink-0">
             <button
-              onClick={() => setIsQuickCaptureOpen(true)}
+              onClick={() => {
+                setQuickCaptureInitialSectionId(undefined);
+                setIsQuickCaptureOpen(true);
+              }}
               title={`${t.sidePanel.newNote} (${t.sidePanel.shortcutCapture})`}
               className={cn(
                 'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-200',
@@ -969,7 +974,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             pages={pageTabItems}
             activePageId={activePageId}
             onSelectPage={handleSelectPage}
-            onAddPage={() => setIsNewPageModalOpen(true)}
+            onAddPage={handleOpenCreatePage}
             onManagePages={() => setIsManagePagesModalOpen(true)}
           />
         </div>
@@ -981,66 +986,34 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             <div className="flex items-center gap-1.5 min-w-0 flex-1">
               <span className="text-base select-none flex-shrink-0">{activePage.icon || '📄'}</span>
 
-              {isEditingPageTitle ? (
-                <div className="flex items-center gap-1 flex-1 min-w-0">
-                  <input
-                    ref={pageTitleInputRef}
-                    type="text"
-                    value={pageTitleInput}
-                    onChange={(e) => setPageTitleInput(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleSavePageTitle();
-                      if (e.key === 'Escape') setIsEditingPageTitle(false);
-                    }}
-                    className={cn(
-                      'text-xs font-semibold px-2 py-0.5 rounded border outline-none w-full max-w-[200px]',
-                      'bg-raycast-light-surface border-raycast-amber text-raycast-light-text',
-                      'dark:bg-raycast-dark-surface dark:border-raycast-amber dark:text-raycast-dark-text'
-                    )}
-                  />
-                  <button
-                    onClick={handleSavePageTitle}
-                    className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-raycast-emerald"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setIsEditingPageTitle(false)}
-                    className="p-1 rounded hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 min-w-0 group/title">
-                  <h2
-                    onDoubleClick={handleStartEditPageTitle}
-                    title="按兩下可編輯名稱"
-                    className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate cursor-pointer hover:underline underline-offset-2 decoration-raycast-amber/50"
-                  >
-                    {activePage.title}
-                  </h2>
-                  <button
-                    onClick={handleStartEditPageTitle}
-                    title="編輯頁面名稱"
-                    className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
-                  >
-                    <Edit2 className="w-3 h-3" />
-                  </button>
+              <div className="flex items-center gap-1 min-w-0 group/title">
+                <h2
+                  onDoubleClick={() => handleOpenEditPage(activePage)}
+                  title={t.sidePanel.doubleClickEditPageTooltip}
+                  className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate cursor-pointer hover:underline underline-offset-2 decoration-raycast-amber/50"
+                >
+                  {activePage.title}
+                </h2>
+                <button
+                  onClick={() => handleOpenEditPage(activePage)}
+                  title={t.sidePanel.editPageTooltip}
+                  className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
+                >
+                  <Edit2 className="w-3 h-3" />
+                </button>
 
-                  {!activePage.isSystem && (
-                    <button
-                      onClick={handleOpenDeletePageModal}
-                      title={t.sidePanel.deletePage}
-                      className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-rose-500/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-rose-500 transition-all"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  )}
-                </div>
-              )}
+                {pages.length > 1 && (
+                  <button
+                    onClick={handleOpenDeletePageModal}
+                    title={t.sidePanel.deletePage}
+                    className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-raycast-coral/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-coral transition-all"
+                  >
+                    <Trash2 className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
 
-              {activePage.domains && activePage.domains.length > 0 && !activePage.isSystem && (
+              {activePage.domains && activePage.domains.length > 0 && (
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded-full border border-raycast-amber/30 bg-raycast-amber/10 text-raycast-amber truncate max-w-[110px] flex-shrink-0">
                   {activePage.domains.join(', ')}
                 </span>
@@ -1098,7 +1071,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 isSelected={selectedSectionIds.includes(section.id)}
                 onToggleSelect={() => handleToggleSelectSection(section.id)}
                 onRenameSection={() => handleOpenRenameCategory(section.id)}
-                onAddItem={() => setIsQuickCaptureOpen(true)}
+                onAddItem={(secId) => {
+                  setQuickCaptureInitialSectionId(secId || section.id);
+                  setIsQuickCaptureOpen(true);
+                }}
                 onExtractToPage={handleExtractSectionToPage}
                 onExportPage={handleExportJson}
                 onDeleteSection={handleDeleteSection}
@@ -1249,9 +1225,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         <QuickCaptureModal
           isOpen={isQuickCaptureOpen}
           language={language}
-          onClose={() => setIsQuickCaptureOpen(false)}
+          onClose={() => {
+            setIsQuickCaptureOpen(false);
+            setQuickCaptureInitialSectionId(undefined);
+          }}
           pages={quickCapturePages}
           activePageId={activePageId}
+          initialSectionId={quickCaptureInitialSectionId}
           sourceUrl={currentUrl}
           sourceTitle="當前瀏覽網頁"
           searchResults={allSearchResults}
@@ -1262,10 +1242,20 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         />
 
         <NewPageModal
-          isOpen={isNewPageModalOpen}
+          isOpen={pageModalState.isOpen}
+          mode={pageModalState.mode}
+          initialData={
+            pageModalState.page
+              ? {
+                  title: pageModalState.page.title,
+                  icon: pageModalState.page.icon,
+                  domains: pageModalState.page.domains || [],
+                }
+              : undefined
+          }
           language={language}
-          onClose={() => setIsNewPageModalOpen(false)}
-          onSubmit={handleCreatePage}
+          onClose={() => setPageModalState((prev) => ({ ...prev, isOpen: false }))}
+          onSubmit={handleSavePageModal}
         />
 
         <MoveCellModal
@@ -1302,8 +1292,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           isOpen={isManagePagesModalOpen}
           language={language}
           pages={pages}
+          activePageId={activePageId}
           onClose={() => setIsManagePagesModalOpen(false)}
           onDeletePages={handleBatchDeletePages}
+          onEditPage={handleOpenEditPage}
           onRenamePage={(pageId, newTitle) => {
             setPages((prev) =>
               prev.map((p) => (p.id === pageId ? { ...p, title: newTitle, updatedAt: Date.now() } : p))

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Layers,
   Search,
@@ -9,7 +9,7 @@ import {
   Sparkles,
 } from 'lucide-react';
 import { cn } from '../utils';
-import type { SearchResult, CreateCellInput } from '../types';
+import { SearchResult, CreateCellInput, SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Dropdown } from './Dropdown';
 import { CellTypeBadge } from './CellTypeBadge';
 import { Language, getTranslations } from '../i18n';
@@ -33,6 +33,7 @@ export interface QuickCaptureModalProps {
   pages?: QuickCapturePageOption[];
   sections?: QuickCaptureSectionOption[];
   activePageId?: string;
+  initialSectionId?: string;
   defaultContent?: string;
   sourceUrl?: string;
   sourceTitle?: string;
@@ -63,17 +64,18 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   isOpen,
   onClose,
   pages = [
-    { id: 'SYSTEM_GLOBAL_PAGE', title: '第一頁', isSystem: true },
+    { id: SYSTEM_GLOBAL_PAGE_ID, title: '第一頁', isSystem: true },
     { id: 'p1', title: '104 中文經歷' },
     { id: 'p2', title: '社交平台貼文' },
   ],
   sections = [
-    { id: 's-global-jots', title: '隨手記事', pageId: 'SYSTEM_GLOBAL_PAGE' },
-    { id: 's-global-fields', title: '常用資料', pageId: 'SYSTEM_GLOBAL_PAGE' },
+    { id: 's-global-jots', title: '隨手記事', pageId: SYSTEM_GLOBAL_PAGE_ID },
+    { id: 's-global-fields', title: '常用資料', pageId: SYSTEM_GLOBAL_PAGE_ID },
     { id: 's-104-fields', title: '經歷資料', pageId: 'p1' },
     { id: 's-social-jots', title: '靈感草稿', pageId: 'p2' },
   ],
-  activePageId = 'SYSTEM_GLOBAL_PAGE',
+  activePageId = SYSTEM_GLOBAL_PAGE_ID,
+  initialSectionId,
   defaultContent = '',
   sourceUrl,
   sourceTitle,
@@ -89,7 +91,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   const t = getTranslations(language);
   // Form state
   const [selectedPageId, setSelectedPageId] = useState(activePageId);
-  const [selectedSectionId, setSelectedSectionId] = useState<string>('');
+  const [selectedSectionId, setSelectedSectionId] = useState<string>(initialSectionId || '');
   const [cellKey, setCellKey] = useState('');
   const [value, setValue] = useState(defaultContent);
 
@@ -102,7 +104,7 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Synchronize active page on open
+  // Synchronize active page and initial section on open
   useEffect(() => {
     if (isOpen) {
       setSelectedPageId(activePageId);
@@ -110,6 +112,9 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
       setCellKey('');
       setIsSearching(false);
       setSearchQuery('');
+      if (initialSectionId) {
+        setSelectedSectionId(initialSectionId);
+      }
       setTimeout(() => {
         if (defaultContent) {
           textareaRef.current?.focus();
@@ -118,21 +123,32 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         }
       }, 50);
     }
-  }, [isOpen, activePageId, defaultContent]);
+  }, [isOpen, activePageId, defaultContent, initialSectionId]);
 
   // Update available sections when selected page changes
-  const availableSections = sections.filter((s) => s.pageId === selectedPageId);
+  const availableSections = useMemo(() => {
+    const targetPage = pages.find((p) => p.id === selectedPageId);
+    return targetPage?.sections && targetPage.sections.length > 0
+      ? targetPage.sections
+      : sections
+      ? sections.filter((s) => s.pageId === selectedPageId)
+      : [];
+  }, [pages, sections, selectedPageId]);
 
   useEffect(() => {
     if (availableSections.length > 0) {
       const match = availableSections.find((s) => s.id === selectedSectionId);
       if (!match) {
-        setSelectedSectionId(availableSections[0].id);
+        if (initialSectionId && availableSections.some((s) => s.id === initialSectionId)) {
+          setSelectedSectionId(initialSectionId);
+        } else {
+          setSelectedSectionId(availableSections[0].id);
+        }
       }
     } else {
       setSelectedSectionId('');
     }
-  }, [selectedPageId, sections]);
+  }, [selectedPageId, availableSections, initialSectionId]);
 
   // Keyboard navigation & Shortcuts
   useEffect(() => {

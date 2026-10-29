@@ -1,26 +1,30 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, Lock, Trash2, CheckSquare, Square, Globe, Edit2, Check } from 'lucide-react';
 import { cn } from '../utils';
-import { Page, SYSTEM_GLOBAL_PAGE_ID } from '../types';
+import { Page } from '../types';
 import { Language, getTranslations } from '../i18n';
 import { ConfirmModal } from './ConfirmModal';
 
 export interface ManagePagesModalProps {
   isOpen: boolean;
   pages: Page[];
+  activePageId?: string;
   language?: Language;
   onClose: () => void;
   onDeletePages: (pageIds: string[]) => void;
   onRenamePage?: (pageId: string, newTitle: string) => void;
+  onEditPage?: (page: Page) => void;
 }
 
 export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
   isOpen,
   pages,
+  activePageId,
   language = 'zh-TW',
   onClose,
   onDeletePages,
   onRenamePage,
+  onEditPage,
 }) => {
   const t = getTranslations(language);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -28,23 +32,46 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
   const [editingPageId, setEditingPageId] = useState<string | null>(null);
   const [editingTitleInput, setEditingTitleInput] = useState('');
 
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (!isOpen || showConfirm || editingPageId !== null) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, showConfirm, editingPageId, onClose]);
+
   if (!isOpen) return null;
 
-  const customPages = pages.filter((p) => !p.isSystem && p.id !== SYSTEM_GLOBAL_PAGE_ID);
-  const allCustomSelected = customPages.length > 0 && selectedIds.length === customPages.length;
+  const isSolePage = pages.length <= 1;
+  const anchorPageId = activePageId || pages[0]?.id;
+  const selectablePages = pages.length > 1 ? pages.filter((p) => p.id !== anchorPageId) : [];
+  const allSelectableChosen =
+    selectablePages.length > 0 && selectedIds.length === selectablePages.length;
 
   const toggleSelectAll = () => {
-    if (allCustomSelected) {
+    if (allSelectableChosen) {
       setSelectedIds([]);
     } else {
-      setSelectedIds(customPages.map((p) => p.id));
+      setSelectedIds(selectablePages.map((p) => p.id));
     }
   };
 
   const toggleSelect = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
+    if (isSolePage || id === anchorPageId) return;
+    setSelectedIds((prev) => {
+      if (prev.includes(id)) {
+        return prev.filter((i) => i !== id);
+      }
+      // Never allow selecting 100% of all pages to prevent 0-page state
+      if (prev.length + 1 >= pages.length) {
+        return prev;
+      }
+      return [...prev, id];
+    });
   };
 
   const handleStartRename = (e: React.MouseEvent, page: Page) => {
@@ -72,9 +99,10 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="fixed inset-0" onClick={onClose} aria-hidden="true" />
       <div
         className={cn(
-          'w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden select-none',
+          'relative w-full max-w-md max-h-[85vh] flex flex-col rounded-2xl border shadow-2xl overflow-hidden select-none',
           'bg-raycast-light-bg border-raycast-light-border text-raycast-light-text',
           'dark:bg-raycast-dark-bg dark:border-white/10 dark:text-raycast-dark-text',
           'animate-in zoom-in-95 duration-150'
@@ -100,7 +128,8 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
         {/* Content list */}
         <div className="flex-1 overflow-y-auto p-3 space-y-2 no-scrollbar">
           {pages.map((page) => {
-            const isSystem = Boolean(page.isSystem || page.id === SYSTEM_GLOBAL_PAGE_ID);
+            const isAnchorPage = page.id === anchorPageId;
+            const isRowProtected = isSolePage || isAnchorPage;
             const isSelected = selectedIds.includes(page.id);
             const totalNotes = page.sections.reduce((acc, s) => acc + s.items.length, 0);
 
@@ -108,11 +137,11 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
               <div
                 key={page.id}
                 onClick={() => {
-                  if (!isSystem) toggleSelect(page.id);
+                  if (!isRowProtected) toggleSelect(page.id);
                 }}
                 className={cn(
                   'flex items-center justify-between p-3 rounded-xl border transition-all duration-150 select-none',
-                  isSystem
+                  isRowProtected
                     ? 'border-raycast-light-border/60 bg-black/[0.02] dark:border-white/5 dark:bg-white/[0.02] opacity-80 cursor-default'
                     : isSelected
                     ? 'border-raycast-coral bg-raycast-coral/5 ring-1 ring-raycast-coral/30 cursor-pointer'
@@ -122,7 +151,7 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
                 <div className="flex items-center gap-3 min-w-0">
                   {/* Checkbox or Lock */}
                   <div className="flex-shrink-0">
-                    {isSystem ? (
+                    {isRowProtected ? (
                       <div className="w-4 h-4 rounded text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center justify-center">
                         <Lock className="w-3.5 h-3.5" />
                       </div>
@@ -176,19 +205,26 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
                           <span className="text-xs font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate">
                             {page.title}
                           </span>
-                          {onRenamePage && (
+                          {(onEditPage || onRenamePage) && (
                             <button
                               type="button"
-                              onClick={(e) => handleStartRename(e, page)}
-                              title="重新命名此頁"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (onEditPage) {
+                                  onEditPage(page);
+                                } else if (onRenamePage) {
+                                  handleStartRename(e, page);
+                                }
+                              }}
+                              title={t.managePagesModal.editPageTooltip}
                               className="p-0.5 rounded opacity-0 group-hover/rename:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
                             >
                               <Edit2 className="w-3 h-3" />
                             </button>
                           )}
-                          {isSystem && (
+                          {isRowProtected && (
                             <span className="px-1.5 py-0.5 rounded text-[10px] bg-black/5 dark:bg-white/10 text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
-                              {t.managePagesModal.lockedBadge}
+                              {isSolePage ? t.managePagesModal.lastPageBadge : t.managePagesModal.anchorBadge}
                             </span>
                           )}
                         </div>
@@ -197,10 +233,10 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
 
                     <div className="flex items-center gap-2 mt-0.5 text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono">
                       <span>{t.managePagesModal.noteCountBadge(totalNotes)}</span>
-                      {page.domains && page.domains.length > 0 && !isSystem && (
+                      {page.domains && page.domains.length > 0 && (
                         <span className="flex items-center gap-1 truncate max-w-[160px]">
                           <Globe className="w-2.5 h-2.5 flex-shrink-0" />
-                          <span className="truncate">{page.domains.join(', ')}</span>
+                          <span className="truncate">{t.managePagesModal.domainBadge(page.domains.join(', '))}</span>
                         </span>
                       )}
                     </div>
@@ -213,13 +249,13 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
 
         {/* Footer toolbar */}
         <div className="p-3 border-t border-raycast-light-border dark:border-white/10 bg-raycast-light-surface/40 dark:bg-raycast-dark-surface/40 flex items-center justify-between gap-2 flex-shrink-0 select-none">
-          {customPages.length > 0 ? (
+          {!isSolePage ? (
             <button
               type="button"
               onClick={toggleSelectAll}
               className="flex items-center gap-1.5 text-xs text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text transition-colors whitespace-nowrap shrink-0"
             >
-              {allCustomSelected ? (
+              {allSelectableChosen ? (
                 <CheckSquare className="w-3.5 h-3.5 text-raycast-coral" />
               ) : (
                 <Square className="w-3.5 h-3.5" />
@@ -228,10 +264,10 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
             </button>
           ) : (
             <span
-              title={t.managePagesModal.emptyCustomPages}
+              title={t.managePagesModal.cannotDeleteLastPage}
               className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle truncate min-w-0 flex-1 mr-2"
             >
-              {t.managePagesModal.emptyCustomPages}
+              {t.managePagesModal.cannotDeleteLastPage}
             </span>
           )}
 
@@ -243,14 +279,14 @@ export const ManagePagesModal: React.FC<ManagePagesModalProps> = ({
             >
               {t.common.cancel}
             </button>
-            {customPages.length > 0 && (
+            {!isSolePage && (
               <button
                 type="button"
-                disabled={selectedIds.length === 0}
+                disabled={selectedIds.length === 0 || selectedIds.length >= pages.length}
                 onClick={() => setShowConfirm(true)}
                 className={cn(
                   'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all duration-150 whitespace-nowrap shrink-0 active:scale-95',
-                  selectedIds.length > 0
+                  selectedIds.length > 0 && selectedIds.length < pages.length
                     ? 'bg-raycast-coral hover:brightness-110 text-white shadow-sm'
                     : 'bg-black/5 dark:bg-white/5 text-raycast-light-subtle dark:text-raycast-dark-subtle cursor-not-allowed'
                 )}

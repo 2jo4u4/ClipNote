@@ -135,7 +135,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - One-click copy copies `cell.value` directly to clipboard.
 
 ### 7. Full CRUD & Batch Deletion
-- **Page Management**: Default system page is designated as "第一頁" (`SYSTEM_GLOBAL_PAGE_ID`). Its title can be renamed inline, but deletion and domain wildcarding (`['*']`) remain protected. Custom pages can be batch-deleted via `ManagePagesModal` or individually removed.
+- **Page Management**: All pages are equal in capability and customize title, emoji icon, and applicable websites ("適用網站"). The notebook maintains the invariant that at least one page must exist (`pages.length >= 1`). If only one page exists, it cannot be deleted. When multiple pages exist, any page (including the initial first page) can be deleted, and applicable websites can be freely customized or left blank. When browsing websites not assigned to any page, the side panel remains on the active page without intrusive auto-switching. Custom and initial pages can be batch-deleted via `ManagePagesModal` (preserving the active/anchor page) or individually removed.
 - **Category Management**: Categories can be created and renamed through Raycast-styled `CategoryModal` (replacing native `window.prompt`), deleted individually from the section menu, or batch-deleted via Batch Mode.
 - **Cell Management**: Cells can be edited through `EditNoteModal` (`Ctrl+Enter` save), deleted individually, or batch-selected and deleted.
 - **Batch Mode**: Active page header allows toggling batch selection mode (`isSelectMode`), displaying checkboxes across categories and cells, with a floating action toolbar showing selection statistics, select-all/deselect-all toggles, and confirmed bulk deletion.
@@ -153,7 +153,7 @@ The primary testing seam is **`NotebookService`**.
 ### 2. Behavioral Testing Guidelines
 - Tests must assert observable external behavior, invariants, and side-effects rather than internal implementation details.
 - Verifications include:
-  - System Global Page immutability and undeletability.
+  - Minimum single-page invariant (`pages.length >= 1`) and undeletability when only 1 page remains, while allowing deletion when multiple pages exist.
   - Cell creation with and without `key`, ensuring timestamps and source attribution persist correctly.
   - Section `updatedAt` updating automatically when cells are modified or removed.
   - Multi-domain resolution prioritizing explicit bindings and falling back to Global Page.

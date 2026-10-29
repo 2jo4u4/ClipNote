@@ -152,29 +152,43 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(sec2.items[0].value).toContain('Alt+N');
     });
 
-    it('prohibits deleting SYSTEM_GLOBAL_PAGE', async () => {
+    it('prohibits deleting the last remaining page', async () => {
       await expect(service.deletePage(SYSTEM_GLOBAL_PAGE_ID)).rejects.toThrow(
-        'Cannot delete system global page'
+        'Cannot delete the last remaining page'
       );
     });
 
-    it('prohibits modifying domains or revoking system status of SYSTEM_GLOBAL_PAGE', async () => {
-      await expect(
-        service.updatePage(SYSTEM_GLOBAL_PAGE_ID, { domains: ['example.com'] })
-      ).rejects.toThrow('Cannot alter domains or system status of system global page');
-
-      await expect(
-        service.updatePage(SYSTEM_GLOBAL_PAGE_ID, { isSystem: false })
-      ).rejects.toThrow('Cannot alter domains or system status of system global page');
+    it('allows deleting SYSTEM_GLOBAL_PAGE if other pages exist', async () => {
+      const page1 = await service.createPage({ title: 'New Secondary Page' });
+      await service.deletePage(SYSTEM_GLOBAL_PAGE_ID);
+      expect(await service.getPage(SYSTEM_GLOBAL_PAGE_ID)).toBeUndefined();
+      expect(await service.getPage(page1.id)).toBeDefined();
     });
 
-    it('prohibits binding specific domains to SYSTEM_GLOBAL_PAGE', async () => {
-      await expect(
-        service.bindDomainToPage('example.com', SYSTEM_GLOBAL_PAGE_ID)
-      ).rejects.toThrow('Cannot bind specific domains to system global page');
+    it('preserves surviving pages on re-initialization and reload after SYSTEM_GLOBAL_PAGE has been deleted', async () => {
+      const page1 = await service.createPage({ title: 'My Surviving Custom Page' });
+      await service.deletePage(SYSTEM_GLOBAL_PAGE_ID);
+
+      // Re-initialize a new service instance with same storage
+      const newService = new NotebookService(storage);
+      await newService.init();
+
+      expect(await newService.getPage(page1.id)).toBeDefined();
+      expect((await newService.getPage(page1.id))?.title).toBe('My Surviving Custom Page');
+      expect(await newService.getPage(SYSTEM_GLOBAL_PAGE_ID)).toBeUndefined();
     });
 
-    it('allows harmless title updates to SYSTEM_GLOBAL_PAGE', async () => {
+    it('allows modifying domains on SYSTEM_GLOBAL_PAGE', async () => {
+      const updated = await service.updatePage(SYSTEM_GLOBAL_PAGE_ID, { domains: ['example.com'] });
+      expect(updated.domains).toEqual(['example.com']);
+    });
+
+    it('allows binding specific domains to SYSTEM_GLOBAL_PAGE', async () => {
+      const bound = await service.bindDomainToPage('github.com', SYSTEM_GLOBAL_PAGE_ID);
+      expect(bound.domains).toContain('github.com');
+    });
+
+    it('allows title updates to SYSTEM_GLOBAL_PAGE', async () => {
       const updated = await service.updatePage(SYSTEM_GLOBAL_PAGE_ID, {
         title: '我的全域頁面',
       });
@@ -504,7 +518,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(pageAfter?.sections[0].items[0].id).toBe(cell.id);
     });
 
-    it('batch deletes custom pages while preserving system global page', async () => {
+    it('batch deletes custom pages while preserving at least one page', async () => {
       const page1 = await service.createPage({ title: 'Page 1' });
       const page2 = await service.createPage({ title: 'Page 2' });
       const page3 = await service.createPage({ title: 'Page 3' });
@@ -515,7 +529,6 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(await service.getPage(page1.id)).toBeUndefined();
       expect(await service.getPage(page2.id)).toBeUndefined();
       expect(await service.getPage(page3.id)).toBeDefined();
-      expect(await service.getPage(SYSTEM_GLOBAL_PAGE_ID)).toBeDefined();
     });
 
     it('batch deletes sections within a page', async () => {

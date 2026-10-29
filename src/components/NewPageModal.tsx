@@ -3,17 +3,21 @@ import { X, CornerDownLeft, Globe } from 'lucide-react';
 import { cn } from '../utils';
 import { Language, getTranslations } from '../i18n';
 
-export interface NewPageData {
+export interface PageModalData {
   title: string;
   icon?: string;
   domains: string[];
 }
 
+export type NewPageData = PageModalData;
+
 export interface NewPageModalProps {
   isOpen: boolean;
+  mode?: 'create' | 'edit';
+  initialData?: PageModalData;
   language?: Language;
   onClose: () => void;
-  onSubmit: (data: NewPageData) => void;
+  onSubmit: (data: PageModalData) => void;
   className?: string;
 }
 
@@ -21,27 +25,39 @@ const PRESET_EMOJIS = ['💼', '📝', '💬', '🌐', '🚀', '💡', '🎯', '
 
 export const NewPageModal: React.FC<NewPageModalProps> = ({
   isOpen,
+  mode = 'create',
+  initialData,
   language = 'zh-TW',
   onClose,
   onSubmit,
   className,
 }) => {
   const t = getTranslations(language);
-  const [title, setTitle] = useState('');
-  const [icon, setIcon] = useState('📝');
-  const [domainsInput, setDomainsInput] = useState('');
+  const isEdit = mode === 'edit';
+  const [title, setTitle] = useState(initialData?.title || '');
+  const [icon, setIcon] = useState(initialData?.icon || '📝');
+  const [domainsInput, setDomainsInput] = useState(
+    initialData?.domains ? initialData.domains.join(', ') : ''
+  );
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isOpen) {
-      setTitle('');
-      setIcon('📝');
-      setDomainsInput('');
+      if (initialData) {
+        setTitle(initialData.title || '');
+        setIcon(initialData.icon || '📝');
+        setDomainsInput(initialData.domains ? initialData.domains.join(', ') : '');
+      } else {
+        setTitle('');
+        setIcon('📝');
+        setDomainsInput('');
+      }
       setTimeout(() => {
         inputRef.current?.focus();
+        inputRef.current?.select();
       }, 50);
     }
-  }, [isOpen]);
+  }, [isOpen, initialData]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -76,7 +92,7 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-200">
       <div
         className="fixed inset-0"
         onClick={onClose}
@@ -98,10 +114,10 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
             <span className="text-lg">{icon || '📄'}</span>
             <div>
               <h3 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
-                {t.newPageModal.title}
+                {isEdit ? t.newPageModal.editTitle : t.newPageModal.title}
               </h3>
               <p className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
-                {t.newPageModal.description}
+                {isEdit ? t.newPageModal.editDescription : t.newPageModal.description}
               </p>
             </div>
           </div>
@@ -238,7 +254,7 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 )}
               >
                 <CornerDownLeft className="w-3.5 h-3.5" />
-                <span>{t.newPageModal.submitBtn}</span>
+                <span>{isEdit ? t.newPageModal.saveChangesBtn : t.newPageModal.submitBtn}</span>
               </button>
             </div>
           </div>

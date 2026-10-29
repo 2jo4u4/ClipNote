@@ -50,9 +50,13 @@ export interface I18nTranslations {
     languageToggle: string;
     firstPageDefaultTitle: string;
     deletePage: string;
+    cannotDeleteLastPage: string;
+    editPageTooltip: string;
+    doubleClickEditPageTooltip: string;
     confirmDeletePage: (title: string) => string;
     deletedPageToast: (title: string) => string;
     renamedPageToast: (title: string) => string;
+    updatedPageToast: (title: string) => string;
     renamedCategoryToast: (title: string) => string;
     updatedNoteToast: string;
     batchDeletedToast: (cats: number, notes: number) => string;
@@ -105,12 +109,16 @@ export interface I18nTranslations {
     title: string;
     subtitle: string;
     lockedBadge: string;
+    lastPageBadge: string;
+    anchorBadge: string;
+    cannotDeleteLastPage: string;
     domainBadge: (domain: string) => string;
     noteCountBadge: (count: number) => string;
     selectAll: string;
     deleteSelected: (count: number) => string;
     confirmDelete: (count: number) => string;
     emptyCustomPages: string;
+    editPageTooltip: string;
   };
   moveModal: {
     title: string;
@@ -123,6 +131,8 @@ export interface I18nTranslations {
   newPageModal: {
     title: string;
     description: string;
+    editTitle: string;
+    editDescription: string;
     nameLabel: string;
     namePlaceholder: string;
     iconLabel: string;
@@ -131,6 +141,8 @@ export interface I18nTranslations {
     domainPlaceholder: string;
     domainHint: string;
     submitBtn: string;
+    saveChangesBtn: string;
+    systemDomainLockedHint: string;
   };
   quickCapture: {
     searchPlaceholder: string;

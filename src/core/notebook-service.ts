@@ -168,8 +168,12 @@ export class NotebookService {
   async init(): Promise<NotebookStorage> {
     let data = await this.storage.get<NotebookStorage>(this.storageKey);
 
-    if (!data || !data.pages || !data.systemGlobalPageId || !data.pages[SYSTEM_GLOBAL_PAGE_ID]) {
+    const pageKeys = data?.pages ? Object.keys(data.pages) : [];
+    if (!data || !data.pages || pageKeys.length === 0) {
       data = createDefaultSeedData();
+      await this.storage.set(this.storageKey, data);
+    } else if (!data.systemGlobalPageId || !data.pages[data.systemGlobalPageId]) {
+      data.systemGlobalPageId = pageKeys[0];
       await this.storage.set(this.storageKey, data);
     }
 
@@ -291,19 +295,13 @@ export class NotebookService {
       throw new Error(`Page not found: ${id}`);
     }
 
-    if (page.isSystem) {
-      if (updates.domains !== undefined || updates.isSystem === false) {
-        throw new Error('Cannot alter domains or system status of system global page');
-      }
-    }
-
     if (updates.title !== undefined) {
       page.title = updates.title.trim();
     }
     if (updates.icon !== undefined) {
       page.icon = updates.icon ? updates.icon.trim() : undefined;
     }
-    if (updates.domains !== undefined && !page.isSystem) {
+    if (updates.domains !== undefined) {
       page.domains = updates.domains.map((d) => d.trim().toLowerCase());
     }
     if (updates.isPrimary !== undefined) {
@@ -317,27 +315,42 @@ export class NotebookService {
 
   async deletePage(id: string): Promise<void> {
     const data = await this.ensureInitialized();
-    if (id === data.systemGlobalPageId || id === SYSTEM_GLOBAL_PAGE_ID) {
-      throw new Error('Cannot delete system global page');
-    }
     if (!data.pages[id]) {
       throw new Error(`Page not found: ${id}`);
     }
+    const pageKeys = Object.keys(data.pages);
+    if (pageKeys.length <= 1) {
+      throw new Error('Cannot delete the last remaining page');
+    }
 
     delete data.pages[id];
+    if (data.systemGlobalPageId === id) {
+      data.systemGlobalPageId = Object.keys(data.pages)[0];
+    }
     await this.persist();
   }
 
   async deletePages(ids: string[]): Promise<void> {
     await this.reload();
     const data = await this.ensureInitialized();
-    const idSet = new Set(ids);
-    // Never delete system global page
-    idSet.delete(data.systemGlobalPageId);
-    idSet.delete(SYSTEM_GLOBAL_PAGE_ID);
+    const pageKeys = Object.keys(data.pages);
+    const toDelete = ids.filter((id) => data.pages[id]);
 
-    for (const id of idSet) {
-      delete data.pages[id];
+    // Always preserve at least 1 page
+    if (toDelete.length >= pageKeys.length) {
+      const retainId = pageKeys[0];
+      const validDelete = toDelete.filter((id) => id !== retainId);
+      for (const id of validDelete) {
+        delete data.pages[id];
+      }
+      data.systemGlobalPageId = retainId;
+    } else {
+      for (const id of toDelete) {
+        delete data.pages[id];
+      }
+      if (!data.pages[data.systemGlobalPageId]) {
+        data.systemGlobalPageId = Object.keys(data.pages)[0];
+      }
     }
     await this.persist();
   }
@@ -695,7 +708,9 @@ export class NotebookService {
     const hostname = extractHostname(urlOrHostname);
 
     if (hostname) {
-      const candidates = Object.values(data.pages).filter((page) => !page.isSystem);
+      const candidates = Object.values(data.pages).filter(
+        (page) => page.domains && page.domains.some((d) => d !== '*')
+      );
       const matches = candidates.filter((page) =>
         page.domains.some((pattern) => matchDomain(hostname, pattern))
       );
@@ -723,10 +738,6 @@ export class NotebookService {
 
   async bindDomainToPage(domain: string, pageId: string): Promise<Page> {
     const data = await this.ensureInitialized();
-    if (pageId === data.systemGlobalPageId || pageId === SYSTEM_GLOBAL_PAGE_ID) {
-      throw new Error('Cannot bind specific domains to system global page');
-    }
-
     const page = data.pages[pageId];
     if (!page) {
       throw new Error(`Page not found: ${pageId}`);
