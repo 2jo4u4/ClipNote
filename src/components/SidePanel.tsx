@@ -227,10 +227,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [pendingDeleteSection, setPendingDeleteSection] = useState<Section | null>(null);
 
   // Drag and Drop State
-  const [draggedCell, setDraggedCell] = useState<{
-    cellId: string;
-    sectionId: string;
-  } | null>(null);
+  const [draggedCell, setDraggedCell] = useState<CellTarget | null>(null);
   const [draggedSectionId, setDraggedSectionId] = useState<string | null>(null);
   const [cellDropTarget, setCellDropTarget] = useState<{
     sectionId: string;
@@ -820,7 +817,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     setSectionDropTarget(null);
   };
 
-  const handleSectionDragOverHeader = (secId: string, e: React.DragEvent) => {
+  const handleSectionDragOverSection = (secId: string, e: React.DragEvent) => {
     if (!draggedSectionId || draggedSectionId === secId) return;
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
@@ -829,13 +826,13 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     setSectionDropTarget({ sectionId: secId, position });
   };
 
-  const handleSectionDragLeaveHeader = (secId: string) => {
+  const handleSectionDragLeaveSection = (secId: string) => {
     if (sectionDropTarget?.sectionId === secId) {
       setSectionDropTarget(null);
     }
   };
 
-  const handleSectionDropHeader = (secId: string, e: React.DragEvent) => {
+  const handleSectionDropSection = (secId: string, e: React.DragEvent) => {
     e.preventDefault();
     if (!draggedSectionId || draggedSectionId === secId || !sectionDropTarget) return;
 
@@ -1273,9 +1270,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                 }
                 onDragStart={(e) => handleSectionDragStart(section.id, e)}
                 onDragEnd={handleSectionDragEnd}
-                onDragOverHeader={(e) => handleSectionDragOverHeader(section.id, e)}
-                onDragLeaveHeader={() => handleSectionDragLeaveHeader(section.id)}
-                onDropHeader={(e) => handleSectionDropHeader(section.id, e)}
+                onDragOverContainer={(e) => handleSectionDragOverSection(section.id, e)}
+                onDragLeaveContainer={() => handleSectionDragLeaveSection(section.id)}
+                onDropContainer={(e) => handleSectionDropSection(section.id, e)}
                 onDragOverEmpty={(e) => handleEmptySectionDragOver(section.id, e)}
                 onDragLeaveEmpty={() => handleEmptySectionDragLeave(section.id)}
                 onDropEmpty={(e) => handleEmptySectionDrop(section.id, e)}

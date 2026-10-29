@@ -622,15 +622,43 @@ export class NotebookService {
     await this.persist();
   }
 
-  async reorderSections(pageId: string, sectionIds: string[]): Promise<Section[]> {
+  async reorderSections(
+    pageId: string,
+    sectionIdsOrSourceIndex: string[] | number,
+    targetIndex?: number
+  ): Promise<Section[]> {
     const data = await this.ensureInitialized();
     const page = data.pages[pageId];
     if (!page) {
       throw new Error(`Page not found: ${pageId}`);
     }
 
-    const sectionMap = new Map(page.sections.map((s) => [s.id, s]));
     const now = Date.now();
+
+    if (typeof sectionIdsOrSourceIndex === 'number') {
+      const sourceIndex = sectionIdsOrSourceIndex;
+      if (
+        sourceIndex < 0 ||
+        sourceIndex >= page.sections.length ||
+        targetIndex === undefined ||
+        targetIndex < 0 ||
+        targetIndex >= page.sections.length
+      ) {
+        throw new Error(`Invalid section reorder indices: ${sourceIndex} -> ${targetIndex}`);
+      }
+      const [moved] = page.sections.splice(sourceIndex, 1);
+      page.sections.splice(targetIndex, 0, moved);
+      page.sections.forEach((sec, idx) => {
+        sec.order = idx;
+        sec.updatedAt = now;
+      });
+      page.updatedAt = now;
+      await this.persist();
+      return this.clone(page.sections);
+    }
+
+    const sectionIds = sectionIdsOrSourceIndex;
+    const sectionMap = new Map(page.sections.map((s) => [s.id, s]));
     const reordered: Section[] = [];
 
     sectionIds.forEach((id, index) => {
@@ -845,6 +873,25 @@ export class NotebookService {
 
     await this.persist();
     return this.clone(cell);
+  }
+
+  async reorderCells(
+    pageId: string,
+    params: {
+      cellId: string;
+      sourceSectionId: string;
+      targetSectionId: string;
+      targetIndex?: number;
+    }
+  ): Promise<Cell> {
+    return this.moveCell({
+      cellId: params.cellId,
+      sourcePageId: pageId,
+      sourceSectionId: params.sourceSectionId,
+      targetPageId: pageId,
+      targetSectionId: params.targetSectionId,
+      targetIndex: params.targetIndex,
+    });
   }
 
   /**

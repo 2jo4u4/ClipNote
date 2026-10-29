@@ -147,7 +147,7 @@ export const CellCard: React.FC<CellCardProps> = ({
               onDragEnd={onDragEnd}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
-              title={language === 'en' ? 'Drag to reorder' : '拖曳以重新排序'}
+              title={t.cellCard.dragToReorder}
               className="opacity-0 group-hover:opacity-60 hover:!opacity-100 cursor-grab active:cursor-grabbing p-0.5 -ml-1 text-raycast-light-subtle dark:text-raycast-dark-subtle transition-opacity flex-shrink-0"
             >
               <GripVertical className="w-3.5 h-3.5" />

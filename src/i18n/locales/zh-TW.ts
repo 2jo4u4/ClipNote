@@ -85,6 +85,8 @@ export const zhTW: I18nTranslations = {
     newNote: '新增筆記',
     renameCategory: '重新命名分類',
     deleteCategory: '刪除分類',
+    dragCategoryToReorder: '拖曳分類以重新排序',
+    dropNoteHere: '放開以移入此分類',
   },
   cellCard: {
     editNote: '編輯筆記',
@@ -92,6 +94,7 @@ export const zhTW: I18nTranslations = {
     copied: '已複製',
     moveNote: '移動筆記至...',
     deleteNote: '刪除筆記',
+    dragToReorder: '拖曳以重新排序',
   },
   categoryModal: {
     createTitle: '新增分類',

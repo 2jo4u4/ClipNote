@@ -38,6 +38,9 @@ export interface SectionContainerProps {
   isCellDropTarget?: boolean;
   onDragStart?: (e: React.DragEvent) => void;
   onDragEnd?: (e: React.DragEvent) => void;
+  onDragOverContainer?: (e: React.DragEvent) => void;
+  onDragLeaveContainer?: (e: React.DragEvent) => void;
+  onDropContainer?: (e: React.DragEvent) => void;
   onDragOverHeader?: (e: React.DragEvent) => void;
   onDragLeaveHeader?: (e: React.DragEvent) => void;
   onDropHeader?: (e: React.DragEvent) => void;
@@ -69,6 +72,9 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   isCellDropTarget = false,
   onDragStart,
   onDragEnd,
+  onDragOverContainer,
+  onDragLeaveContainer,
+  onDropContainer,
   onDragOverHeader,
   onDragLeaveHeader,
   onDropHeader,
@@ -86,6 +92,10 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
   const isFields = type === 'fields';
   const isJots = type === 'jots';
 
+  const handleContainerDragOver = onDragOverContainer || onDragOverHeader;
+  const handleContainerDragLeave = onDragLeaveContainer || onDragLeaveHeader;
+  const handleContainerDrop = onDropContainer || onDropHeader;
+
   // Outside click listener for the action menu (No full-screen blocking backdrop)
   useEffect(() => {
     if (!showMenu) return;
@@ -102,6 +112,9 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
 
   return (
     <div
+      onDragOver={handleContainerDragOver}
+      onDragLeave={handleContainerDragLeave}
+      onDrop={handleContainerDrop}
       className={cn(
         'group/section flex flex-col rounded-2xl border transition-all duration-300 ease-raycast',
         isDragging && 'opacity-40 scale-[0.99]',
@@ -116,9 +129,6 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
     >
       {/* Section Header */}
       <div
-        onDragOver={onDragOverHeader}
-        onDragLeave={onDragLeaveHeader}
-        onDrop={onDropHeader}
         className={cn(
           'flex items-center justify-between gap-3 px-3.5 py-2.5 select-none transition-colors duration-150',
           isCollapsible && 'cursor-pointer hover:bg-black/[0.02] dark:hover:bg-white/[0.02] rounded-t-2xl',
@@ -138,7 +148,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
               onDragEnd={onDragEnd}
               onClick={(e) => e.stopPropagation()}
               onMouseDown={(e) => e.stopPropagation()}
-              title={language === 'en' ? 'Drag category to reorder' : '拖曳分類以重新排序'}
+              title={t.sectionContainer.dragCategoryToReorder}
               className="opacity-0 group-hover/section:opacity-60 hover:!opacity-100 cursor-grab active:cursor-grabbing p-0.5 -ml-1 text-raycast-light-subtle dark:text-raycast-dark-subtle transition-opacity flex-shrink-0"
             >
               <GripVertical className="w-3.5 h-3.5" />
@@ -381,7 +391,7 @@ export const SectionContainer: React.FC<SectionContainerProps> = ({
                 )}
               >
                 {isCellDropTarget ? (
-                  <span>{language === 'en' ? 'Drop note here' : '放開以移入此分類'}</span>
+                  <span>{t.sectionContainer.dropNoteHere}</span>
                 ) : (
                   <>
                     <span>{t.sidePanel.emptyCategoryPrompt}</span>

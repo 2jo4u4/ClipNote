@@ -339,7 +339,18 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(reordered[0].id).toBe(sec2.id);
       expect(reordered[1].id).toBe(sec1.id);
 
+      // Reorder using index positions (sourceIndex, targetIndex)
+      const sec3 = await service.createSection(page.id, { title: '專案經歷' });
+      // Current order: [sec2, sec1, sec3]
+      const reorderedByIndex = await service.reorderSections(page.id, 2, 0);
+      // New order: [sec3, sec2, sec1]
+      expect(reorderedByIndex.map((s) => s.id)).toEqual([sec3.id, sec2.id, sec1.id]);
+      expect(reorderedByIndex[0].order).toBe(0);
+      expect(reorderedByIndex[1].order).toBe(1);
+      expect(reorderedByIndex[2].order).toBe(2);
+
       await service.deleteSection(page.id, sec1.id);
+      await service.deleteSection(page.id, sec3.id);
       const updatedPage = await service.getPage(page.id);
       expect(updatedPage?.sections.length).toBe(1);
       expect(updatedPage?.sections[0].id).toBe(sec2.id);
@@ -486,6 +497,45 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
 
       expect(s1?.items.map((c) => c.id)).toEqual([c2.id]);
       expect(s2?.items.map((c) => c.id)).toEqual([c1.id]);
+    });
+
+    it('reorders cells using reorderCells domain method within and across categories', async () => {
+      const page = await service.createPage({ title: 'Reorder Cells Test' });
+      const secA = await service.createSection(page.id, { title: 'Category A' });
+      const secB = await service.createSection(page.id, { title: 'Category B' });
+
+      const c1 = await service.createCell(page.id, secA.id, { key: 'K1', value: 'V1' });
+      const c2 = await service.createCell(page.id, secA.id, { key: 'K2', value: 'V2' });
+
+      // Reorder within Category A
+      await service.reorderCells(page.id, {
+        cellId: c2.id,
+        sourceSectionId: secA.id,
+        targetSectionId: secA.id,
+        targetIndex: 0,
+      });
+
+      let pageState = await service.getPage(page.id);
+      expect(pageState?.sections.find((s) => s.id === secA.id)?.items.map((c) => c.id)).toEqual([
+        c2.id,
+        c1.id,
+      ]);
+
+      // Move into empty Category B
+      await service.reorderCells(page.id, {
+        cellId: c1.id,
+        sourceSectionId: secA.id,
+        targetSectionId: secB.id,
+        targetIndex: 0,
+      });
+
+      pageState = await service.getPage(page.id);
+      expect(pageState?.sections.find((s) => s.id === secA.id)?.items.map((c) => c.id)).toEqual([
+        c2.id,
+      ]);
+      expect(pageState?.sections.find((s) => s.id === secB.id)?.items.map((c) => c.id)).toEqual([
+        c1.id,
+      ]);
     });
   });
 

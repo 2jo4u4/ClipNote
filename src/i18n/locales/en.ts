@@ -86,6 +86,8 @@ export const en: I18nTranslations = {
     newNote: 'New Note',
     renameCategory: 'Rename Category',
     deleteCategory: 'Delete Category',
+    dragCategoryToReorder: 'Drag category to reorder',
+    dropNoteHere: 'Drop note here',
   },
   cellCard: {
     editNote: 'Edit Note',
@@ -93,6 +95,7 @@ export const en: I18nTranslations = {
     copied: 'Copied',
     moveNote: 'Move Note...',
     deleteNote: 'Delete Note',
+    dragToReorder: 'Drag to reorder',
   },
   categoryModal: {
     createTitle: 'New Category',

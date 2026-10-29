@@ -83,6 +83,8 @@ export interface I18nTranslations {
     newNote: string;
     renameCategory: string;
     deleteCategory: string;
+    dragCategoryToReorder: string;
+    dropNoteHere: string;
   };
   cellCard: {
     editNote: string;
@@ -90,6 +92,7 @@ export interface I18nTranslations {
     copied: string;
     moveNote: string;
     deleteNote: string;
+    dragToReorder: string;
   };
   categoryModal: {
     createTitle: string;
