@@ -7,24 +7,24 @@ const sampleResults: SearchResult[] = [
   {
     id: 'res-1',
     type: 'field',
-    pageId: 'page-104',
-    pageTitle: '104 中文經歷',
+    pageId: 'page-resume',
+    pageTitle: '求職中文經歷',
     sectionId: 'sec-title',
     sectionTitle: '職稱經歷',
     title: '英文職稱 (Title)',
     content: 'Staff Frontend Engineer & System Architect',
-    sourcePath: '來自 [104 中文經歷] > [職稱經歷] ‧ 英文職稱 (Title)',
+    sourcePath: '來自 [求職中文經歷] > [職稱經歷] ‧ 英文職稱 (Title)',
   },
   {
     id: 'res-2',
     type: 'field',
-    pageId: 'page-104',
-    pageTitle: '104 中文經歷',
+    pageId: 'page-resume',
+    pageTitle: '求職中文經歷',
     sectionId: 'sec-summary',
     sectionTitle: '專業簡介',
     title: '架構設計成就',
     content: '主導設計高併發前端微服務，將模組載入時間優化至 200ms 以內。',
-    sourcePath: '來自 [104 中文經歷] > [專業簡介] ‧ 架構設計成就',
+    sourcePath: '來自 [求職中文經歷] > [專業簡介] ‧ 架構設計成就',
   },
   {
     id: 'res-3',
@@ -36,7 +36,7 @@ const sampleResults: SearchResult[] = [
     title: '靈感便簽',
     content: '推薦閱讀《Designing Data-Intensive Applications》第 5 章。',
     sourcePath: '來自 [全域筆記頁] > [隨筆收集箱]',
-    sourceUrl: 'https://news.ycombinator.com',
+    sourceUrl: 'https://example.org',
   },
   {
     id: 'res-4',
@@ -69,8 +69,8 @@ export const Default: Story = {
       <div className="max-w-lg mx-auto p-4 bg-raycast-dark-bg rounded-xl border border-raycast-dark-border min-h-[300px]">
         <OmniSearchBar
           results={sampleResults}
-          currentDomain="cake.me"
-          onBindDomain={(pId) => alert(`觸發智慧網域綁定: 將 Page ${pId} 綁定至 cake.me`)}
+          currentDomain="example.com"
+          onBindDomain={(pId) => alert(`觸發智慧網域綁定: 將 Page ${pId} 綁定至 example.com`)}
         />
       </div>
     );
@@ -97,9 +97,9 @@ export const InteractiveSearchAndKeyboard: Story = {
         <OmniSearchBar
           results={filtered}
           onSearch={setQuery}
-          currentDomain="linkedin.com"
+          currentDomain="sample.org"
           onSelectItem={(item) => setLastCopied(item.content)}
-          onBindDomain={(pageId) => alert(`將 Page ${pageId} 綁定至 linkedin.com`)}
+          onBindDomain={(pageId) => alert(`將 Page ${pageId} 綁定至 sample.org`)}
         />
         {lastCopied && (
           <div className="text-xs font-mono text-emerald-400 mt-auto">

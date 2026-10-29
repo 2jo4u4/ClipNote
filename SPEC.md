@@ -1,4 +1,4 @@
-# Specification: Notebook Browser Extension (筆記本網頁擴充應用)
+# Specification: ClipNote Browser Extension (筆記本網頁擴充應用)
 
 ## Problem Statement
 
@@ -8,13 +8,13 @@ Existing solutions either force users into heavyweight external note apps that b
 
 ## Solution
 
-A lightweight, domain-aware Chrome Manifest V3 browser extension called **Notebook (筆記本)** that acts as an ambient drawer and instant capture palette.
+A lightweight, domain-aware Chrome Manifest V3 browser extension called **ClipNote (筆記本)** that acts as an ambient drawer and instant capture palette.
 
 It provides:
 1. **Unified Atomic Unit (`Cell`)**: Standardizes all note items into a unified `Cell` model. If a Cell has a `key`, it behaves and renders as a structured Field; if the `key` is omitted, it behaves as a free-form Jot.
 2. **Flexible Mixed Sections (`Section`)**: Sections act as pure organizational clusters containing an ordered array of `Cell` items. Sections can freely hold both Fields and Jots side-by-side without artificial container type segregation.
 3. **One-Click Copy (一鍵複製)**: Fast, non-destructive copying of any Cell value with visual feedback (scale tap + emerald glow), tailored for form filling and zero DOM disruption.
-4. **Context-First Active Page Resolution (作用中筆記頁解析)**: Automatically highlights and opens the relevant thematic notebook page (e.g., "104 中文經歷" or "社交平台貼文") based on the current website hostname, while universally pinning a built-in `Global Page` (`🌐`) as a universal fallback.
+4. **Context-First Active Page Resolution (作用中筆記頁解析)**: Automatically highlights and opens the relevant thematic notebook page (e.g., "求職中文經歷" or "社交平台貼文") based on the current website hostname, while universally pinning a built-in `Global Page` (`🌐`) as a universal fallback.
 5. **Custom Page Icons & Dynamic Creation**: Full customization of page tabs with Emoji icons (e.g., `💼`, `💬`, `📝`, `🚀`) and a streamlined creation flow (`NewPageModal`).
 6. **Zero-Friction Dual-Mode Capture**: Instant capturing via right-click context menu and an in-page floating modal (`Alt+N`) with unified title/content inputs and real-time omni-search.
 7. **Side Panel Workspace (側邊欄常駐工作區)**: Non-obstructive Chrome Side Panel (`Alt+S`) built with Raycast-inspired warm minimalism for multi-field continuous resume filling.
@@ -38,7 +38,7 @@ It provides:
 11. As a user reviewing my notes, I want to see the creation or modification relative time (e.g., "5 分鐘前", "昨天") on every Cell, so that I can judge how fresh or relevant the information is.
 
 ### Domain Awareness & Organization
-12. As a content creator drafting posts for multiple social platforms, I want to bind a single "社交平台貼文" Page to multiple domains (e.g., `x.com`, `threads.net`, `facebook.com`), so that the exact same drafting notes and hashtags appear by default whenever I visit any of these sites.
+12. As a content creator drafting posts for multiple social platforms, I want to bind a single "社交平台貼文" Page to multiple domains (e.g., `sample.org`, `social.example.net`, `forum.example.org`), so that the exact same drafting notes and hashtags appear by default whenever I visit any of these sites.
 13. As a user visiting an arbitrary or unknown website, I want the extension to automatically default to the system `Global Page`, so that I never face an empty screen or broken navigation.
 14. As a user with multiple Pages associated with the same domain, I want to designate a primary Page or have the system remember my last active Page tab on that site, so that I land on the most relevant page without repetitive clicking.
 15. As a user reviewing my notes on a matched domain, I want a permanent `[ 🌐 第一頁 ]` tab pinned at the top of the Side Panel, so that I can instantly switch between domain-specific notes and universal notes.
@@ -56,7 +56,7 @@ It provides:
 24. As a user organizing or clearing notebook items, I want batch selection and deletion for Pages, Categories, and Cells, so that I can select multiple unwanted items and delete them in one step.
 
 ### Discovery & Search
-25. As a user on a new job website (`cake.me`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `104 中文經歷`.
+25. As a user on a new job website (`sample.org`), I want to type in the Side Panel search bar and have it search across all Pages, Sections, and Cells (matching both Key and Value), so that I can find my work history stored under `求職中文經歷`.
 26. As a user discovering a Cell from another Page via search, I want an option to bind the current domain to that Page with one click, so that future visits automatically prioritize that Page.
 27. As a user browsing search results, I want each result card to show its source path (`來自 [Page] > [Section]`) and type badge (`[欄位]` or `[隨筆]`), so that I understand the context before copying.
 
@@ -275,6 +275,16 @@ Whenever a Cell is created, updated, or deleted within a Section:
   - Supports `ArrowDown` / `ArrowUp` to cycle options, `Enter` / `Space` to open and confirm selection, and `Escape` to close and return focus.
 - **Explicit Label Association in Modals**:
   - Form modals (`QuickCaptureModal`, `MoveCellModal`) bind label `<label htmlFor="...">` with dropdown trigger button `<Dropdown id="...">`.
+
+### 19. Subdomain Auto-Matching & Specificity Priority (`matchDomain` & `findBestMatchingPage`)
+- **Subdomain Auto-Matching**: Configuring a root domain pattern (e.g., `example.com`) automatically matches the exact domain as well as any subdomain (`www.example.com`, `m.example.com`) without requiring explicit `*.` wildcard prefixes (`normHost === normPattern || normHost.endsWith('.' + normPattern)`).
+- **Subdomain Specificity**: Configuring a specific subdomain (e.g., `docs.example.com`) matches only that subdomain and its sub-branches (`v1.docs.example.com`), never matching the root domain or peer subdomains (`www.example.com`).
+- **Longest-Pattern Specificity Weighting (`findBestMatchingPage`)**: When multiple pages match the active hostname, the page with the longest normalized matching domain pattern wins (`docs.example.com` > `example.com`). Ties at the top specificity score are broken by active session selection (`sessionPageId`), then `isPrimary`, then creation/list order.
+
+### 20. Chrome Native `_locales` & Static Assets Consolidation
+- **Manifest i18n (`public/_locales/`)**: Provides Chrome Web Store native localization files (`public/_locales/en/messages.json` and `public/_locales/zh_TW/messages.json`) with `default_locale: 'en'` and `__MSG_...__` placeholders in `wxt.config.ts` for browser-level extension name, description, action tooltip, and shortcut descriptions.
+- **Decoupled In-App Language State**: Inside the React Side Panel and Quick Capture UI, translations continue to be driven by the synchronous React `language` state (`src/i18n/index.ts` + `localStorage.getItem('notebook_language')`), keeping the in-app header language toggle 100% responsive and independent of browser OS locale.
+- **Single Root `public/` Directory**: All static assets (`icons/` and `_locales/`) reside exclusively in the root `public/` directory.
 
 ---
 

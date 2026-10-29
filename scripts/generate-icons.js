@@ -243,7 +243,7 @@ const targetDirs = [
 
 for (const outDir of targetDirs) {
   fs.mkdirSync(outDir, { recursive: true });
-  for (const size of [16, 48, 128, 256]) {
+  for (const size of [16, 48, 128]) {
     const png = generateIconPNG(size);
     fs.writeFileSync(path.join(outDir, `icon-${size}.png`), png);
     console.log(`Generated ${path.relative('.', outDir)}/icon-${size}.png (${png.length} bytes)`);

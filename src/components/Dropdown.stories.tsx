@@ -5,9 +5,9 @@ import { Globe, Layers, Hash, BookOpen } from 'lucide-react';
 
 const sampleOptions: DropdownOption[] = [
   { id: 'SYSTEM_GLOBAL_PAGE', label: '全域筆記頁', icon: <Globe className="w-3.5 h-3.5 text-raycast-coral" /> },
-  { id: 'p1', label: '104 中文經歷', icon: <Hash className="w-3.5 h-3.5 text-raycast-amber" /> },
+  { id: 'p1', label: '求職中文經歷', icon: <Hash className="w-3.5 h-3.5 text-raycast-amber" /> },
   { id: 'p2', label: '社交平台貼文', icon: <BookOpen className="w-3.5 h-3.5 text-emerald-400" /> },
-  { id: 'p3', label: 'CakeResume 英文檔案', icon: <Layers className="w-3.5 h-3.5 text-sky-400" /> },
+  { id: 'p3', label: '英文履歷檔案', icon: <Layers className="w-3.5 h-3.5 text-sky-400" /> },
 ];
 
 const meta: Meta<typeof Dropdown> = {

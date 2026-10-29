@@ -79,8 +79,8 @@ export const MixedList: Story = {
           id="c-3"
           value="面試前記得複習瀏覽器 Event Loop 與微前端狀態隔離機制。"
           createdAt={Date.now() - 7200000}
-          sourceUrl="https://developer.mozilla.org"
-          sourceTitle="MDN Web Docs"
+          sourceUrl="https://docs.example.org"
+          sourceTitle="Example Web Docs"
         />
       </div>
     );

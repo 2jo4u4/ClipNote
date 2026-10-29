@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import {
   NotebookService,
   matchDomain,
+  findBestMatchingPage,
   extractHostname,
   reorderArray,
   moveCellInPage,
@@ -54,6 +55,23 @@ describe('Domain Utility Functions', () => {
       expect(matchDomain('sub.example.com', '*.example.com')).toBe(true);
       expect(matchDomain('deep.sub.example.com', '*.example.com')).toBe(true);
       expect(matchDomain('notexample.com', '*.example.com')).toBe(false);
+    });
+  });
+
+  describe('findBestMatchingPage', () => {
+    it('selects longest matching pattern and respects sessionPageId and isPrimary on ties', () => {
+      const pages = [
+        { id: 'p-root-1', domains: ['example.com'], isPrimary: true },
+        { id: 'p-root-2', domains: ['example.com'], isPrimary: false },
+        { id: 'p-docs', domains: ['docs.example.com'], isPrimary: false },
+      ];
+
+      // Root domain tie-broken by isPrimary
+      expect(findBestMatchingPage(pages, 'www.example.com')?.id).toBe('p-root-1');
+      // Session page overrides isPrimary on equal specificity
+      expect(findBestMatchingPage(pages, 'www.example.com', 'p-root-2')?.id).toBe('p-root-2');
+      // Specific subdomain overrides root page even when root page has sessionPageId or isPrimary
+      expect(findBestMatchingPage(pages, 'docs.example.com', 'p-root-2')?.id).toBe('p-docs');
     });
   });
 });

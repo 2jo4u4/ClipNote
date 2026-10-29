@@ -66,7 +66,7 @@ If we update this Privacy Policy in the future, changes will be published direct
 ClipNote 遵循最小權限原則，僅申請實現核心功能不可或缺的權限：
 - **`storage`（本機儲存）**：用於在您的電腦本機讀寫與持久化筆記資料。
 - **`sidePanel`（側邊欄）**：用於在 Chrome 原生側邊欄中渲染筆記本介面。
-- **`tabs` 與 `activeTab`（分頁網域識別）**：僅在前景即時讀取目前活躍分頁的網域名稱（Hostname），以實現切換分頁時自動顯示該網站對應筆記本（例如開啟求職網站 `example.com` 時自動切換至求職筆記頁面）。網址僅於本機記憶體即時比對，絕不上傳或留存記錄。
+- **`tabs` 與 `activeTab`（分頁網域識別）**：僅在前景即時讀取目前活躍分頁的網域名稱（Hostname），以實現切換分頁時自動顯示該網站對應筆記本（例如開啟求職網站 `example.com` 時自動切換至求職筆記頁）。網址僅於本機記憶體即時比對，絕不上傳或留存記錄。
 - **`contextMenus`（右鍵選單）**：用於在網頁上選取文字時，提供「新增筆記」右鍵快捷搜刮功能。
 
 ### 4. 第三方服務與廣告

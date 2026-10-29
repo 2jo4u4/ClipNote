@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, Fragment } from 'react';
+import { useState, useMemo, useEffect, useRef, Fragment } from 'react';
 import {
   Globe,
   Plus,
@@ -29,7 +29,13 @@ import { ConfirmModal } from './ConfirmModal';
 import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
-import { matchDomain, createDefaultSeedData, reorderArray, moveCellInPage } from '../core/notebook-service';
+import {
+  extractHostname,
+  findBestMatchingPage,
+  createDefaultSeedData,
+  reorderArray,
+  moveCellInPage,
+} from '../core/notebook-service';
 import {
   applyTheme,
   getStoredTheme,
@@ -134,31 +140,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     });
   };
 
-  const findBestMatchingPage = (candidates: PageItem[], domain: string): PageItem | undefined => {
-    if (!domain) return undefined;
-    const filtered = candidates.filter((p) => p.domains && p.domains.some((d) => d !== '*'));
-    const scored = filtered
-      .map((page) => {
-        let bestScore = -1;
-        for (const pattern of page.domains || []) {
-          if (matchDomain(domain, pattern)) {
-            let clean = pattern.trim().toLowerCase();
-            if (clean.startsWith('*.')) clean = clean.slice(2);
-            if (clean.length > bestScore) {
-              bestScore = clean.length;
-            }
-          }
-        }
-        return { page, score: bestScore };
-      })
-      .filter((item) => item.score > 0);
-
-    if (scored.length === 0) return undefined;
-    scored.sort((a, b) => b.score - a.score);
-    const topScore = scored[0].score;
-    const topMatches = scored.filter((m) => m.score === topScore).map((m) => m.page);
-    return topMatches.find((p) => p.isPrimary) || topMatches[0];
-  };
+  const sessionPagesRef = useRef<Record<string, string>>({});
 
   const [activePageId, setActivePageId] = useState<string>(() => {
     if (initialActivePageId) return initialActivePageId;
@@ -180,6 +162,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
   const handleSelectPage = (pageId: string) => {
     setActivePageId(pageId);
+    const normHost = extractHostname(currentDomain);
+    if (normHost) {
+      sessionPagesRef.current[normHost] = pageId;
+    }
     if (onActivePageChange) {
       onActivePageChange(pageId);
     }
@@ -188,7 +174,9 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   // Automatically focus matching page when user switches tab domain in browser
   useEffect(() => {
     if (!currentDomain) return;
-    const matched = findBestMatchingPage(pages, currentDomain);
+    const normHost = extractHostname(currentDomain);
+    const sessionPageId = normHost ? sessionPagesRef.current[normHost] : undefined;
+    const matched = findBestMatchingPage(pages, currentDomain, sessionPageId);
     if (matched) {
       setActivePageId(matched.id);
     }

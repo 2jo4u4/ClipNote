@@ -65,13 +65,13 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   onClose,
   pages = [
     { id: SYSTEM_GLOBAL_PAGE_ID, title: '第一頁', isSystem: true },
-    { id: 'p1', title: '104 中文經歷' },
+    { id: 'p1', title: '求職中文經歷' },
     { id: 'p2', title: '社交平台貼文' },
   ],
   sections = [
     { id: 's-global-jots', title: '隨手記事', pageId: SYSTEM_GLOBAL_PAGE_ID },
     { id: 's-global-fields', title: '常用資料', pageId: SYSTEM_GLOBAL_PAGE_ID },
-    { id: 's-104-fields', title: '經歷資料', pageId: 'p1' },
+    { id: 's-resume-fields', title: '經歷資料', pageId: 'p1' },
     { id: 's-social-jots', title: '靈感草稿', pageId: 'p2' },
   ],
   activePageId = SYSTEM_GLOBAL_PAGE_ID,

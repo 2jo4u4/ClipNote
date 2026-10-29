@@ -53,6 +53,17 @@ export function extractHostname(urlOrDomain: string): string {
 }
 
 /**
+ * Normalizes a domain pattern by trimming, lowercasing, and stripping leading '*.'.
+ */
+export function normalizeDomainPattern(pattern: string): string {
+  let clean = pattern.trim().toLowerCase();
+  if (clean.startsWith('*.')) {
+    clean = clean.slice(2);
+  }
+  return clean;
+}
+
+/**
  * Matches a target hostname against a domain pattern.
  * - '*' matches all domains.
  * - Root or wildcard patterns (e.g. 'example.com' or '*.example.com') match exact hostname as well as any subdomains ('www.example.com', 'api.example.com').
@@ -60,19 +71,64 @@ export function extractHostname(urlOrDomain: string): string {
  */
 export function matchDomain(hostname: string, pattern: string): boolean {
   const normHost = hostname.trim().toLowerCase();
-  let normPattern = pattern.trim().toLowerCase();
+  const normPattern = normalizeDomainPattern(pattern);
 
   if (!normHost || !normPattern) return false;
   if (normPattern === '*') return true;
-
-  if (normPattern.startsWith('*.')) {
-    normPattern = normPattern.slice(2);
-  }
 
   if (normHost === normPattern) return true;
   if (normHost.endsWith('.' + normPattern)) return true;
 
   return false;
+}
+
+/**
+ * Pure helper to select the best matching page for a given hostname based on:
+ * 1. Longest matching domain pattern specificity (e.g. 'docs.example.com' > 'example.com')
+ * 2. Active session page preference (sessionPageId) among tied top-scoring pages
+ * 3. Primary page flag (isPrimary) among tied top-scoring pages
+ * 4. First matched page in order
+ */
+export function findBestMatchingPage<
+  T extends { id: string; domains?: string[]; isPrimary?: boolean }
+>(pages: T[], hostname: string, sessionPageId?: string): T | undefined {
+  const normHost = extractHostname(hostname);
+  if (!normHost) return undefined;
+
+  const candidates = pages.filter(
+    (page) => page.domains && page.domains.some((d) => d !== '*')
+  );
+
+  const matchesWithScore = candidates
+    .map((page) => {
+      let bestScore = -1;
+      for (const pattern of page.domains || []) {
+        if (pattern === '*') continue;
+        if (matchDomain(normHost, pattern)) {
+          const clean = normalizeDomainPattern(pattern);
+          if (clean.length > bestScore) {
+            bestScore = clean.length;
+          }
+        }
+      }
+      return { page, score: bestScore };
+    })
+    .filter((item) => item.score > 0);
+
+  if (matchesWithScore.length === 0) return undefined;
+
+  matchesWithScore.sort((a, b) => b.score - a.score);
+  const topScore = matchesWithScore[0].score;
+  const topMatches = matchesWithScore
+    .filter((m) => m.score === topScore)
+    .map((m) => m.page);
+
+  if (sessionPageId) {
+    const sessionMatch = topMatches.find((p) => p.id === sessionPageId);
+    if (sessionMatch) return sessionMatch;
+  }
+
+  return topMatches.find((p) => p.isPrimary) || topMatches[0];
 }
 
 /**
@@ -344,7 +400,7 @@ export function createDefaultSeedData(): NotebookStorage {
         items: [
           {
             id: 'cell-en-10',
-            value: 'Assign applicable websites (e.g., example.com, sample.org) to a page, and Notebook will switch to it automatically as you browse.',
+            value: 'Assign applicable websites (e.g., example.com, sample.org) to a page, and ClipNote will switch to it automatically as you browse.',
             createdAt: now,
             updatedAt: now,
           },
@@ -959,45 +1015,10 @@ export class NotebookService {
     const hostname = extractHostname(urlOrHostname);
 
     if (hostname) {
-      const candidates = Object.values(data.pages).filter(
-        (page) => page.domains && page.domains.some((d) => d !== '*')
-      );
-      const matchesWithScore = candidates
-        .map((page) => {
-          let bestScore = -1;
-          for (const pattern of page.domains) {
-            if (matchDomain(hostname, pattern)) {
-              let clean = pattern.trim().toLowerCase();
-              if (clean.startsWith('*.')) clean = clean.slice(2);
-              if (clean.length > bestScore) {
-                bestScore = clean.length;
-              }
-            }
-          }
-          return { page, score: bestScore };
-        })
-        .filter((item) => item.score > 0);
-
-      if (matchesWithScore.length > 0) {
-        // Prioritize by pattern specificity (longer matched domain pattern wins)
-        matchesWithScore.sort((a, b) => b.score - a.score);
-        const topScore = matchesWithScore[0].score;
-        const topMatches = matchesWithScore
-          .filter((m) => m.score === topScore)
-          .map((m) => m.page);
-
-        // 1. Check if user previously selected a page for this domain in active session
-        const sessionPageId = this.sessionActivePages.get(hostname);
-        if (sessionPageId) {
-          const sessionMatch = topMatches.find((p) => p.id === sessionPageId);
-          if (sessionMatch) {
-            return this.clone(sessionMatch);
-          }
-        }
-
-        // 2. Prioritize isPrimary among top score matches
-        const primary = topMatches.find((p) => p.isPrimary);
-        return this.clone(primary || topMatches[0]);
+      const sessionPageId = this.sessionActivePages.get(hostname);
+      const matched = findBestMatchingPage(Object.values(data.pages), hostname, sessionPageId);
+      if (matched) {
+        return this.clone(matched);
       }
     }
 

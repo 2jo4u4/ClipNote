@@ -35,7 +35,7 @@ export const MixedSectionDefault: Story = {
           <CellCard
             id="f2"
             cellKey="聯絡信箱"
-            value="david.wang@agent-cloud.io"
+            value="david.wang@example.com"
           />
           <CellCard
             id="j1"
@@ -57,7 +57,7 @@ export const JotsSectionInteractive: Story = {
         id: 'c-1',
         value: '閱讀了最新 Chrome MV3 SidePanel API 規範，確認支援跨分頁長連接。',
         createdAt: Date.now() - 1000 * 60 * 20,
-        sourceUrl: 'https://developer.chrome.com/docs/extensions/reference/sidePanel',
+        sourceUrl: 'https://docs.example.org/extensions/reference/sidePanel',
       },
       {
         id: 'c-2',

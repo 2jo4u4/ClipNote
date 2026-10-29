@@ -40,7 +40,7 @@ const samplePages: Page[] = [
     updatedAt: Date.now(),
     sections: [
       {
-        id: 'sec-104-exp',
+        id: 'sec-resume-exp',
         title: '工作經驗',
         order: 0,
         createdAt: Date.now(),
@@ -48,7 +48,7 @@ const samplePages: Page[] = [
         items: [],
       },
       {
-        id: 'sec-104-bio',
+        id: 'sec-resume-bio',
         title: '自傳與自述',
         order: 1,
         createdAt: Date.now(),
@@ -102,8 +102,8 @@ export const Default: Story = {
         <MoveCellModal
           isOpen={isOpen}
           cell={sampleCell}
-          sourcePageId="p-104"
-          sourceSectionId="sec-104-exp"
+          sourcePageId="p-resume"
+          sourceSectionId="sec-resume-exp"
           pages={samplePages}
           onClose={() => setIsOpen(false)}
           onConfirm={(targetPageId, targetSectionId) => {

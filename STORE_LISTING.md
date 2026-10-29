@@ -13,7 +13,7 @@
 | **主要類別 (Category)** | `Productivity` | `生產力` | 推薦分類 |
 | **定價 (Pricing)** | `Free` | `免費` | 無內購、無廣告 |
 | **預設語言 (Default Language)** | `English` (或 `繁體中文`) | `繁體中文` (或 `English`) | 後台可設置多語系獨立說明 |
-| **隱私權政策 (Privacy Policy URL)** | 您的 GitHub Gist 公開網址（請參閱 [`PRIVACY_POLICY.md`](file:///d:/project/note-ext/PRIVACY_POLICY.md)） | 必填欄位 |
+| **隱私權政策 (Privacy Policy URL)** | 您的 GitHub Gist 公開網址（請參閱 [`PRIVACY_POLICY.md`](PRIVACY_POLICY.md)） | 必填欄位 |
 
 ---
 
@@ -45,7 +45,7 @@ Designed for job seekers, developers, content creators, and power users who freq
 
 4. 📁 Structured Fields & Free-form Jots
 • Supports structured "Fields" (Key-Value pairs like Phone, Email, Address, Portfolio links) and unstructured "Jots" (free-flowing plain text memos and code snippets).
-• Organize content into custom Categories, with one-click "Collapse All / Expand All" and batch selection management.
+• Organize content into custom Categories, with one-click "Collapse All / Expand All" and Batch Manage.
 
 5. 🔒 100% Local Storage & Extreme Privacy
 • All your notes, categories, pages, and settings are stored strictly on your local device (chrome.storage.local).
@@ -57,7 +57,7 @@ Designed for job seekers, developers, content creators, and power users who freq
 • Alt + S: Open or close the ClipNote side panel
 • Alt + N: Trigger Quick Capture / search notes overlay
 • Ctrl + Enter: Quickly save and submit note modal
-• Esc: Dismiss modals or exit batch selection mode
+• Esc: Dismiss modals or exit Batch Manage mode
 
 ────────────────────────
 💡 POPULAR USE CASES
@@ -85,7 +85,7 @@ ClipNote 是一款極簡、高質感且具備「網域感知」能力的瀏覽�
 • 當您瀏覽求職平台、開發者社群、各類線上服務等網站時，側邊欄會即時自動切換至該網域綁定的專屬頁面。
 • 告別在雜亂記事本中反覆翻找特定網站常用帳號、常用履歷段落或個人資料的困擾。
 
-2. ⚡ 一鍵複製（One-Click Fast Copy）
+2. ⚡ 一鍵複製（One-Click Copy）
 • 點擊任何筆記卡片，完整文字立即複製至剪貼簿，並伴隨細緻觸感回饋。
 • 求職投履歷、填寫線上表單、社群發文一氣呵成，效率倍增。
 
@@ -95,7 +95,7 @@ ClipNote 是一款極簡、高質感且具備「網域感知」能力的瀏覽�
 
 4. 📁 結構化欄位與隨筆管理
 • 同時支援具備標題的「欄位（Field，適用結構化 Key-Value）」與無標題的「隨筆（Jot，適用純文字備忘）」。
-• 提供分類一鍵全部折疊／展開，以及靈活的多選批次管理功能。
+• 提供分類一鍵全部折疊／展開，以及靈活的批次管理功能。
 
 5. 🔒 100% 本機儲存，極致隱私
 • 所有筆記完全儲存在您的電腦本機（chrome.storage.local）。
@@ -170,8 +170,8 @@ Chrome 商店要求至少 1 張、建議上傳 4~5 張高解析截圖。
    - *文字標籤*：`極簡黑夜風格，一鍵點擊立即複製` / `Warm Minimalist Design, One-Click Copy`
 
 4. **截圖 4：批次管理與一鍵折疊**
-   - *畫面*：展示分類標題列的多選核取方塊，以及頂部 Chevrons 一鍵折疊所有分類的收合效果。
-   - *文字標籤*：`一鍵折疊分類，靈活批次管理` / `One-Click Collapse All & Batch Management`
+   - *畫面*：展示分類標題列的批次管理核取方塊，以及頂部 Chevrons 一鍵折疊所有分類的收合效果。
+   - *文字標籤*：`一鍵折疊分類，靈活批次管理` / `One-Click Collapse All & Batch Manage`
 
 ---
 
