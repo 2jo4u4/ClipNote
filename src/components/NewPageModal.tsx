@@ -40,9 +40,12 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
     initialData?.domains ? initialData.domains.join(', ') : ''
   );
   const inputRef = useRef<HTMLInputElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
 
   useEffect(() => {
     if (isOpen) {
+      previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
       if (initialData) {
         setTitle(initialData.title || '');
         setIcon(initialData.icon || '📝');
@@ -52,21 +55,54 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
         setIcon('📝');
         setDomainsInput('');
       }
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         inputRef.current?.focus();
         inputRef.current?.select();
       }, 50);
+      return () => clearTimeout(timer);
+    } else {
+      if (previouslyFocusedElementRef.current) {
+        previouslyFocusedElementRef.current.focus();
+        previouslyFocusedElementRef.current = null;
+      }
     }
   }, [isOpen, initialData]);
 
+  // Focus trap and Escape key listener
   useEffect(() => {
+    if (!isOpen) return;
+
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isOpen) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         onClose();
+        return;
+      }
+
+      if (e.key === 'Tab') {
+        if (!modalRef.current) return;
+        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusableElements.length === 0) return;
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (e.shiftKey) {
+          if (document.activeElement === firstElement) {
+            e.preventDefault();
+            lastElement.focus();
+          }
+        } else {
+          if (document.activeElement === lastElement) {
+            e.preventDefault();
+            firstElement.focus();
+          }
+        }
       }
     };
+
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
@@ -100,6 +136,11 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
       />
 
       <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-page-modal-title"
+        aria-describedby="new-page-modal-desc"
         className={cn(
           'relative w-full max-w-lg rounded-2xl shadow-2xl border overflow-hidden flex flex-col',
           'bg-raycast-light-bg border-raycast-light-border text-raycast-light-text',
@@ -111,18 +152,20 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-raycast-light-border dark:border-raycast-dark-border">
           <div className="flex items-center gap-2">
-            <span className="text-lg">{icon || '📄'}</span>
+            <span className="text-lg" aria-hidden="true">{icon || '📄'}</span>
             <div>
-              <h3 className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
+              <h3 id="new-page-modal-title" className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text">
                 {isEdit ? t.newPageModal.editTitle : t.newPageModal.title}
               </h3>
-              <p className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
+              <p id="new-page-modal-desc" className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
                 {isEdit ? t.newPageModal.editDescription : t.newPageModal.description}
               </p>
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
+            aria-label={t.common.cancel}
             className="p-1 rounded-lg text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -133,12 +176,18 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
         <form onSubmit={handleSubmit} className="p-5 flex flex-col gap-4">
           {/* Page Title */}
           <div>
-            <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5">
+            <label
+              htmlFor="new-page-title-input"
+              className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5"
+            >
               {t.newPageModal.nameLabel} <span className="text-raycast-coral">*</span>
             </label>
             <input
+              id="new-page-title-input"
               ref={inputRef}
               type="text"
+              required
+              aria-required="true"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder={t.newPageModal.namePlaceholder}
@@ -153,7 +202,10 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
 
           {/* Icon / Emoji Selection */}
           <div>
-            <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center justify-between">
+            <label
+              htmlFor="new-page-icon-input"
+              className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center justify-between"
+            >
               <span>{t.newPageModal.iconLabel}</span>
               <span className="text-[11px] font-normal text-raycast-light-subtle dark:text-raycast-dark-subtle">
                 {t.newPageModal.iconHint}
@@ -161,9 +213,11 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
             </label>
             <div className="flex items-center gap-2 mb-2">
               <input
+                id="new-page-icon-input"
                 type="text"
                 value={icon}
                 maxLength={4}
+                aria-label={t.newPageModal.iconLabel}
                 onChange={(e) => setIcon(e.target.value)}
                 placeholder="圖示"
                 className={cn(
@@ -174,12 +228,18 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 )}
               />
               {/* Preset Chips */}
-              <div className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar flex-1">
+              <div
+                role="group"
+                aria-label={t.newPageModal.iconLabel}
+                className="flex items-center gap-1 overflow-x-auto py-0.5 no-scrollbar flex-1"
+              >
                 {PRESET_EMOJIS.map((emoji) => (
                   <button
                     key={emoji}
                     type="button"
                     onClick={() => setIcon(emoji)}
+                    aria-label={emoji}
+                    aria-pressed={icon === emoji}
                     className={cn(
                       'w-7 h-7 flex-shrink-0 flex items-center justify-center rounded-lg text-sm transition-all duration-150',
                       icon === emoji
@@ -196,13 +256,18 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
 
           {/* Bound Domains */}
           <div>
-            <label className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center gap-1.5">
+            <label
+              htmlFor="new-page-domains-input"
+              className="block text-xs font-medium text-raycast-light-muted dark:text-raycast-dark-muted mb-1.5 flex items-center gap-1.5"
+            >
               <Globe className="w-3.5 h-3.5 text-raycast-light-subtle dark:text-raycast-dark-subtle" />
               <span>{t.newPageModal.domainLabel}</span>
             </label>
             <input
+              id="new-page-domains-input"
               type="text"
               value={domainsInput}
+              aria-describedby="new-page-domains-hint"
               onChange={(e) => setDomainsInput(e.target.value)}
               placeholder={t.newPageModal.domainPlaceholder}
               className={cn(
@@ -212,14 +277,14 @@ export const NewPageModal: React.FC<NewPageModalProps> = ({
                 'focus:border-raycast-amber focus:ring-1 focus:ring-raycast-amber/50'
               )}
             />
-            <p className="mt-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
+            <p id="new-page-domains-hint" className="mt-1 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle">
               {t.newPageModal.domainHint}
             </p>
           </div>
 
           {/* Actions Footer */}
           <div className="flex items-center justify-between pt-3 mt-1 border-t border-raycast-light-border dark:border-raycast-dark-border">
-            <div className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1.5">
+            <div aria-hidden="true" className="text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle flex items-center gap-1.5">
               <kbd className="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10 font-mono text-[10px]">
                 Esc
               </kbd>
