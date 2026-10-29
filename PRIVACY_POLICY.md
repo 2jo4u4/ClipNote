@@ -53,7 +53,7 @@ If we update this Privacy Policy in the future, changes will be published direct
 ## 中文版（繁體中文）
 
 ### 1. 簡介與承諾
-**ClipNote** 是一款極簡、感知網域的個人備忘與快速填表 Chrome 擴充功能，旨在協助使用者在瀏覽器側邊欄（Side Panel）中高效率記錄隨筆、整理結構化欄位並提供單鍵複製。
+**ClipNote** 是一款極簡、感知網域的個人備忘與快速填表 Chrome 擴充功能，旨在協助使用者在瀏覽器側邊欄（Side Panel）中高效率記錄隨筆、整理結構化欄位並提供一鍵複製。
 
 我們極度重視您的個人隱私。ClipNote 秉持**「零資料收集」**的嚴格原則：我們不會收集、上傳、追蹤、分享或販售您的任何個人資訊或瀏覽活動。
 

@@ -21,6 +21,7 @@ This document defines the ubiquitous language for the Notebook browser extension
 | **Domain Binding** | 網域綁定 | Domain Binding | Domain patterns associated with a Page for automatic prioritization. |
 | **Section Extraction** | 升格為獨立一頁 | Promote to Standalone Page | Elevating an existing Category into an independent top-level Page. |
 | **Move Note** | 移動筆記 | Move Note | Re-filing a note to another Page and Category. |
+| **One-Click Copy** | 一鍵複製 | One-Click Copy | The core interaction where single-clicking a note card copies its full content to clipboard with instant visual feedback. |
 
 ---
 
