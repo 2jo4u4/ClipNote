@@ -5,7 +5,7 @@ import {
   extractHostname,
 } from '../src/core/notebook-service';
 import { MemoryStorageAdapter, ChromeStorageAdapter } from '../src/core/storage';
-import { SYSTEM_GLOBAL_PAGE_ID } from '../src/core/types';
+import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../src/core/types';
 
 describe('Domain Utility Functions', () => {
   describe('extractHostname', () => {
@@ -129,30 +129,71 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
   });
 
   describe('Initialization & System Global Page Invariants', () => {
-    it('creates SYSTEM_GLOBAL_PAGE with seed onboarding cells on fresh initialization', async () => {
+    it('creates two bilingual onboarding tutorial pages on fresh initialization', async () => {
       const pages = await service.getAllPages();
-      expect(pages.length).toBe(1);
+      expect(pages.length).toBe(2);
 
-      const globalPage = await service.getGlobalPage();
-      expect(globalPage.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
-      expect(globalPage.title).toBe('第一頁');
-      expect(globalPage.icon).toBe('🌐');
-      expect(globalPage.isSystem).toBe(true);
-      expect(globalPage.sections.length).toBe(2);
+      const zhPage = await service.getPage(SYSTEM_GLOBAL_PAGE_ID);
+      expect(zhPage).toBeDefined();
+      expect(zhPage?.title).toBe('使用教學');
+      expect(zhPage?.icon).toBe('💡');
+      expect(zhPage?.sections.length).toBe(3);
 
-      // Verify onboarding Field Cells (cells with key)
-      const sec1 = globalPage.sections[0];
-      expect(sec1.items.length).toBe(3);
-      expect(sec1.items.map((c) => c.key)).toEqual(['姓名', 'Email', '電話']);
+      // Section 1: Shortcuts
+      const zhSec1 = zhPage!.sections[0];
+      expect(zhSec1.title).toContain('快捷鍵與即時操作');
+      expect(zhSec1.items.length).toBe(3);
+      expect(zhSec1.items[0].value).toContain('Alt+N');
 
-      // Verify onboarding Jot Cells (cells without key)
-      const sec2 = globalPage.sections[1];
-      expect(sec2.items.length).toBe(2);
-      expect(sec2.items[0].key).toBeUndefined();
-      expect(sec2.items[0].value).toContain('Alt+N');
+      // Section 2: CRUD & Key-Value Demo
+      const zhSec2 = zhPage!.sections[1];
+      expect(zhSec2.title).toContain('筆記與分類操作');
+      expect(zhSec2.items.find((c) => c.key === '姓名')?.value).toBe('王小明');
+      expect(zhSec2.items.find((c) => c.key === 'Email')?.value).toBe('xiaoming@example.com');
+      expect(zhSec2.items.some((c) => c.value.includes('提示'))).toBe(true);
+
+      // Section 3: Applicable Websites
+      const zhSec3 = zhPage!.sections[2];
+      expect(zhSec3.title).toContain('適用網站自動切換');
+      expect(zhSec3.items.length).toBeGreaterThanOrEqual(1);
+
+      // English Tutorial Page
+      const enPage = await service.getPage(TUTORIAL_EN_PAGE_ID);
+      expect(enPage).toBeDefined();
+      expect(enPage?.title).toBe('Getting Started');
+      expect(enPage?.icon).toBe('💡');
+      expect(enPage?.sections.length).toBe(3);
+
+      const enSec1 = enPage!.sections[0];
+      expect(enSec1.title).toContain('Shortcuts & Instant Actions');
+      expect(enSec1.items.length).toBe(3);
+      expect(enSec1.items[0].value).toContain('Alt+N');
+
+      const enSec2 = enPage!.sections[1];
+      expect(enSec2.title).toContain('Note & Category Management');
+      expect(enSec2.items.find((c) => c.key === 'Name')?.value).toBe('Alex Wang');
+      expect(enSec2.items.find((c) => c.key === 'Email')?.value).toBe('alex.wang@example.com');
+      expect(enSec2.items.some((c) => c.value.includes('Tip:'))).toBe(true);
+
+      const enSec3 = enPage!.sections[2];
+      expect(enSec3.title).toContain('Applicable Websites Auto-Switch');
+      expect(enSec3.items.length).toBeGreaterThanOrEqual(1);
     });
 
-    it('prohibits deleting the last remaining page', async () => {
+    it('allows deleting either tutorial page immediately on fresh install', async () => {
+      // Initially 2 pages exist
+      const initialPages = await service.getAllPages();
+      expect(initialPages.length).toBe(2);
+
+      // Delete the English page immediately
+      await service.deletePage(TUTORIAL_EN_PAGE_ID);
+      expect(await service.getPage(TUTORIAL_EN_PAGE_ID)).toBeUndefined();
+      expect(await service.getPage(SYSTEM_GLOBAL_PAGE_ID)).toBeDefined();
+
+      const remainingPages = await service.getAllPages();
+      expect(remainingPages.length).toBe(1);
+
+      // Now with only 1 page left, deleting the last page is prohibited
       await expect(service.deletePage(SYSTEM_GLOBAL_PAGE_ID)).rejects.toThrow(
         'Cannot delete the last remaining page'
       );
@@ -378,6 +419,16 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
 
       const fallback = await service.resolveActivePage('https://unrelated-domain.com');
       expect(fallback.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
+    });
+
+    it('supports locale-aware fallback when no domain matches', async () => {
+      const enResolved = await service.resolveActivePage('https://random.com', 'en');
+      expect(enResolved.id).toBe(TUTORIAL_EN_PAGE_ID);
+      expect(enResolved.title).toBe('Getting Started');
+
+      const zhResolved = await service.resolveActivePage('https://random.com', 'zh-TW');
+      expect(zhResolved.id).toBe(SYSTEM_GLOBAL_PAGE_ID);
+      expect(zhResolved.title).toBe('使用教學');
     });
 
     it('prioritizes session memory over isPrimary if user selected another page in current session', async () => {

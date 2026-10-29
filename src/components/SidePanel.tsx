@@ -24,9 +24,9 @@ import { EditNoteModal } from './EditNoteModal';
 import { ManagePagesModal } from './ManagePagesModal';
 import { ConfirmModal } from './ConfirmModal';
 import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
-import { SYSTEM_GLOBAL_PAGE_ID } from '../types';
+import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../types';
 import { Language, getTranslations } from '../i18n';
-import { matchDomain } from '../core/notebook-service';
+import { matchDomain, createDefaultSeedData } from '../core/notebook-service';
 
 export interface MovingCellTarget {
   cell: Cell;
@@ -48,131 +48,24 @@ export interface SidePanelProps {
   className?: string;
 }
 
-// Built-in rich demo dataset using unified Cell and Section
-const defaultDemoPages: Page[] = [
-  {
-    id: SYSTEM_GLOBAL_PAGE_ID,
-    title: '第一頁',
-    icon: '🌐',
-    domains: [],
-    isSystem: true,
-    createdAt: Date.now() - 86400000 * 3,
-    updatedAt: Date.now() - 3600000,
-    sections: [
-      {
-        id: 'sec-global-fields',
-        title: '常用填表資訊',
-        order: 0,
-        createdAt: Date.now() - 86400000 * 2,
-        updatedAt: Date.now() - 3600000,
-        items: [
-          { id: 'f-1', key: '全名', value: '王小明', createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
-          { id: 'f-2', key: 'Email', value: 'xiaoming.wang@example.com', createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
-          { id: 'f-3', key: '電話號碼', value: '0912-345-678', createdAt: Date.now() - 86400000 * 2, updatedAt: Date.now() - 86400000 * 2 },
-          { id: 'f-4', key: '個人作品集', value: 'https://github.com/xiaoming', createdAt: Date.now() - 86400000, updatedAt: Date.now() - 86400000 },
-        ],
-      },
-      {
-        id: 'sec-global-jots',
-        title: '全網通用備忘隨筆',
-        order: 1,
-        createdAt: Date.now() - 86400000,
-        updatedAt: Date.now() - 1800000,
-        items: [
-          {
-            id: 'j-1',
-            value: '歡迎使用 Notebook 側邊欄！在此處點擊任何欄位即可一秒複製。使用右鍵或 Alt+N 可隨時快速捕獲。',
-            createdAt: Date.now() - 7200000,
-            updatedAt: Date.now() - 7200000,
-          },
-          {
-            id: 'j-2',
-            value: '這個第一頁在任何網頁皆可快速查閱，不會隨著網址切換而隱藏。',
-            sourceUrl: 'https://google.com',
-            sourceTitle: 'Google 首頁',
-            createdAt: Date.now() - 3600000,
-            updatedAt: Date.now() - 3600000,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'page-104',
-    title: '104 中文經歷',
-    icon: '💼',
-    domains: ['104.com.tw', '*.104.com.tw'],
-    createdAt: Date.now() - 86400000 * 2,
-    updatedAt: Date.now() - 1200000,
-    sections: [
-      {
-        id: 'sec-104-job-fields',
-        title: '工作經驗與技能',
-        order: 0,
-        createdAt: Date.now() - 86400000 * 2,
-        updatedAt: Date.now() - 1200000,
-        items: [
-          {
-            id: 'f-104-1',
-            key: '職稱',
-            value: '資深前端架構工程師 (Senior Frontend Architect)',
-            createdAt: Date.now() - 86400000,
-            updatedAt: Date.now() - 86400000,
-          },
-          {
-            id: 'f-104-2',
-            key: '任職公司',
-            value: '極速科技有限公司 (Speedy Tech Co.)',
-            createdAt: Date.now() - 86400000,
-            updatedAt: Date.now() - 86400000,
-          },
-          {
-            id: 'f-104-3',
-            key: '核心技術棧',
-            value: 'React, TypeScript, Next.js, Tailwind CSS, Chrome Extension, Vitest',
-            createdAt: Date.now() - 43200000,
-            updatedAt: Date.now() - 43200000,
-          },
-          {
-            id: 'j-104-1',
-            value: '具備 6 年以上大型 Web 產品開發經驗，主導千萬級流量前端微服務架構重構，使頁面加載速度提升 42%，並建立自動化 CI/CD 流程。',
-            sourceUrl: 'https://104.com.tw/resume',
-            sourceTitle: '104 人力銀行 - 我的履歷表',
-            createdAt: Date.now() - 1800000,
-            updatedAt: Date.now() - 1800000,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'page-social',
-    title: '社交貼文靈感',
-    icon: '💬',
-    domains: ['threads.net', 'x.com', 'facebook.com'],
-    createdAt: Date.now() - 86400000,
-    updatedAt: Date.now() - 7200000,
-    sections: [
-      {
-        id: 'sec-social-jots',
-        title: '短影音與社群靈感',
-        order: 0,
-        createdAt: Date.now() - 86400000,
-        updatedAt: Date.now() - 7200000,
-        items: [
-          {
-            id: 'j-soc-1',
-            value: '如何用 Raycast 式的極簡流暢動態打造讓人愛不釋手的 Chrome 擴充功能？重點在於細膩的過渡曲線與零多餘線條。',
-            sourceUrl: 'https://x.com/design_gems',
-            sourceTitle: 'X / Design Gems',
-            createdAt: Date.now() - 7200000,
-            updatedAt: Date.now() - 7200000,
-          },
-        ],
-      },
-    ],
-  },
-];
+// Built-in seed onboarding dataset using unified Cell and Section
+const defaultDemoPages: Page[] = Object.values(createDefaultSeedData().pages);
+
+const getInitialLanguage = (controlled?: Language, initial?: Language): Language => {
+  if (controlled) return controlled;
+  try {
+    if (typeof window !== 'undefined' && window.localStorage) {
+      const saved = localStorage.getItem('notebook_language') as Language | null;
+      if (saved === 'zh-TW' || saved === 'en') return saved;
+    }
+    if (typeof navigator !== 'undefined' && navigator.language) {
+      return navigator.language.toLowerCase().startsWith('zh') ? 'zh-TW' : 'en';
+    }
+  } catch {
+    // Ignore storage errors
+  }
+  return initial || 'zh-TW';
+};
 
 export const SidePanel: React.FC<SidePanelProps> = ({
   currentDomain = '104.com.tw',
@@ -187,9 +80,23 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   defaultDarkMode,
   className,
 }) => {
-  const [internalLanguage, setInternalLanguage] = useState<Language>(initialLanguage);
+  const [internalLanguage, setInternalLanguage] = useState<Language>(() =>
+    getInitialLanguage(controlledLanguage, initialLanguage)
+  );
   const language = controlledLanguage || internalLanguage;
   const t = getTranslations(language);
+
+  const handleToggleLanguage = () => {
+    const nextLang: Language = language === 'zh-TW' ? 'en' : 'zh-TW';
+    setInternalLanguage(nextLang);
+    try {
+      if (typeof window !== 'undefined' && window.localStorage) {
+        localStorage.setItem('notebook_language', nextLang);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+  };
 
   const [pagesState, setPagesState] = useState<Page[]>(controlledPages || initialPages);
   const pages = controlledPages || pagesState;
@@ -218,7 +125,23 @@ export const SidePanel: React.FC<SidePanelProps> = ({
       p.domains && p.domains.some((pattern) => matchDomain(currentDomain, pattern))
     );
     const primary = matches.find((p) => p.isPrimary);
-    return primary ? primary.id : matches[0]?.id || basePages[0]?.id || SYSTEM_GLOBAL_PAGE_ID;
+    if (primary) return primary.id;
+    if (matches.length > 0) return matches[0].id;
+
+    // Language-aware fallback for tutorial onboarding pages
+    if (language === 'en') {
+      const enPage = basePages.find(
+        (p) => p.id === TUTORIAL_EN_PAGE_ID || p.title === 'Getting Started'
+      );
+      if (enPage) return enPage.id;
+    } else {
+      const zhPage = basePages.find(
+        (p) => p.id === SYSTEM_GLOBAL_PAGE_ID || p.title === '使用教學'
+      );
+      if (zhPage) return zhPage.id;
+    }
+
+    return basePages[0]?.id || SYSTEM_GLOBAL_PAGE_ID;
   });
 
   const handleSelectPage = (pageId: string) => {
@@ -971,7 +894,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             {/* Language Switcher Toggle */}
             <button
               type="button"
-              onClick={() => setInternalLanguage((l) => (l === 'zh-TW' ? 'en' : 'zh-TW'))}
+              onClick={handleToggleLanguage}
               title={t.sidePanel.languageToggle}
               className={cn(
                 'px-1.5 py-0.5 rounded-lg text-xs font-semibold font-mono tracking-tight border',

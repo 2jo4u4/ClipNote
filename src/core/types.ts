@@ -4,6 +4,7 @@
  */
 
 export const SYSTEM_GLOBAL_PAGE_ID = 'SYSTEM_GLOBAL_PAGE';
+export const TUTORIAL_EN_PAGE_ID = 'TUTORIAL_EN_PAGE';
 
 /**
  * Cell is the atomic unit of content in a Section.

@@ -19,6 +19,7 @@ import {
   SearchResult,
   MoveCellParams,
   SYSTEM_GLOBAL_PAGE_ID,
+  TUTORIAL_EN_PAGE_ID,
 } from './types';
 import { StorageAdapter, MemoryStorageAdapter } from './storage';
 
@@ -68,10 +69,10 @@ export function matchDomain(hostname: string, pattern: string): boolean {
 
 export function createDefaultSeedData(): NotebookStorage {
   const now = Date.now();
-  const globalPage: Page = {
+  const zhTutorialPage: Page = {
     id: SYSTEM_GLOBAL_PAGE_ID,
-    title: '第一頁',
-    icon: '🌐',
+    title: '使用教學',
+    icon: '💡',
     domains: [],
     isPrimary: false,
     isSystem: true,
@@ -79,51 +80,190 @@ export function createDefaultSeedData(): NotebookStorage {
     updatedAt: now,
     sections: [
       {
-        id: 'welcome-fields',
-        title: '常用快速填表 (點擊即複製)',
+        id: 'sec-zh-shortcuts',
+        title: '⌨️ 快捷鍵與即時操作',
         order: 0,
         createdAt: now,
         updatedAt: now,
         items: [
           {
-            id: 'cell-1',
-            key: '姓名',
-            value: '王小明',
+            id: 'cell-zh-1',
+            value: '使用快捷鍵 Alt+N 可隨時喚起快速筆記與即時搜尋視窗。',
             createdAt: now,
             updatedAt: now,
           },
           {
-            id: 'cell-2',
-            key: 'Email',
-            value: 'xiaoming@example.com',
+            id: 'cell-zh-2',
+            value: '反白網頁任何文字後，點擊右鍵「存為全域隨筆」可直接保存，並自動記錄來源網址與網頁標題。',
             createdAt: now,
             updatedAt: now,
           },
           {
-            id: 'cell-3',
-            key: '電話',
-            value: '0912-345-678',
+            id: 'cell-zh-3',
+            value: '點擊任意筆記卡片即可直接將內容複製到剪貼簿。',
             createdAt: now,
             updatedAt: now,
           },
         ],
       },
       {
-        id: 'welcome-jots',
-        title: '快速隨筆 (全網通用備忘)',
+        id: 'sec-zh-crud',
+        title: '📝 筆記與分類操作 (CRUD)',
         order: 1,
         createdAt: now,
         updatedAt: now,
         items: [
           {
-            id: 'cell-4',
-            value: '歡迎使用 Notebook 擴充功能！使用 Alt+N 可以隨時喚起快速輸入與搜尋。',
+            id: 'cell-zh-4',
+            key: '姓名',
+            value: '王小明',
             createdAt: now,
             updatedAt: now,
           },
           {
-            id: 'cell-5',
-            value: '反白網頁文字後，右鍵「存為全域隨筆」可直接保存，並記錄來源網址。',
+            id: 'cell-zh-5',
+            key: 'Email',
+            value: 'xiaoming@example.com',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-zh-6',
+            value: '雙擊卡片或點擊右側鉛筆圖示進入編輯；點擊垃圾桶圖示可刪除該筆記。',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-zh-7',
+            value: '點擊右上角「+」可新增筆記；點擊右上角「多選」可進行批次移動或刪除。',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-zh-8',
+            value: '雙擊分類標題可重新命名；點擊分類右側選單可展開/收合或刪除分類。',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-zh-9',
+            value: '💡 提示：本教學頁為一般筆記，您熟悉所有功能後可隨時修改或整頁刪除。',
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      },
+      {
+        id: 'sec-zh-domains',
+        title: '🌐 適用網站自動切換',
+        order: 2,
+        createdAt: now,
+        updatedAt: now,
+        items: [
+          {
+            id: 'cell-zh-10',
+            value: '在新增或編輯頁面時設定「適用網站」（例如 104.com.tw、github.com），當瀏覽該網頁時，側邊欄會自動切換為對應的專屬筆記頁。',
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      },
+    ],
+  };
+
+  const enTutorialPage: Page = {
+    id: TUTORIAL_EN_PAGE_ID,
+    title: 'Getting Started',
+    icon: '💡',
+    domains: [],
+    isPrimary: false,
+    createdAt: now,
+    updatedAt: now,
+    sections: [
+      {
+        id: 'sec-en-shortcuts',
+        title: '⌨️ Shortcuts & Instant Actions',
+        order: 0,
+        createdAt: now,
+        updatedAt: now,
+        items: [
+          {
+            id: 'cell-en-1',
+            value: 'Press Alt+N anywhere to summon the Quick Capture and omni-search modal.',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-2',
+            value: 'Select any text on a webpage, right-click and choose "Save to Global Note" to capture text along with source URL and page title.',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-3',
+            value: 'Click any note card to instantly copy its value to the clipboard.',
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      },
+      {
+        id: 'sec-en-crud',
+        title: '📝 Note & Category Management (CRUD)',
+        order: 1,
+        createdAt: now,
+        updatedAt: now,
+        items: [
+          {
+            id: 'cell-en-4',
+            key: 'Name',
+            value: 'Alex Wang',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-5',
+            key: 'Email',
+            value: 'alex.wang@example.com',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-6',
+            value: 'Double-click a note or click the pencil icon to edit; click the trash icon to delete.',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-7',
+            value: 'Click "+" at the top right to add notes; use batch select to move or delete multiple notes.',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-8',
+            value: 'Double-click a category title to rename; click the category menu to collapse or delete.',
+            createdAt: now,
+            updatedAt: now,
+          },
+          {
+            id: 'cell-en-9',
+            value: "💡 Tip: This guide is a standard notebook page. Feel free to edit or delete it once you're familiar with the app.",
+            createdAt: now,
+            updatedAt: now,
+          },
+        ],
+      },
+      {
+        id: 'sec-en-domains',
+        title: '🌐 Applicable Websites Auto-Switch',
+        order: 2,
+        createdAt: now,
+        updatedAt: now,
+        items: [
+          {
+            id: 'cell-en-10',
+            value: 'Assign applicable websites (e.g., github.com, 104.com.tw) to a page, and Notebook will switch to it automatically as you browse.',
             createdAt: now,
             updatedAt: now,
           },
@@ -134,7 +274,8 @@ export function createDefaultSeedData(): NotebookStorage {
 
   return {
     pages: {
-      [SYSTEM_GLOBAL_PAGE_ID]: globalPage,
+      [SYSTEM_GLOBAL_PAGE_ID]: zhTutorialPage,
+      [TUTORIAL_EN_PAGE_ID]: enTutorialPage,
     },
     systemGlobalPageId: SYSTEM_GLOBAL_PAGE_ID,
   };
@@ -703,7 +844,7 @@ export class NotebookService {
   // Domain Resolution Engine
   // ==========================================
 
-  async resolveActivePage(urlOrHostname: string): Promise<Page> {
+  async resolveActivePage(urlOrHostname: string, preferredLocale?: string): Promise<Page> {
     const data = await this.ensureInitialized();
     const hostname = extractHostname(urlOrHostname);
 
@@ -731,8 +872,26 @@ export class NotebookService {
       }
     }
 
-    // Fallback to SYSTEM_GLOBAL_PAGE
-    const globalPage = data.pages[data.systemGlobalPageId] || data.pages[SYSTEM_GLOBAL_PAGE_ID];
+    // Fallback: check preferredLocale if provided
+    if (preferredLocale) {
+      if (preferredLocale.toLowerCase().startsWith('en')) {
+        const enPage = Object.values(data.pages).find(
+          (p) => p.id === TUTORIAL_EN_PAGE_ID || p.title === 'Getting Started'
+        );
+        if (enPage) return this.clone(enPage);
+      } else if (preferredLocale.toLowerCase().startsWith('zh')) {
+        const zhPage = Object.values(data.pages).find(
+          (p) => p.id === SYSTEM_GLOBAL_PAGE_ID || p.title === '使用教學'
+        );
+        if (zhPage) return this.clone(zhPage);
+      }
+    }
+
+    // Fallback to SYSTEM_GLOBAL_PAGE or first existing page
+    const globalPage =
+      data.pages[data.systemGlobalPageId] ||
+      data.pages[SYSTEM_GLOBAL_PAGE_ID] ||
+      Object.values(data.pages)[0];
     return this.clone(globalPage);
   }
 
