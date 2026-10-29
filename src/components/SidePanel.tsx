@@ -224,6 +224,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
   const [selectedCellTargets, setSelectedCellTargets] = useState<CellTarget[]>([]);
   const [showBatchConfirm, setShowBatchConfirm] = useState(false);
   const [showDeletePageConfirm, setShowDeletePageConfirm] = useState(false);
+  const [pendingDeleteSection, setPendingDeleteSection] = useState<Section | null>(null);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -577,6 +578,17 @@ export const SidePanel: React.FC<SidePanelProps> = ({
 
   const handleDeleteSection = (secId: string) => {
     const sec = activePage.sections.find((s) => s.id === secId);
+    if (sec) {
+      setPendingDeleteSection(sec);
+    }
+  };
+
+  const handleConfirmDeleteSection = () => {
+    if (!pendingDeleteSection) return;
+    const secId = pendingDeleteSection.id;
+    const secTitle = pendingDeleteSection.title;
+    setPendingDeleteSection(null);
+
     setPages((prev) =>
       prev.map((p) => {
         if (p.id !== activePage.id) return p;
@@ -587,7 +599,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
         };
       })
     );
-    showToast(t.sidePanel.deletedCategoryToast(sec?.title || ''));
+    showToast(t.sidePanel.deletedCategoryToast(secTitle));
   };
 
   // Batch Selection Handlers
@@ -1156,6 +1168,23 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           isDestructive={true}
           onConfirm={handleConfirmDeleteActivePage}
           onClose={() => setShowDeletePageConfirm(false)}
+        />
+
+        {/* Delete Single Category Confirmation Dialog */}
+        <ConfirmModal
+          isOpen={!!pendingDeleteSection}
+          language={language}
+          title={t.sidePanel.deleteCategory}
+          description={
+            pendingDeleteSection
+              ? t.sidePanel.confirmDeleteCategory(pendingDeleteSection.title)
+              : ''
+          }
+          confirmText={t.common.delete}
+          cancelText={t.common.cancel}
+          isDestructive={true}
+          onConfirm={handleConfirmDeleteSection}
+          onClose={() => setPendingDeleteSection(null)}
         />
 
         {/* Quick Capture Modal */}

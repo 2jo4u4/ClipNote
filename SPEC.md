@@ -76,6 +76,7 @@ It provides:
 38. As a user who has mastered all features, I want to edit, repurpose, or completely delete both tutorial pages, so that I have complete ownership over my personal notebook.
 39. As a user adjusting theme and language preferences, I want my choices (dark/light theme and zh-TW/en language) to be persisted in local storage and applied synchronously on launch, so that I don't experience visual flash or have to re-select my preferred language every time the side panel opens.
 40. As a user viewing the active page header, I want a clean header without redundant domain tags or badges, so that the page title and action controls remain visually unobstructed.
+41. As a user deleting a category, I want a confirmation dialog (ConfirmModal) with the category's title and a destruction warning, so that I don't accidentally erase a category and all its contained notes with an accidental click.
 
 ---
 
@@ -148,7 +149,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
 
 ### 7. Full CRUD & Batch Deletion
 - **Page Management**: All pages are equal in capability and customize title, emoji icon, and applicable websites ("適用網站"). The notebook maintains the invariant that at least one page must exist (`pages.length >= 1`). If only one page exists, it cannot be deleted. When multiple pages exist, any page (including the initial first page) can be deleted, and applicable websites can be freely customized or left blank. When browsing websites not assigned to any page, the side panel remains on the active page without intrusive auto-switching. Custom and initial pages can be batch-deleted via `ManagePagesModal` (preserving the active/anchor page) or individually removed.
-- **Category Management**: Categories can be created and renamed through Raycast-styled `CategoryModal` (replacing native `window.prompt`), deleted individually from the section menu, or batch-deleted via Batch Mode.
+- **Category Management**: Categories can be created and renamed through Raycast-styled `CategoryModal` (replacing native `window.prompt`). Deleting a category from its header menu prompts a destructive `ConfirmModal` displaying the category title and warning of notes deletion before execution, preventing accidental data loss. Categories can also be batch-deleted via Batch Mode.
 - **Cell Management**: Cells can be edited through `EditNoteModal` (`Ctrl+Enter` save), deleted individually, or batch-selected and deleted.
 - **Batch Mode**: Active page header allows toggling batch selection mode (`isSelectMode`), displaying checkboxes across categories and cells, with a floating action toolbar showing selection statistics, select-all/deselect-all toggles, and confirmed bulk deletion.
 
@@ -159,7 +160,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
      - `⌨️ 快捷鍵與即時操作`: Guides for `Alt+N` capture, context menu saving, and one-click copy.
      - `📝 筆記與分類操作 (CRUD)`: Key-value demo fields (`姓名: 王小明`, `Email: xiaoming@example.com`), double-click/pencil edit, delete, batch select, and a clear reassurance tip that this page can be edited or deleted.
      - `🌐 適用網站自動切換`: Explanation of domain-aware auto-switching with example sites.
-  2. `Getting Started` (icon: `💡`, id: `TUTORIAL_EN_PAGE`, domains: `[]`):
+  2. `Getting Started` (icon: `💡`, id: `TUTORIAL_EN_PAGE_ID`, domains: `[]`):
      - Parity English translation of the exact same 3 categories, key-value fields (`Name: Alex Wang`, `Email: alex.wang@example.com`), and instructions.
 - **Initial Active Page Resolution**:
   On cold start or storage initialization, the active page selection checks the user's browser language (`navigator.language` / `currentLanguage`). If it matches Chinese (`zh*`), `使用教學` is focused; otherwise `Getting Started` is focused for all other locales.

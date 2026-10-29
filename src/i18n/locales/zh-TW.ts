@@ -55,6 +55,8 @@ export const zhTW: I18nTranslations = {
     editPageTooltip: '編輯頁面設定',
     doubleClickEditPageTooltip: '按兩下可編輯頁面',
     confirmDeletePage: (title) => `確定要刪除「${title}」頁面及其所有分類與筆記嗎？此動作無法復原。`,
+    deleteCategory: '刪除分類',
+    confirmDeleteCategory: (title) => `確定要刪除「${title}」分類及其內的所有筆記嗎？此動作無法復原。`,
     deletedPageToast: (title) => `已刪除頁面「${title}」`,
     renamedPageToast: (title) => `已更名為「${title}」`,
     updatedPageToast: (title) => `已儲存「${title}」頁面設定`,

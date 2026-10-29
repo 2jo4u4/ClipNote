@@ -54,6 +54,8 @@ export interface I18nTranslations {
     editPageTooltip: string;
     doubleClickEditPageTooltip: string;
     confirmDeletePage: (title: string) => string;
+    deleteCategory: string;
+    confirmDeleteCategory: (title: string) => string;
     deletedPageToast: (title: string) => string;
     renamedPageToast: (title: string) => string;
     updatedPageToast: (title: string) => string;

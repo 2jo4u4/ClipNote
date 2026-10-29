@@ -56,6 +56,8 @@ export const en: I18nTranslations = {
     editPageTooltip: 'Edit Page Settings',
     doubleClickEditPageTooltip: 'Double click to edit page',
     confirmDeletePage: (title) => `Are you sure you want to delete page "${title}" and all its categories and notes? This action cannot be undone.`,
+    deleteCategory: 'Delete Category',
+    confirmDeleteCategory: (title) => `Are you sure you want to delete category "${title}" and all its notes? This action cannot be undone.`,
     deletedPageToast: (title) => `Deleted page "${title}"`,
     renamedPageToast: (title) => `Renamed to "${title}"`,
     updatedPageToast: (title) => `Saved settings for "${title}"`,
