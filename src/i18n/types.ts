@@ -19,7 +19,10 @@ export interface I18nTranslations {
   sidePanel: {
     newNote: string;
     exportJson: string;
+    importJson: string;
     exportJsonSuccess: string;
+    importJsonSuccess: (count: number) => string;
+    importJsonError: string;
     switchToLight: string;
     switchToDark: string;
     searchPlaceholder: string;
@@ -133,6 +136,16 @@ export interface I18nTranslations {
     confirmDelete: (count: number) => string;
     emptyCustomPages: string;
     editPageTooltip: string;
+  };
+  exportJsonModal: {
+    title: string;
+    subtitle: string;
+    selectAll: string;
+    deselectAll: string;
+    activePageBadge: string;
+    domainBadge: (domain: string) => string;
+    noteCountBadge: (count: number) => string;
+    submitExport: (count: number) => string;
   };
   moveModal: {
     title: string;

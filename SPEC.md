@@ -286,6 +286,21 @@ Whenever a Cell is created, updated, or deleted within a Section:
 - **Decoupled In-App Language State**: Inside the React Side Panel and Quick Capture UI, translations continue to be driven by the React `language` state (`src/i18n/index.ts` persisted to `localStorage` and `chrome.storage.local` under `'notebook_language'`), keeping the in-app header language toggle 100% responsive and synchronized across Side Panel, In-Page Quick Capture, and the right-click context menu.
 - **Single Root `public/` Directory**: All static assets (`icons/` and `_locales/`) reside exclusively in the root `public/` directory.
 
+### 21. Portable Page / Page[] JSON Export & Import
+- **Side Panel Header Controls**:
+  - The top-right header bar provides an **Export JSON (`Download`)** button and an **Import JSON (`Upload`)** button side by side.
+- **Multi-Page Export Selection (`ExportJsonModal`)**:
+  - Clicking **Export JSON** opens `ExportJsonModal`, listing all pages with checkboxes (defaulting to the currently active page selected) and a **Select All / Deselect All** toggle.
+  - Selecting **1 page** exports a single `ExportedPage` JSON object named `${page.title}.json`.
+  - Selecting **multiple pages** exports an `ExportedPage[]` JSON array named `clipnote-export-YYYY-MM-DD.json`.
+- **ID-Stripped Schema & Timestamp Formatting**:
+  - **Export (`serializePagesForExport`)**: Strips all internal `id` and `isSystem` properties from `Page`, `Section`, and `Cell`, and formats `createdAt` and `updatedAt` timestamps as local `"YYYY-MM-DD HH:mm:ss"` strings.
+  - **Import (`parseImportedPagesFromJson` / `importPagesFromJson`)**:
+    - Accepts both a single `Page` object and a `Page[]` array.
+    - Ignores any `id` fields in the JSON across `Page`, `Section`, and `Cell`, generating fresh unique IDs so every imported page is guaranteed to be added as a brand-new `Page` without overwriting existing pages.
+    - Parses `"YYYY-MM-DD HH:mm:ss"` (or ISO / numeric) timestamps back into epoch milliseconds, falling back to `Date.now()` whenever a timestamp is missing or invalid.
+    - Automatically switches the active tab to the first newly imported page and displays a localized success or error toast.
+
 ---
 
 ## Testing Decisions

@@ -6,6 +6,7 @@ import {
   Sun,
   FileText,
   Download,
+  Upload,
   Check,
   Edit2,
   Trash2,
@@ -25,6 +26,7 @@ import { MoveCellModal } from './MoveCellModal';
 import { CategoryModal } from './CategoryModal';
 import { EditNoteModal } from './EditNoteModal';
 import { ManagePagesModal } from './ManagePagesModal';
+import { ExportJsonModal } from './ExportJsonModal';
 import { ConfirmModal } from './ConfirmModal';
 import type { Page, Section, Cell, CellTarget, SearchResult, CreateCellInput } from '../types';
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../types';
@@ -35,6 +37,9 @@ import {
   createDefaultSeedData,
   reorderArray,
   moveCellInPage,
+  serializePagesForExport,
+  parseImportedPagesFromJson,
+  formatExportTimestamp,
 } from '../core/notebook-service';
 import {
   applyTheme,
@@ -197,6 +202,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     mode: 'create',
   });
   const [isManagePagesModalOpen, setIsManagePagesModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const importFileInputRef = useRef<HTMLInputElement>(null);
   const [movingCellTarget, setMovingCellTarget] = useState<MovingCellTarget | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
@@ -827,17 +834,42 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     showToast(t.sidePanel.createdNoteToast(data.key));
   };
 
-  const handleExportJson = () => {
-    const dataStr =
-      'data:text/json;charset=utf-8,' +
-      encodeURIComponent(JSON.stringify(activePage, null, 2));
+  const handleConfirmExportJson = (selectedPages: Page[]) => {
+    if (selectedPages.length === 0) return;
+    const jsonPayload = serializePagesForExport(selectedPages);
+    const safeSingleTitle =
+      selectedPages[0].title.replace(/[\\/:*?"<>|]/g, '_').trim() || 'page';
+    const filename =
+      selectedPages.length === 1
+        ? `${safeSingleTitle}.json`
+        : `clipnote-export-${formatExportTimestamp(Date.now()).slice(0, 10)}.json`;
+
+    const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(jsonPayload);
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataStr);
-    downloadAnchor.setAttribute('download', `${activePage.title}.json`);
+    downloadAnchor.setAttribute('download', filename);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
     showToast(t.sidePanel.exportJsonSuccess);
+  };
+
+  const handleImportJsonFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const importedPages = parseImportedPagesFromJson(text);
+      setPages((prev) => [...prev, ...importedPages]);
+      if (importedPages[0]) {
+        handleSelectPage(importedPages[0].id);
+      }
+      showToast(t.sidePanel.importJsonSuccess(importedPages.length));
+    } catch {
+      showToast(t.sidePanel.importJsonError);
+    }
   };
 
   // ==========================================
@@ -1053,7 +1085,8 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             </button>
 
             <button
-              onClick={handleExportJson}
+              type="button"
+              onClick={() => setIsExportModalOpen(true)}
               title={t.sidePanel.exportJson}
               className={cn(
                 'p-1.5 rounded-lg text-raycast-light-muted dark:text-raycast-dark-muted',
@@ -1063,6 +1096,28 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             >
               <Download className="w-3.5 h-3.5" />
             </button>
+
+            <button
+              type="button"
+              onClick={() => importFileInputRef.current?.click()}
+              title={t.sidePanel.importJson}
+              className={cn(
+                'p-1.5 rounded-lg text-raycast-light-muted dark:text-raycast-dark-muted',
+                'hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5',
+                'transition-colors duration-150'
+              )}
+            >
+              <Upload className="w-3.5 h-3.5" />
+            </button>
+            <input
+              ref={importFileInputRef}
+              type="file"
+              accept=".json,application/json"
+              aria-hidden="true"
+              tabIndex={-1}
+              className="hidden"
+              onChange={handleImportJsonFile}
+            />
 
             <button
               onClick={() => setIsDarkMode(!isDarkMode)}
@@ -1272,7 +1327,7 @@ export const SidePanel: React.FC<SidePanelProps> = ({
                       setIsQuickCaptureOpen(true);
                     }}
                     onExtractToPage={handleExtractSectionToPage}
-                    onExportPage={handleExportJson}
+                    onExportPage={() => setIsExportModalOpen(true)}
                     onDeleteSection={handleDeleteSection}
                   >
                     {section.items.length > 0 ? (
@@ -1588,6 +1643,15 @@ export const SidePanel: React.FC<SidePanelProps> = ({
             );
             showToast(t.sidePanel.renamedPageToast(newTitle));
           }}
+        />
+
+        <ExportJsonModal
+          isOpen={isExportModalOpen}
+          language={language}
+          pages={pages}
+          activePageId={activePageId}
+          onClose={() => setIsExportModalOpen(false)}
+          onConfirmExport={handleConfirmExportJson}
         />
       </div>
     </div>

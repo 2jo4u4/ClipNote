@@ -19,8 +19,12 @@ export const en: I18nTranslations = {
   },
   sidePanel: {
     newNote: 'New Note',
-    exportJson: 'Export Page as JSON',
-    exportJsonSuccess: 'Page exported as JSON',
+    exportJson: 'Export JSON',
+    importJson: 'Import JSON',
+    exportJsonSuccess: 'JSON exported',
+    importJsonSuccess: (count) =>
+      `Imported ${count} ${count === 1 ? 'page' : 'pages'}`,
+    importJsonError: 'Import failed: Invalid JSON format',
     switchToLight: 'Switch to Light Mode',
     switchToDark: 'Switch to Dark Mode',
     searchPlaceholder: 'Search notes...',
@@ -136,6 +140,16 @@ export const en: I18nTranslations = {
     confirmDelete: (count) => `Are you sure you want to delete the ${count} selected pages and all their notes? This action cannot be undone.`,
     emptyCustomPages: 'No pages to manage.',
     editPageTooltip: 'Edit Page Settings',
+  },
+  exportJsonModal: {
+    title: 'Export JSON',
+    subtitle: 'Select pages to export (single page exports as object, multiple as array)',
+    selectAll: 'Select All',
+    deselectAll: 'Deselect All',
+    activePageBadge: 'Current Page',
+    domainBadge: (domain) => `Active on: ${domain}`,
+    noteCountBadge: (count) => `${count} notes`,
+    submitExport: (count) => `Export JSON (${count})`,
   },
   moveModal: {
     title: 'Move Note',

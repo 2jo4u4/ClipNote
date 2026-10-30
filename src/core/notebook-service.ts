@@ -1176,7 +1176,29 @@ export class NotebookService {
     if (!page) {
       throw new Error(`Page not found: ${pageId}`);
     }
-    return JSON.stringify(page, null, 2);
+    return serializePagesForExport([page]);
+  }
+
+  async exportPagesAsJson(pageIds?: string[]): Promise<string> {
+    const allPages = await this.getAllPages();
+    const selected =
+      pageIds && pageIds.length > 0
+        ? allPages.filter((p) => pageIds.includes(p.id))
+        : allPages;
+    if (selected.length === 0) {
+      throw new Error('No pages selected for export');
+    }
+    return serializePagesForExport(selected);
+  }
+
+  async importPagesFromJson(jsonStr: string): Promise<Page[]> {
+    const data = await this.ensureInitialized();
+    const importedPages = parseImportedPagesFromJson(jsonStr);
+    for (const page of importedPages) {
+      data.pages[page.id] = page;
+    }
+    await this.persist();
+    return this.clone(importedPages);
   }
 
   async importNotebookFromJson(jsonStr: string): Promise<NotebookStorage> {
@@ -1255,3 +1277,259 @@ export class NotebookService {
     return this.clone(validatedData);
   }
 }
+
+function pad2(n: number): string {
+  return String(n).padStart(2, '0');
+}
+
+/**
+ * Formats an epoch millisecond timestamp as local "YYYY-MM-DD HH:mm:ss".
+ */
+export function formatExportTimestamp(ts: number): string {
+  const d = new Date(Number.isFinite(ts) && ts > 0 ? ts : Date.now());
+  const validDate = Number.isNaN(d.getTime()) ? new Date() : d;
+  return `${validDate.getFullYear()}-${pad2(validDate.getMonth() + 1)}-${pad2(validDate.getDate())} ${pad2(validDate.getHours())}:${pad2(validDate.getMinutes())}:${pad2(validDate.getSeconds())}`;
+}
+
+export interface ExportedCell {
+  key?: string;
+  value: string;
+  sourceUrl?: string;
+  sourceTitle?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ExportedSection {
+  title: string;
+  order: number;
+  createdAt: string;
+  updatedAt: string;
+  items: ExportedCell[];
+}
+
+export interface ExportedPage {
+  title: string;
+  icon?: string;
+  domains: string[];
+  isPrimary?: boolean;
+  createdAt: string;
+  updatedAt: string;
+  sections: ExportedSection[];
+}
+
+/**
+ * Serializes 1 or more Pages into portable JSON:
+ * - Strips all `id` and internal `isSystem` properties from Page, Section, and Cell.
+ * - Formats `createdAt` and `updatedAt` as "YYYY-MM-DD HH:mm:ss".
+ * - Outputs a single ExportedPage object if `pages.length === 1`, or ExportedPage[] if `pages.length > 1`.
+ */
+export function serializePagesForExport(pages: Page[]): string {
+  const exported: ExportedPage[] = pages.map((page) => ({
+    title: page.title,
+    ...(page.icon ? { icon: page.icon } : {}),
+    domains: Array.isArray(page.domains) ? page.domains.filter((d) => d !== '*') : [],
+    ...(page.isPrimary ? { isPrimary: page.isPrimary } : {}),
+    createdAt: formatExportTimestamp(page.createdAt),
+    updatedAt: formatExportTimestamp(page.updatedAt),
+    sections: (page.sections || []).map((sec, sIdx) => ({
+      title: sec.title,
+      order: typeof sec.order === 'number' ? sec.order : sIdx,
+      createdAt: formatExportTimestamp(sec.createdAt),
+      updatedAt: formatExportTimestamp(sec.updatedAt),
+      items: (sec.items || []).map((cell) => ({
+        ...(cell.key ? { key: cell.key } : {}),
+        value: cell.value,
+        ...(cell.sourceUrl ? { sourceUrl: cell.sourceUrl } : {}),
+        ...(cell.sourceTitle ? { sourceTitle: cell.sourceTitle } : {}),
+        createdAt: formatExportTimestamp(cell.createdAt),
+        updatedAt: formatExportTimestamp(cell.updatedAt),
+      })),
+    })),
+  }));
+
+  return JSON.stringify(exported.length === 1 ? exported[0] : exported, null, 2);
+}
+
+const EXPORT_DATETIME_RE = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2}):(\d{2})$/;
+
+/**
+ * Parses a timestamp from exported JSON ("YYYY-MM-DD HH:mm:ss", ISO string, or epoch number).
+ * Falls back to `fallbackNow` (`Date.now()`) when missing or invalid.
+ */
+export function parseImportTimestamp(raw: unknown, fallbackNow: number = Date.now()): number {
+  if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
+    return raw;
+  }
+
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    const match = EXPORT_DATETIME_RE.exec(trimmed);
+    if (match) {
+      const year = Number(match[1]);
+      const month = Number(match[2]);
+      const day = Number(match[3]);
+      const hour = Number(match[4]);
+      const minute = Number(match[5]);
+      const second = Number(match[6]);
+
+      if (
+        month >= 1 &&
+        month <= 12 &&
+        day >= 1 &&
+        day <= 31 &&
+        hour >= 0 &&
+        hour <= 23 &&
+        minute >= 0 &&
+        minute <= 59 &&
+        second >= 0 &&
+        second <= 59
+      ) {
+        const d = new Date(year, month - 1, day, hour, minute, second);
+        if (
+          !Number.isNaN(d.getTime()) &&
+          d.getFullYear() === year &&
+          d.getMonth() === month - 1 &&
+          d.getDate() === day
+        ) {
+          return d.getTime();
+        }
+      }
+      return fallbackNow;
+    }
+
+    const parsedMs = Date.parse(trimmed);
+    if (!Number.isNaN(parsedMs) && parsedMs > 0) {
+      return parsedMs;
+    }
+  }
+
+  return fallbackNow;
+}
+
+/**
+ * Parses portable JSON (either a single Page object or Page[] array) into new Page instances:
+ * - Ignores any `id` on Page, Section, and Cell, generating fresh IDs so imported pages are always new Pages.
+ * - Parses "YYYY-MM-DD HH:mm:ss" timestamps and falls back to `Date.now()` on invalid timestamps.
+ */
+export function parseImportedPagesFromJson(
+  jsonStr: string,
+  fallbackNow: number = Date.now()
+): Page[] {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(jsonStr);
+  } catch {
+    throw new Error('Invalid JSON format: Malformed JSON syntax');
+  }
+
+  const rawPages: unknown[] = Array.isArray(parsed)
+    ? parsed
+    : parsed && typeof parsed === 'object'
+    ? [parsed]
+    : [];
+
+  if (rawPages.length === 0) {
+    throw new Error('Invalid JSON format: Expected a Page object or non-empty Page[] array');
+  }
+
+  return rawPages.map((rawPage, pIdx) => {
+    if (!rawPage || typeof rawPage !== 'object' || Array.isArray(rawPage)) {
+      throw new Error(`Invalid JSON format: Page at index ${pIdx} must be an object`);
+    }
+
+    const candidate = rawPage as Record<string, unknown>;
+    if (typeof candidate.title !== 'string' || !candidate.title.trim()) {
+      throw new Error(`Invalid JSON format: Page at index ${pIdx} is missing a valid title`);
+    }
+    if (!Array.isArray(candidate.sections)) {
+      throw new Error(`Invalid JSON format: Page "${candidate.title}" is missing sections array`);
+    }
+
+    const sections: Section[] = candidate.sections.map((rawSec, sIdx) => {
+      if (!rawSec || typeof rawSec !== 'object' || Array.isArray(rawSec)) {
+        throw new Error(
+          `Invalid JSON format: Section at index ${sIdx} in "${candidate.title}" must be an object`
+        );
+      }
+      const secObj = rawSec as Record<string, unknown>;
+      if (typeof secObj.title !== 'string' || !secObj.title.trim()) {
+        throw new Error(
+          `Invalid JSON format: Section at index ${sIdx} in "${candidate.title}" is missing a valid title`
+        );
+      }
+      if (!Array.isArray(secObj.items)) {
+        throw new Error(
+          `Invalid JSON format: Section "${secObj.title}" in "${candidate.title}" is missing items array`
+        );
+      }
+
+      const items: Cell[] = secObj.items.map((rawCell, cIdx) => {
+        if (!rawCell || typeof rawCell !== 'object' || Array.isArray(rawCell)) {
+          throw new Error(
+            `Invalid JSON format: Cell at index ${cIdx} in section "${secObj.title}" must be an object`
+          );
+        }
+        const cellObj = rawCell as Record<string, unknown>;
+        if (typeof cellObj.value !== 'string') {
+          throw new Error(
+            `Invalid JSON format: Cell at index ${cIdx} in section "${secObj.title}" is missing string value`
+          );
+        }
+
+        const keyStr =
+          typeof cellObj.key === 'string' && cellObj.key.trim() ? cellObj.key.trim() : undefined;
+        const sourceUrlStr =
+          typeof cellObj.sourceUrl === 'string' && cellObj.sourceUrl.trim()
+            ? cellObj.sourceUrl.trim()
+            : undefined;
+        const sourceTitleStr =
+          typeof cellObj.sourceTitle === 'string' && cellObj.sourceTitle.trim()
+            ? cellObj.sourceTitle.trim()
+            : undefined;
+
+        return {
+          id: `cell-${generateId()}`,
+          ...(keyStr ? { key: keyStr } : {}),
+          value: cellObj.value,
+          ...(sourceUrlStr ? { sourceUrl: sourceUrlStr } : {}),
+          ...(sourceTitleStr ? { sourceTitle: sourceTitleStr } : {}),
+          createdAt: parseImportTimestamp(cellObj.createdAt, fallbackNow),
+          updatedAt: parseImportTimestamp(cellObj.updatedAt, fallbackNow),
+        };
+      });
+
+      return {
+        id: `sec-${generateId()}`,
+        title: secObj.title.trim(),
+        order: typeof secObj.order === 'number' && Number.isFinite(secObj.order) ? secObj.order : sIdx,
+        createdAt: parseImportTimestamp(secObj.createdAt, fallbackNow),
+        updatedAt: parseImportTimestamp(secObj.updatedAt, fallbackNow),
+        items,
+      };
+    });
+
+    const domains = Array.isArray(candidate.domains)
+      ? candidate.domains
+          .filter((d): d is string => typeof d === 'string' && d.trim() !== '' && d.trim() !== '*')
+          .map((d) => d.trim())
+      : [];
+
+    const iconStr =
+      typeof candidate.icon === 'string' && candidate.icon.trim()
+        ? candidate.icon.trim()
+        : '📄';
+
+    return {
+      id: `page-${generateId()}`,
+      title: candidate.title.trim(),
+      icon: iconStr,
+      domains,
+      ...(typeof candidate.isPrimary === 'boolean' ? { isPrimary: candidate.isPrimary } : {}),
+      createdAt: parseImportTimestamp(candidate.createdAt, fallbackNow),
+      updatedAt: parseImportTimestamp(candidate.updatedAt, fallbackNow),
+      sections,
+    };
+  });
+}
+

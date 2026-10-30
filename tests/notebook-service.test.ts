@@ -6,6 +6,8 @@ import {
   extractHostname,
   reorderArray,
   moveCellInPage,
+  serializePagesForExport,
+  parseImportedPagesFromJson,
 } from '../src/core/notebook-service';
 import { MemoryStorageAdapter, ChromeStorageAdapter } from '../src/core/storage';
 import { SYSTEM_GLOBAL_PAGE_ID, TUTORIAL_EN_PAGE_ID } from '../src/core/types';
@@ -997,6 +999,136 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(filterSearchResults(items, '姓名 王小明')).toHaveLength(1);
       expect(filterSearchResults(items, '   ')).toEqual([]);
       expect(filterSearchResults(items, '不存在的關鍵字')).toEqual([]);
+    });
+  });
+
+  describe('Portable Page/Page[] JSON Export & Import (ID-stripped & YYYY-MM-DD HH:mm:ss)', () => {
+    it('serializes a single Page as an object and multiple Pages as an array without id fields and with YYYY-MM-DD HH:mm:ss timestamps', () => {
+      const ts = new Date(2026, 9, 30, 9, 5, 7).getTime(); // 2026-10-30 09:05:07 local time
+      const samplePage = {
+        id: 'page-123',
+        title: '履歷頁面',
+        icon: '💼',
+        domains: ['example.com'],
+        isSystem: true,
+        createdAt: ts,
+        updatedAt: ts,
+        sections: [
+          {
+            id: 'sec-456',
+            title: '基本資料',
+            order: 0,
+            createdAt: ts,
+            updatedAt: ts,
+            items: [
+              {
+                id: 'cell-789',
+                key: '姓名',
+                value: '王小明',
+                createdAt: ts,
+                updatedAt: ts,
+              },
+            ],
+          },
+        ],
+      };
+
+      const singleJson = serializePagesForExport([samplePage]);
+      const parsedSingle = JSON.parse(singleJson);
+      expect(Array.isArray(parsedSingle)).toBe(false);
+      expect(parsedSingle.id).toBeUndefined();
+      expect(parsedSingle.isSystem).toBeUndefined();
+      expect(parsedSingle.title).toBe('履歷頁面');
+      expect(parsedSingle.createdAt).toBe('2026-10-30 09:05:07');
+      expect(parsedSingle.updatedAt).toBe('2026-10-30 09:05:07');
+      expect(parsedSingle.sections[0].id).toBeUndefined();
+      expect(parsedSingle.sections[0].createdAt).toBe('2026-10-30 09:05:07');
+      expect(parsedSingle.sections[0].items[0].id).toBeUndefined();
+      expect(parsedSingle.sections[0].items[0].createdAt).toBe('2026-10-30 09:05:07');
+
+      const multiJson = serializePagesForExport([
+        samplePage,
+        { ...samplePage, id: 'page-999', title: '第二頁' },
+      ]);
+      const parsedMulti = JSON.parse(multiJson);
+      expect(Array.isArray(parsedMulti)).toBe(true);
+      expect(parsedMulti).toHaveLength(2);
+      expect(parsedMulti[0].id).toBeUndefined();
+      expect(parsedMulti[1].id).toBeUndefined();
+      expect(parsedMulti[1].title).toBe('第二頁');
+    });
+
+    it('imports single Page and Page[] while ignoring incoming ids, parsing YYYY-MM-DD HH:mm:ss, falling back to Date.now() on invalid timestamps, and always creating new Pages', async () => {
+      const expectedValidTime = new Date(2026, 9, 30, 14, 30, 45).getTime();
+      const fallbackNow = 1793330000000;
+
+      const rawJson = JSON.stringify([
+        {
+          id: 'should-be-ignored-page-id',
+          title: '匯入頁面 A',
+          icon: '📌',
+          domains: ['example.com'],
+          createdAt: '2026-10-30 14:30:45',
+          updatedAt: 'invalid-date-string',
+          sections: [
+            {
+              id: 'should-be-ignored-sec-id',
+              title: '分類 1',
+              order: 0,
+              createdAt: 'not-a-timestamp',
+              updatedAt: '2026-10-30 14:30:45',
+              items: [
+                {
+                  id: 'should-be-ignored-cell-id',
+                  key: 'Email',
+                  value: 'test@example.com',
+                  createdAt: '2026-10-30 14:30:45',
+                  updatedAt: null,
+                },
+              ],
+            },
+          ],
+        },
+      ]);
+
+      const parsedPages = parseImportedPagesFromJson(rawJson, fallbackNow);
+      expect(parsedPages).toHaveLength(1);
+      const imported = parsedPages[0];
+      expect(imported.id).toBeTruthy();
+      expect(imported.id).not.toBe('should-be-ignored-page-id');
+      expect(imported.title).toBe('匯入頁面 A');
+      expect(imported.createdAt).toBe(expectedValidTime);
+      expect(imported.updatedAt).toBe(fallbackNow);
+
+      const sec = imported.sections[0];
+      expect(sec.id).toBeTruthy();
+      expect(sec.id).not.toBe('should-be-ignored-sec-id');
+      expect(sec.createdAt).toBe(fallbackNow);
+      expect(sec.updatedAt).toBe(expectedValidTime);
+
+      const cell = sec.items[0];
+      expect(cell.id).toBeTruthy();
+      expect(cell.id).not.toBe('should-be-ignored-cell-id');
+      expect(cell.createdAt).toBe(expectedValidTime);
+      expect(cell.updatedAt).toBe(fallbackNow);
+
+      // Importing the exact same JSON twice into NotebookService must always create new distinct Pages
+      const beforeCount = (await service.getAllPages()).length;
+      const firstBatch = await service.importPagesFromJson(rawJson);
+      const secondBatch = await service.importPagesFromJson(rawJson);
+      const afterPages = await service.getAllPages();
+
+      expect(afterPages.length).toBe(beforeCount + 2);
+      expect(firstBatch[0].id).not.toBe(secondBatch[0].id);
+    });
+
+    it('rejects malformed or structurally invalid JSON on import', () => {
+      expect(() => parseImportedPagesFromJson('{bad json')).toThrow();
+      expect(() => parseImportedPagesFromJson('[]')).toThrow();
+      expect(() => parseImportedPagesFromJson('{"foo":"bar"}')).toThrow();
+      expect(() =>
+        parseImportedPagesFromJson(JSON.stringify({ title: 'No Sections' }))
+      ).toThrow();
     });
   });
 });
