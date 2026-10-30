@@ -1042,6 +1042,7 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(parsedSingle.createdAt).toBe('2026-10-30 09:05:07');
       expect(parsedSingle.updatedAt).toBe('2026-10-30 09:05:07');
       expect(parsedSingle.sections[0].id).toBeUndefined();
+      expect(parsedSingle.sections[0].order).toBeUndefined();
       expect(parsedSingle.sections[0].createdAt).toBe('2026-10-30 09:05:07');
       expect(parsedSingle.sections[0].items[0].id).toBeUndefined();
       expect(parsedSingle.sections[0].items[0].createdAt).toBe('2026-10-30 09:05:07');

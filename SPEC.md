@@ -294,7 +294,7 @@ Whenever a Cell is created, updated, or deleted within a Section:
   - Selecting **1 page** exports a single `ExportedPage` JSON object named `${page.title}.json`.
   - Selecting **multiple pages** exports an `ExportedPage[]` JSON array named `clipnote-export-YYYY-MM-DD.json`.
 - **ID-Stripped Schema & Timestamp Formatting**:
-  - **Export (`serializePagesForExport`)**: Strips all internal `id` and `isSystem` properties from `Page`, `Section`, and `Cell`, and formats `createdAt` and `updatedAt` timestamps as local `"YYYY-MM-DD HH:mm:ss"` strings.
+  - **Export (`serializePagesForExport`)**: Strips all internal `id`, `order`, and `isSystem` properties from `Page`, `Section`, and `Cell`, and formats `createdAt` and `updatedAt` timestamps as local `"YYYY-MM-DD HH:mm:ss"` strings.
   - **Import (`parseImportedPagesFromJson` / `importPagesFromJson`)**:
     - Accepts both a single `Page` object and a `Page[]` array.
     - Ignores any `id` fields in the JSON across `Page`, `Section`, and `Cell`, generating fresh unique IDs so every imported page is guaranteed to be added as a brand-new `Page` without overwriting existing pages.

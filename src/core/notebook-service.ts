@@ -1302,7 +1302,6 @@ export interface ExportedCell {
 
 export interface ExportedSection {
   title: string;
-  order: number;
   createdAt: string;
   updatedAt: string;
   items: ExportedCell[];
@@ -1320,7 +1319,7 @@ export interface ExportedPage {
 
 /**
  * Serializes 1 or more Pages into portable JSON:
- * - Strips all `id` and internal `isSystem` properties from Page, Section, and Cell.
+ * - Strips all `id`, `order`, and internal `isSystem` properties from Page, Section, and Cell.
  * - Formats `createdAt` and `updatedAt` as "YYYY-MM-DD HH:mm:ss".
  * - Outputs a single ExportedPage object if `pages.length === 1`, or ExportedPage[] if `pages.length > 1`.
  */
@@ -1332,9 +1331,8 @@ export function serializePagesForExport(pages: Page[]): string {
     ...(page.isPrimary ? { isPrimary: page.isPrimary } : {}),
     createdAt: formatExportTimestamp(page.createdAt),
     updatedAt: formatExportTimestamp(page.updatedAt),
-    sections: (page.sections || []).map((sec, sIdx) => ({
+    sections: (page.sections || []).map((sec) => ({
       title: sec.title,
-      order: typeof sec.order === 'number' ? sec.order : sIdx,
       createdAt: formatExportTimestamp(sec.createdAt),
       updatedAt: formatExportTimestamp(sec.updatedAt),
       items: (sec.items || []).map((cell) => ({
@@ -1502,7 +1500,7 @@ export function parseImportedPagesFromJson(
       return {
         id: `sec-${generateId()}`,
         title: secObj.title.trim(),
-        order: typeof secObj.order === 'number' && Number.isFinite(secObj.order) ? secObj.order : sIdx,
+        order: sIdx,
         createdAt: parseImportTimestamp(secObj.createdAt, fallbackNow),
         updatedAt: parseImportTimestamp(secObj.updatedAt, fallbackNow),
         items,
