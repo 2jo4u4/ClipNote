@@ -858,17 +858,17 @@ export class NotebookService {
       throw new Error(`Cell not found: ${cellId}`);
     }
 
-    if (updates.key !== undefined) {
-      cell.key = updates.key.trim() ? updates.key.trim() : undefined;
+    if ('key' in updates) {
+      cell.key = updates.key?.trim() ? updates.key.trim() : undefined;
     }
     if (updates.value !== undefined) {
       cell.value = updates.value;
     }
-    if (updates.sourceUrl !== undefined) {
-      cell.sourceUrl = updates.sourceUrl;
+    if ('sourceUrl' in updates) {
+      cell.sourceUrl = updates.sourceUrl?.trim() ? updates.sourceUrl.trim() : undefined;
     }
-    if (updates.sourceTitle !== undefined) {
-      cell.sourceTitle = updates.sourceTitle;
+    if ('sourceTitle' in updates) {
+      cell.sourceTitle = updates.sourceTitle?.trim() ? updates.sourceTitle.trim() : undefined;
     }
 
     const now = Date.now();

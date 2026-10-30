@@ -185,6 +185,11 @@ export const en: I18nTranslations = {
     targetPage: 'Target Page',
     targetCategory: 'Target Category',
     sourcePrefix: 'Source: ',
+    sourceLabel: 'Source Webpage (Optional)',
+    sourceTitlePlaceholder: 'Source title (e.g. Example Site)',
+    sourceUrlPlaceholder: 'Source URL (https://...)',
+    detectCurrentTab: 'Detect Current Tab',
+    clearSource: 'Clear',
     submitBtn: 'Save Note',
   },
 };

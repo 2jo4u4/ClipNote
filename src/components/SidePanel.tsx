@@ -467,7 +467,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
     });
   };
 
-  const handleSaveEditNote = (cellId: string, updates: { key?: string; value: string }) => {
+  const handleSaveEditNote = (
+    cellId: string,
+    updates: { key?: string; value: string; sourceUrl?: string; sourceTitle?: string }
+  ) => {
     if (!editNoteModalState.sectionId) return;
     const { sectionId } = editNoteModalState;
     const now = Date.now();
@@ -483,7 +486,14 @@ export const SidePanel: React.FC<SidePanelProps> = ({
               ...s,
               items: s.items.map((c) =>
                 c.id === cellId
-                  ? { ...c, key: updates.key?.trim() || undefined, value: updates.value, updatedAt: now }
+                  ? {
+                      ...c,
+                      key: updates.key?.trim() || undefined,
+                      value: updates.value,
+                      sourceUrl: updates.sourceUrl?.trim() || undefined,
+                      sourceTitle: updates.sourceTitle?.trim() || undefined,
+                      updatedAt: now,
+                    }
                   : c
               ),
               updatedAt: now,
@@ -1179,98 +1189,99 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           />
         </div>
 
-        {/* Active Page Body */}
-        <main className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
-          {/* Active Page Header Banner */}
-          <div className="flex items-center justify-between pb-1 gap-2 flex-shrink-0">
-            <div className="flex items-center gap-1.5 min-w-0 flex-1">
-              <span className="text-base select-none flex-shrink-0">{activePage.icon || '📄'}</span>
+        {/* Active Page Control Bar (Pinned outside scrollable main area) */}
+        <div className="flex items-center justify-between px-3.5 py-2.5 gap-2 border-b border-raycast-light-border dark:border-white/10 flex-shrink-0">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            <span className="text-base select-none flex-shrink-0">{activePage.icon || '📄'}</span>
 
-              <div className="flex items-center gap-1 min-w-0 group/title">
-                <h2
-                  onDoubleClick={() => handleOpenEditPage(activePage)}
-                  title={t.sidePanel.doubleClickEditPageTooltip}
-                  className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate cursor-pointer hover:underline underline-offset-2 decoration-raycast-amber/50"
-                >
-                  {activePage.title}
-                </h2>
-                <button
-                  onClick={() => handleOpenEditPage(activePage)}
-                  title={t.sidePanel.editPageTooltip}
-                  className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
-                >
-                  <Edit2 className="w-3 h-3" />
-                </button>
-
-                {pages.length > 1 && (
-                  <button
-                    onClick={handleOpenDeletePageModal}
-                    title={t.sidePanel.deletePage}
-                    className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-raycast-coral/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-coral transition-all"
-                  >
-                    <Trash2 className="w-3 h-3" />
-                  </button>
-                )}
-              </div>
-            </div>
-
-            <div className="flex items-center gap-1 flex-shrink-0">
-              {/* Batch Mode Toggle */}
-              <button
-                type="button"
-                onClick={() => {
-                  setIsBatchMode(!isBatchMode);
-                  setSelectedSectionIds([]);
-                  setSelectedCellTargets([]);
-                }}
-                title={isBatchMode ? t.sidePanel.batchExit : t.sidePanel.batchSelect}
-                className={cn(
-                  'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150',
-                  isBatchMode
-                    ? 'bg-raycast-amber text-raycast-dark-bg font-semibold'
-                    : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5'
-                )}
+            <div className="flex items-center gap-1 min-w-0 group/title">
+              <h2
+                onDoubleClick={() => handleOpenEditPage(activePage)}
+                title={t.sidePanel.doubleClickEditPageTooltip}
+                className="text-sm font-semibold text-raycast-light-text dark:text-raycast-dark-text truncate cursor-pointer hover:underline underline-offset-2 decoration-raycast-amber/50"
               >
-                <CheckSquare className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">
-                  {isBatchMode ? t.sidePanel.batchExit : t.sidePanel.batchSelect}
-                </span>
+                {activePage.title}
+              </h2>
+              <button
+                onClick={() => handleOpenEditPage(activePage)}
+                title={t.sidePanel.editPageTooltip}
+                className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-black/5 dark:hover:bg-white/10 text-raycast-light-muted dark:text-raycast-dark-muted transition-opacity"
+              >
+                <Edit2 className="w-3 h-3" />
               </button>
 
-              {/* Collapse / Expand All Categories Toggle */}
-              {activePage.sections && activePage.sections.length > 0 && (
+              {pages.length > 1 && (
                 <button
-                  type="button"
-                  onClick={handleToggleAllSections}
-                  title={allSectionsCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
-                  aria-label={allSectionsCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
-                  className={cn(
-                    'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
-                    'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
-                  )}
+                  onClick={handleOpenDeletePageModal}
+                  title={t.sidePanel.deletePage}
+                  className="p-0.5 rounded opacity-0 group-hover/title:opacity-100 hover:bg-raycast-coral/10 text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-coral transition-all"
                 >
-                  {allSectionsCollapsed ? (
-                    <ChevronsUpDown className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronsDownUp className="w-3.5 h-3.5" />
-                  )}
+                  <Trash2 className="w-3 h-3" />
                 </button>
               )}
+            </div>
+          </div>
 
-              {/* Add Category '+' button */}
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {/* Batch Mode Toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                setIsBatchMode(!isBatchMode);
+                setSelectedSectionIds([]);
+                setSelectedCellTargets([]);
+              }}
+              title={isBatchMode ? t.sidePanel.batchExit : t.sidePanel.batchSelect}
+              className={cn(
+                'flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-all duration-150',
+                isBatchMode
+                  ? 'bg-raycast-amber text-raycast-dark-bg font-semibold'
+                  : 'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5'
+              )}
+            >
+              <CheckSquare className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">
+                {isBatchMode ? t.sidePanel.batchExit : t.sidePanel.batchSelect}
+              </span>
+            </button>
+
+            {/* Collapse / Expand All Categories Toggle */}
+            {activePage.sections && activePage.sections.length > 0 && (
               <button
                 type="button"
-                onClick={handleOpenAddCategory}
-                title={t.sidePanel.addCategory}
+                onClick={handleToggleAllSections}
+                title={allSectionsCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
+                aria-label={allSectionsCollapsed ? t.sidePanel.expandAllCategories : t.sidePanel.collapseAllCategories}
                 className={cn(
                   'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
                   'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
                 )}
               >
-                <Plus className="w-3.5 h-3.5" />
+                {allSectionsCollapsed ? (
+                  <ChevronsUpDown className="w-3.5 h-3.5" />
+                ) : (
+                  <ChevronsDownUp className="w-3.5 h-3.5" />
+                )}
               </button>
-            </div>
+            )}
+
+            {/* Add Category '+' button */}
+            <button
+              type="button"
+              onClick={handleOpenAddCategory}
+              title={t.sidePanel.addCategory}
+              className={cn(
+                'flex items-center justify-center p-1.5 rounded-lg text-xs font-medium flex-shrink-0 transition-all duration-150',
+                'text-raycast-light-muted dark:text-raycast-dark-muted hover:text-raycast-light-text dark:hover:text-raycast-dark-text hover:bg-black/5 dark:hover:bg-white/5 active:scale-95'
+              )}
+            >
+              <Plus className="w-3.5 h-3.5" />
+            </button>
           </div>
+        </div>
+
+        {/* Active Page Body */}
+        <main className="flex-1 overflow-y-auto p-3.5 space-y-3.5 no-scrollbar">
 
           {activePage.sections && activePage.sections.length > 0 ? (
             activePage.sections.map((section, sIdx) => {
@@ -1625,6 +1636,10 @@ export const SidePanel: React.FC<SidePanelProps> = ({
           cellId={editNoteModalState.cell?.id || ''}
           initialKey={editNoteModalState.cell?.key || ''}
           initialValue={editNoteModalState.cell?.value || ''}
+          initialSourceUrl={editNoteModalState.cell?.sourceUrl || ''}
+          initialSourceTitle={editNoteModalState.cell?.sourceTitle || ''}
+          currentUrl={currentUrl}
+          currentTitle={currentTitle}
           onClose={() => setEditNoteModalState({ isOpen: false })}
           onSubmit={handleSaveEditNote}
         />

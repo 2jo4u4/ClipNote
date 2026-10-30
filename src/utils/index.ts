@@ -97,3 +97,30 @@ export function focusNextOnEnter(
     nextRef.current?.focus();
   }
 }
+
+/**
+ * Queries the currently active Chrome tab for its URL and title,
+ * falling back to the provided `fallbackUrl` and `fallbackTitle` when unavailable.
+ */
+export async function detectActiveTabSource(
+  fallbackUrl?: string,
+  fallbackTitle?: string
+): Promise<{ url: string; title: string }> {
+  try {
+    if (typeof chrome !== 'undefined' && chrome.tabs?.query) {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab?.url) {
+        return {
+          url: tab.url,
+          title: tab.title || fallbackTitle || '',
+        };
+      }
+    }
+  } catch {
+    // Fallback to provided values
+  }
+  return {
+    url: fallbackUrl || '',
+    title: fallbackTitle || '',
+  };
+}

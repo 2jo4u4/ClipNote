@@ -18,7 +18,7 @@ import {
   setStoredLanguage,
   resolveStoredPreferences,
 } from '../src/core/theme';
-import { isEventInsideNode, filterSearchResults } from '../src/utils';
+import { isEventInsideNode, filterSearchResults, detectActiveTabSource } from '../src/utils';
 
 describe('Domain Utility Functions', () => {
   describe('extractHostname', () => {
@@ -1130,6 +1130,60 @@ describe('NotebookService Core Business Logic (Unified Cell & Flexible Section)'
       expect(() =>
         parseImportedPagesFromJson(JSON.stringify({ title: 'No Sections' }))
       ).toThrow();
+    });
+
+    it('updates and clears cell key, sourceUrl, and sourceTitle via updateCell', async () => {
+      const page = await service.createPage({ title: 'Source Update Page' });
+      const sec = await service.createSection(page.id, { title: 'Sec' });
+      const cell = await service.createCell(page.id, sec.id, {
+        key: 'Initial Key',
+        value: 'Initial Value',
+        sourceUrl: 'https://initial.example.com',
+        sourceTitle: 'Initial Title',
+      });
+
+      const updated = await service.updateCell(page.id, sec.id, cell.id, {
+        key: 'Updated Key',
+        value: 'Updated Value',
+        sourceUrl: '  https://updated.example.com  ',
+        sourceTitle: '  Updated Title  ',
+      });
+      expect(updated.key).toBe('Updated Key');
+      expect(updated.sourceUrl).toBe('https://updated.example.com');
+      expect(updated.sourceTitle).toBe('Updated Title');
+
+      const cleared = await service.updateCell(page.id, sec.id, cell.id, {
+        key: undefined,
+        value: 'Updated Value',
+        sourceUrl: '',
+        sourceTitle: undefined,
+      });
+      expect(cleared.key).toBeUndefined();
+      expect(cleared.sourceUrl).toBeUndefined();
+      expect(cleared.sourceTitle).toBeUndefined();
+    });
+
+    it('detects active tab source via chrome.tabs.query or falls back to provided url/title', async () => {
+      vi.stubGlobal('chrome', {
+        tabs: {
+          query: vi.fn().mockResolvedValue([
+            { url: 'https://www.example.com/jobs', title: '範例網站' },
+          ]),
+        },
+      });
+
+      const fromTabs = await detectActiveTabSource('https://fallback.com', 'Fallback Title');
+      expect(fromTabs).toEqual({
+        url: 'https://www.example.com/jobs',
+        title: '範例網站',
+      });
+
+      vi.unstubAllGlobals();
+      const fromFallback = await detectActiveTabSource('https://fallback.com', 'Fallback Title');
+      expect(fromFallback).toEqual({
+        url: 'https://fallback.com',
+        title: 'Fallback Title',
+      });
     });
   });
 });

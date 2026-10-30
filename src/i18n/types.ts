@@ -181,6 +181,11 @@ export interface I18nTranslations {
     targetPage: string;
     targetCategory: string;
     sourcePrefix: string;
+    sourceLabel: string;
+    sourceTitlePlaceholder: string;
+    sourceUrlPlaceholder: string;
+    detectCurrentTab: string;
+    clearSource: string;
     submitBtn: string;
   };
 }

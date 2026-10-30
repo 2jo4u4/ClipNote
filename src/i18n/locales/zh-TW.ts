@@ -183,6 +183,11 @@ export const zhTW: I18nTranslations = {
     targetPage: '目標頁',
     targetCategory: '目標分類',
     sourcePrefix: '來源：',
+    sourceLabel: '來源網頁 (選填)',
+    sourceTitlePlaceholder: '來源標題（例如：範例網站）',
+    sourceUrlPlaceholder: '來源網址（https://...）',
+    detectCurrentTab: '抓取當前分頁',
+    clearSource: '清除',
     submitBtn: '新增筆記',
   },
 };

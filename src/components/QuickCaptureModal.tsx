@@ -5,10 +5,11 @@ import {
   CornerDownLeft,
   Check,
   Globe,
-  ExternalLink,
+  RefreshCw,
+  X,
   Sparkles,
 } from 'lucide-react';
-import { cn, filterSearchResults, focusNextOnEnter } from '../utils';
+import { cn, filterSearchResults, focusNextOnEnter, detectActiveTabSource } from '../utils';
 import { SearchResult, CreateCellInput, SYSTEM_GLOBAL_PAGE_ID } from '../types';
 import { Dropdown } from './Dropdown';
 import { Language, getTranslations } from '../i18n';
@@ -93,6 +94,8 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
   const [selectedSectionId, setSelectedSectionId] = useState<string>(initialSectionId || '');
   const [cellKey, setCellKey] = useState('');
   const [value, setValue] = useState(defaultContent);
+  const [draftSourceTitle, setDraftSourceTitle] = useState(sourceTitle || '');
+  const [draftSourceUrl, setDraftSourceUrl] = useState(sourceUrl || '');
 
   // Search state
   const [isSearching, setIsSearching] = useState(false);
@@ -102,23 +105,33 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
 
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const sourceUrlInputRef = useRef<HTMLInputElement>(null);
 
   const filteredSearchResults = useMemo(
     () => filterSearchResults(searchResults, searchQuery),
     [searchResults, searchQuery]
   );
 
-  // Synchronize active page and initial section on open
+  // Synchronize active page, initial section, and initial activeTab snapshot on open
   useEffect(() => {
+    let cancelled = false;
     if (isOpen) {
       setSelectedPageId(activePageId);
       setValue(defaultContent);
       setCellKey('');
+      setDraftSourceTitle(sourceTitle || '');
+      setDraftSourceUrl(sourceUrl || '');
       setIsSearching(false);
       setSearchQuery('');
       if (initialSectionId) {
         setSelectedSectionId(initialSectionId);
       }
+      detectActiveTabSource(sourceUrl, sourceTitle).then((detected) => {
+        if (!cancelled) {
+          setDraftSourceUrl(detected.url);
+          setDraftSourceTitle(detected.title);
+        }
+      });
       setTimeout(() => {
         if (defaultContent) {
           textareaRef.current?.focus();
@@ -127,7 +140,12 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         }
       }, 50);
     }
-  }, [isOpen, activePageId, defaultContent, initialSectionId]);
+    return () => {
+      cancelled = true;
+    };
+    // Only re-initialize when isOpen transitions so switching tabs while open never overwrites user state
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
 
   // Update available sections when selected page changes
   const availableSections = useMemo(() => {
@@ -191,7 +209,16 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, isSearching, filteredSearchResults, selectedSearchIndex, value, cellKey]);
+  }, [
+    isOpen,
+    isSearching,
+    filteredSearchResults,
+    selectedSearchIndex,
+    value,
+    cellKey,
+    draftSourceTitle,
+    draftSourceUrl,
+  ]);
 
   if (!isOpen) return null;
 
@@ -218,11 +245,19 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
     }, 600);
   };
 
+  const handleDetectCurrentTab = async () => {
+    const detected = await detectActiveTabSource(sourceUrl, sourceTitle);
+    setDraftSourceUrl(detected.url);
+    setDraftSourceTitle(detected.title);
+  };
+
   const handleSave = () => {
     const cleanVal = value.trim();
     if (!cleanVal) return;
 
     const key = cellKey.trim() || undefined;
+    const cleanSourceUrl = draftSourceUrl.trim() || undefined;
+    const cleanSourceTitle = draftSourceTitle.trim() || undefined;
 
     if (onSaveCell) {
       onSaveCell({
@@ -230,8 +265,8 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         sectionId: selectedSectionId || undefined,
         key,
         value: cleanVal,
-        sourceUrl,
-        sourceTitle,
+        sourceUrl: cleanSourceUrl,
+        sourceTitle: cleanSourceTitle,
       });
     } else if (key && onSaveField) {
       onSaveField({
@@ -239,16 +274,16 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
         sectionId: selectedSectionId || undefined,
         key,
         value: cleanVal,
-        sourceUrl,
-        sourceTitle,
+        sourceUrl: cleanSourceUrl,
+        sourceTitle: cleanSourceTitle,
       });
     } else if (onSaveJot) {
       onSaveJot({
         pageId: selectedPageId,
         sectionId: selectedSectionId || undefined,
         content: cleanVal,
-        sourceUrl,
-        sourceTitle,
+        sourceUrl: cleanSourceUrl,
+        sourceTitle: cleanSourceTitle,
       });
     }
 
@@ -439,12 +474,12 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               </label>
               <textarea
                 ref={textareaRef}
-                rows={3}
+                rows={4}
                 value={value}
                 onChange={(e) => setValue(e.target.value)}
                 placeholder={t.quickCapture.contentPlaceholder}
                 className={cn(
-                  'w-full p-3 rounded-lg text-xs outline-none transition-all duration-150 resize-none font-sans leading-relaxed',
+                  'w-full p-3 rounded-lg text-xs outline-none transition-colors duration-150 resize-y min-h-[84px] max-h-[45vh] font-sans leading-relaxed',
                   'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
                   'dark:bg-raycast-dark-surface dark:border-white/10 dark:text-raycast-dark-text dark:placeholder:text-raycast-dark-subtle',
                   'focus:border-raycast-amber'
@@ -452,14 +487,70 @@ export const QuickCaptureModal: React.FC<QuickCaptureModalProps> = ({
               />
             </div>
 
-            {/* Source URL Pill */}
-            {sourceUrl && (
-              <div className="flex items-center gap-1.5 text-[11px] text-raycast-light-subtle dark:text-raycast-dark-subtle font-mono truncate">
-                <Globe className="w-3 h-3 flex-shrink-0" />
-                <span className="truncate">{t.quickCapture.sourcePrefix}{sourceTitle || sourceUrl}</span>
-                <ExternalLink className="w-2.5 h-2.5 opacity-60 flex-shrink-0" />
+            {/* Source Webpage (Editable Title & URL + Manual Detect Button) */}
+            <div className="space-y-1.5">
+              <div className="flex items-center justify-between gap-2">
+                <label className="flex items-center gap-1 text-[11px] font-medium text-raycast-light-subtle dark:text-raycast-dark-subtle">
+                  <Globe className="w-3 h-3" />
+                  <span>{t.quickCapture.sourceLabel}</span>
+                </label>
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleDetectCurrentTab}
+                    title={t.quickCapture.detectCurrentTab}
+                    className="flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-medium text-raycast-amber bg-raycast-amber/10 hover:bg-raycast-amber/20 transition-colors active:scale-95"
+                  >
+                    <RefreshCw className="w-2.5 h-2.5" />
+                    <span>{t.quickCapture.detectCurrentTab}</span>
+                  </button>
+                  {(draftSourceTitle || draftSourceUrl) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDraftSourceTitle('');
+                        setDraftSourceUrl('');
+                      }}
+                      title={t.quickCapture.clearSource}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-md text-[10px] text-raycast-light-subtle dark:text-raycast-dark-subtle hover:text-raycast-coral hover:bg-raycast-coral/10 transition-colors"
+                    >
+                      <X className="w-2.5 h-2.5" />
+                      <span>{t.quickCapture.clearSource}</span>
+                    </button>
+                  )}
+                </div>
               </div>
-            )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+                <input
+                  type="text"
+                  value={draftSourceTitle}
+                  onChange={(e) => setDraftSourceTitle(e.target.value)}
+                  onKeyDown={(e) => focusNextOnEnter(e, sourceUrlInputRef)}
+                  aria-label={t.quickCapture.sourceTitlePlaceholder}
+                  placeholder={t.quickCapture.sourceTitlePlaceholder}
+                  className={cn(
+                    'w-full px-2.5 py-1.5 rounded-lg text-[11px] outline-none transition-all duration-150',
+                    'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
+                    'dark:bg-raycast-dark-surface dark:border-white/10 dark:text-raycast-dark-text dark:placeholder:text-raycast-dark-subtle',
+                    'focus:border-raycast-amber'
+                  )}
+                />
+                <input
+                  ref={sourceUrlInputRef}
+                  type="text"
+                  value={draftSourceUrl}
+                  onChange={(e) => setDraftSourceUrl(e.target.value)}
+                  aria-label={t.quickCapture.sourceUrlPlaceholder}
+                  placeholder={t.quickCapture.sourceUrlPlaceholder}
+                  className={cn(
+                    'w-full px-2.5 py-1.5 rounded-lg text-[11px] font-mono outline-none transition-all duration-150',
+                    'bg-raycast-light-surface border border-raycast-light-border text-raycast-light-text placeholder:text-raycast-light-subtle',
+                    'dark:bg-raycast-dark-surface dark:border-white/10 dark:text-raycast-dark-text dark:placeholder:text-raycast-dark-subtle',
+                    'focus:border-raycast-amber'
+                  )}
+                />
+              </div>
+            </div>
           </div>
         )}
 

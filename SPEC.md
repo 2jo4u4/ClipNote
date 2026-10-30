@@ -301,6 +301,15 @@ Whenever a Cell is created, updated, or deleted within a Section:
     - Parses `"YYYY-MM-DD HH:mm:ss"` (or ISO / numeric) timestamps back into epoch milliseconds, falling back to `Date.now()` whenever a timestamp is missing or invalid.
     - Automatically switches the active tab to the first newly imported page and displays a localized success or error toast.
 
+### 22. Pinned Page Control Bar, Source Webpage Snapshot/Edit & Resizable Textarea
+- **Pinned Page Control Bar (`SidePanel.tsx`)**:
+  - The active page control bar (displaying page icon, editable title, delete page icon, Batch Mode toggle, Collapse/Expand All Categories toggle, and Add Category `+` button) is placed outside `<main className="flex-1 overflow-y-auto">` as a `flex-shrink-0` bar directly below `PageTabs`, ensuring it remains permanently visible when scrolling through long category lists.
+- **Source Webpage Snapshot, Manual Detection & Editing (`QuickCaptureModal` & `EditNoteModal`)**:
+  - When `QuickCaptureModal` opens (`isOpen` transitions to `true`), it snapshots the current active tab's `sourceTitle` and `sourceUrl` once via `detectActiveTabSource` into local form state (`draftSourceTitle`, `draftSourceUrl`); subsequent tab switches while the modal remains open do not overwrite the user's draft.
+  - Both `QuickCaptureModal` and `EditNoteModal` provide editable inputs for `sourceTitle` and `sourceUrl`, a **"抓取當前分頁 / Detect Current Tab"** button (`detectActiveTabSource`) to manually fetch the active tab's metadata on demand, and a **"清除 / Clear"** button.
+- **Resizable Note Content Textarea (`resize-y`)**:
+  - Both `QuickCaptureModal` (`resize-y min-h-[84px] max-h-[45vh]`) and `EditNoteModal` (`resize-y min-h-[100px] max-h-[50vh]` with initial auto-height sizing up to `240px`) allow users to vertically resize the note content `<textarea>` for comfortable reading and editing of long notes.
+
 ---
 
 ## Testing Decisions
