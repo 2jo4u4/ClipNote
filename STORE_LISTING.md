@@ -199,9 +199,9 @@ Chrome 商店要求至少 1 張、建議上傳 4~5 張高解析截圖。
    ```
 2. **取得打包檔案**：
    打包完成後，WXT 會在專案目錄下生成：
-   `.output/clipnote-1.0.0-chrome.zip`
+   `.output/clipnote-1.0.1-chrome.zip`
 3. **上傳至 Chrome 開發者後台**：
    - 登入 [Chrome Web Store Developer Dashboard](https://chrome.google.com/webstore/devconsole)。
-   - 點擊「新增項目 (New Item)」，將 `.output/clipnote-1.0.0-chrome.zip` 拖曳上傳。
+   - 點擊「新增項目 (New Item)」，將 `.output/clipnote-1.0.1-chrome.zip` 拖曳上傳。
    - 依據本文件第 1~4 節填寫名稱、說明、隱私權網址、權限聲明與上傳 1280x800 截圖。
    - 點擊「提交審查 (Submit for Review)」，通常在 1~3 個工作天內即可通過上架！
